@@ -18,10 +18,22 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+
+    // llave primaria
+    protected $primaryKey = 'usuario_id';
+
+    // campos bd necesarios
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'usuario_apellido1',
+        'usuario_apellido2',
+        'usuario_nombre1',
+        'usuario_nombre2',
+        'usuario_tipo_documento',
+        'area_servicio_id',
+        'usuario_clave',
+        'usuario_usuario',
+        'usuario_celular',
+        'usuario_correo',
     ];
 
     /**
