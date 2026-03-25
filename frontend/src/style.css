@@ -1,35 +1,136 @@
-/* :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+:root {
+  --primary: #077E9D;
+  --secondary: #025B7D;
+  --warning: #FCBB1C;
 }
 
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 70px;
+  background-color: var(--primary);
+  color: white;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.btn-primary {
+  background-color: #077E9D;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.sidebar.expanded {
+  width: 200px;
+}
+
+.sidebar .toggle {
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.sidebar li:hover {
+  background-color: var(--secondary);
+}
+
+/* MAIN */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* NAVBAR */
+.navbar {
+  padding: 0 20px;
+  height: 70px;
+  background: white;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.logo {
+  height: 50px;
+}
+
+/* CONTENT */
+.content {
+  flex: 1;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+/* FOOTER */
+.footer {
+  height: 50px;
+  background-color: var(--secondary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  background: var(--primary);
+  color: white;
+
+  border: none;
+  border-radius: 8px;
+
+  padding: 10px 18px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Ícono */
+.btn-primary .icon {
+  font-size: 16px;
+}
+
+/* Hover */
+.btn-primary:hover {
+  background: var(--secondary);
+}
+
+/* Active (click) */
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* 
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #9ca3af;
