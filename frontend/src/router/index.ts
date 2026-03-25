@@ -16,7 +16,7 @@ const router = createRouter({
         {
           path: '', // La ruta por defecto cuando entras a /
           name: 'inicio',
-          component: HomePage // Se mostrará dentro del <router-view>
+          component: HomePageAdmin // Se mostrará dentro del <router-view>
         }
       ]
     }

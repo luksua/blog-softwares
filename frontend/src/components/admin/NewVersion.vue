@@ -1,71 +1,76 @@
 <template>
-  <div class="form-container">
-    <h2>Nuevo Registro</h2>
+  <div>
+    <form @submit.prevent="guardarRegistro">
 
-    <form @submit.prevent="guardarRegistro" class="formulario">
-
-      <div class="form-group">
-        <label for="titulo">Título:</label>
-        <input type="text" id="titulo" v-model="registro.titulo" required />
+      <div class="mb-3">
+        <label for="titulo" class="form-label fw-bold">Título:</label>
+        <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
 
-      <div class="form-group">
-        <label for="resumen">Resumen:</label>
-        <textarea id="resumen" v-model="registro.resumen" rows="3" required></textarea>
+      <div class="mb-3">
+        <label for="titulo" class="form-label fw-bold">Número de Version:</label>
+        <input type="text" id="titulo" class="form-control" v-model="registro.version" required />
       </div>
 
-      <div class="form-group">
-        <label for="contenido">Contenido:</label>
-        <textarea id="contenido" v-model="registro.contenido" rows="6" required></textarea>
+      <div class="mb-3">
+        <label for="resumen" class="form-label fw-bold">Resumen:</label>
+        <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
       </div>
 
-      <div class="form-group">
-        <label for="miniatura">URL de la Miniatura:</label>
-        <input type="url" id="miniatura" v-model="registro.imagen_destacada" placeholder="https://..." />
+      <div class="mb-3">
+        <label for="contenido" class="form-label fw-bold">Contenido:</label>
+        <textarea id="contenido" class="form-control" v-model="registro.contenido" rows="4" required></textarea>
       </div>
 
-      <div class="form-group">
-        <label for="area_servicio">ID Área de Servicio:</label>
-        <input type="number" id="area_servicio" v-model="registro.area_servicio_id" required />
+      <div class="mb-3">
+        <label for="miniatura" class="form-label fw-bold">URL de la Miniatura:</label>
+        <input type="url" id="miniatura" class="form-control" v-model="registro.imagen_destacada" placeholder="https://..." />
       </div>
 
-      <div class="form-group">
-        <label for="usuario_id_autor">ID del Autor:</label>
-        <input type="number" id="usuario_id_autor" v-model="registro.usuario_id_autor" required />
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="area_servicio" class="form-label fw-bold">ID Área:</label>
+          <input type="number" id="area_servicio" class="form-control" v-model="registro.area_servicio_id" required />
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="usuario_id_autor" class="form-label fw-bold">ID Autor:</label>
+          <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor" required />
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="estado">Estado:</label>
-        <select id="estado" v-model="registro.estado" required>
-          <option value="borrador">Borrador</option>
-          <option value="revision">En Revisión</option>
-          <option value="publicado">Publicado</option>
-        </select>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="estado" class="form-label fw-bold">Estado:</label>
+          <select id="estado" class="form-select" v-model="registro.estado" required>
+            <option value="borrador">Borrador</option>
+            <option value="revision">En Revisión</option>
+            <option value="publicado">Publicado</option>
+          </select>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="fecha_publicacion" class="form-label fw-bold">Fecha:</label>
+          <input type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion" required disabled/>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="fecha_publicacion">Fecha de Publicación:</label>
-        <input type="date" id="fecha_publicacion" v-model="registro.fecha_publicacion" required />
+      <div class="mb-3">
+        <label for="imagenes" class="form-label fw-bold">Imágenes de la Galería:</label>
+        <input type="file" id="imagenes" class="form-control" multiple accept="image/png, image/jpeg, image/webp" @change="manejarSeleccionImagenes" />
       </div>
 
-      <div class="form-group">
-        <label for="imagenes">Imágenes de la Galería:</label>
-        <input type="file" id="imagenes" multiple accept="image/png, image/jpeg, image/webp"
-          @change="manejarSeleccionImagenes" />
-      </div>
-
-      <div v-if="previsualizaciones.length > 0" class="preview-container">
-        <p>Vista previa:</p>
-        <div class="imagenes-grid">
-          <div v-for="(url, index) in previsualizaciones" :key="index" class="imagen-preview">
-            <img :src="url" alt="Previsualización" />
-            <button type="button" @click="quitarImagen(index)" class="btn-quitar">X</button>
+      <div v-if="previsualizaciones.length > 0" class="mb-3">
+        <p class="fw-bold mb-2">Vista previa:</p>
+        <div class="d-flex flex-wrap gap-2">
+          <div v-for="(url, index) in previsualizaciones" :key="index" class="position-relative">
+            <img :src="url" alt="Previa" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;" />
+            <button type="button" @click="quitarImagen(index)" class="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle p-1" style="width: 24px; height: 24px; line-height: 0.5;">X</button>
           </div>
         </div>
       </div>
 
-      <div class="form-actions">
-        <button type="submit" :disabled="enviando">
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-secondary" @click="$emit('cerrar')">Cancelar</button>
+        <button type="submit" class="btn btn-primary" :disabled="enviando">
           {{ enviando ? 'Guardando...' : 'Guardar Registro' }}
         </button>
       </div>
@@ -82,12 +87,14 @@ import type { NewVersion } from '../../types/newVersion.ts';
 // Estado del formulario
 const registro = reactive<NewVersion>({
   titulo: '',
+  version: '',
   contenido: '',
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: null,
   usuario_id_autor: null,
   estado: 'borrador', // Coincide con el value del <select>
+  fecha_creacion: new Date().toISOString().split('T')[0],
   fecha_publicacion: new Date().toISOString().split('T')[0]
 });
 
@@ -122,23 +129,28 @@ const quitarImagen = (index: number) => {
   archivosImagenes.value.splice(index, 1);
 };
 
+const emit = defineEmits(['cerrar', 'recargar-lista']);
+
 // Envía los datos al backend
 const guardarRegistro = async () => {
   enviando.value = true;
 
   try {
     const formData = new FormData();
+    emit('recargar-lista');
+    emit('cerrar');
 
     // Textos y números
-    formData.append('titulo', registro.titulo);
-    formData.append('contenido', registro.contenido);
-    formData.append('resumen', registro.resumen);
+    formData.append('actualizacion_titulo', registro.titulo);
+    formData.append('actualizacion_version', registro.version);
+    formData.append('actualizacion_contenido', registro.contenido);
+    formData.append('actualizacion_resumen', registro.resumen);
     // Si imagen_destacada está vacío, enviamos un string vacío para evitar enviar "null" como texto
-    formData.append('imagen_destacada', registro.imagen_destacada || '');
-    formData.append('area_servicio_id', String(registro.area_servicio_id));
-    formData.append('usuario_id_autor', String(registro.usuario_id_autor));
-    formData.append('estado', registro.estado);
-    formData.append('fecha_publicacion', registro.fecha_publicacion);
+    formData.append('actualizacion_imagen_destacada', registro.imagen_destacada || '');
+    formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id));
+    formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor));
+    formData.append('actualizacion_estado', registro.estado);
+    formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '');
 
     // Imágenes físicas
     archivosImagenes.value.forEach((archivo) => {
@@ -164,14 +176,13 @@ const guardarRegistro = async () => {
 // Resetea el formulario después de guardar
 const limpiarFormulario = () => {
   Object.assign(registro, {
-    titulo: '',
-    contenido: '',
-    resumen: '',
-    imagen_destacada: '',
-    area_servicio_id: null,
-    usuario_id_autor: null,
-    estado: 'borrador',
-    fecha_publicacion: new Date().toISOString().split('T')[0]
+    actualizacion_titulo: '',
+    actualizacion_contenido: '',
+    actualizacion_resumen: '',
+    actualizacion_area_servicio_id: null,
+    actualizacion_usuario_id_autor: null,
+    actualizacion_estado: 'borrador',
+    actualizacion_fecha_publicacion: new Date().toISOString().split('T')[0]
   });
 
   previsualizaciones.value.forEach(url => URL.revokeObjectURL(url));

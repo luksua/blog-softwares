@@ -20,32 +20,32 @@
 
     <div v-else class="grid-tarjetas">
       <div v-for="item in actualizaciones" :key="item.id" class="tarjeta">
-        
+
         <div class="tarjeta-imagen">
-          <img 
-            v-if="item.imagen_destacada" 
-            :src="item.imagen_destacada" 
-            alt="Miniatura del blog" 
-          />
+          <img v-if="item.actualizacion_imagen_destacada" :src="item.actualizacion_imagen_destacada"
+            alt="Miniatura del blog" />
           <div v-else class="sin-imagen">Sin imagen</div>
-          
-          <span :class="['etiqueta-estado', item.estado.toLowerCase()]">
-            {{ item.estado }}
+
+          <span :class="['etiqueta-estado', item.actualizacion_estado]">
+            {{ item.actualizacion_estado }}
           </span>
         </div>
 
         <div class="tarjeta-cuerpo">
-          <h3>{{ item.titulo }}</h3>
-          <p class="fecha">{{ formatearFecha(item.fecha_publicacion) }}</p>
-          <p class="resumen">{{ item.resumen }}</p>
+          <h3>{{ item.actualizacion_titulo }}</h3>
+          <h3>{{ item.actualizacion_version ? item.actualizacion_version : 'Sin número de versión' }}</h3>
+          <p class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</p>
+          <p class="resumen">{{ item.actualizacion_resumen }}</p>
         </div>
 
         <div class="tarjeta-pie">
           <span class="galeria-info">
-            📸 {{ item.imagenes ? item.imagenes.length : 0 }} imágenes adjuntas
+            📸 {{ item.actualizacion_imagenes ? item.actualizacion_imagenes.length : 0 }} imágenes adjuntas
           </span>
-          <button class="btn-editar">Ver / Editar</button>
+          <button class="btn-editar">Ver más</button>
         </div>
+
+        <!-- PAGINACION -->
 
       </div>
     </div>
@@ -69,11 +69,11 @@ const error = ref('');
 const obtenerActualizaciones = async () => {
   cargando.value = true;
   error.value = '';
-  
+
   try {
     // Hacemos el GET a la misma ruta
-    const respuesta = await api.get('/admin/actualizaciones');
-    actualizaciones.value = respuesta.data;
+    const respuesta = await api.get('/employee/actualizaciones');
+    actualizaciones.value = respuesta.data.data;
   } catch (err) {
     console.error('Error al cargar la lista:', err);
     error.value = 'No se pudo conectar con el servidor para obtener los datos.';
@@ -141,7 +141,7 @@ onMounted(() => {
 
 .tarjeta:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 .tarjeta-imagen {
@@ -176,9 +176,17 @@ onMounted(() => {
   text-transform: capitalize;
 }
 
-.etiqueta-estado.publicado { background-color: #4caf50; }
-.etiqueta-estado.borrador { background-color: #ff9800; }
-.etiqueta-estado.revision { background-color: #2196f3; }
+.etiqueta-estado.publicado {
+  background-color: #4caf50;
+}
+
+.etiqueta-estado.borrador {
+  background-color: #ff9800;
+}
+
+.etiqueta-estado.revision {
+  background-color: #2196f3;
+}
 
 .tarjeta-cuerpo {
   padding: 15px;

@@ -1,12 +1,14 @@
 
 export interface Version {
   id: number;
-  titulo: string;
-  resumen: string;
-  imagen_destacada: string;
-  estado: string;
-  fecha_publicacion: string;
-  imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
+  actualizacion_titulo: string;
+  actualizacion_version: string;
+  actualizacion_resumen: string;
+  actualizacion_imagen_destacada: string;
+  actualizacion_estado: string;
+  actualizacion_fecha_publicacion: string;
+  actualizacion_fecha_creacion: string;
+  actualizacion_imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
 }
 
 export interface ImagenGaleria {

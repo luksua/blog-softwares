@@ -7,20 +7,22 @@ use App\Models\UpdateBlog;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
-class UpdateBlogController extends Controller
+class UpdateBlogAdminController extends Controller
 {
     public function store(Request $request)
     {
         // 1. Validación de los datos que llegan desde el FormData de Vue
         $request->validate([
-            'titulo'            => 'required|string|max:255',
-            'contenido'         => 'required|string',
-            'resumen'           => 'required|string',
-            'imagen_destacada'  => 'nullable|string', // Asumo que envías una URL estática por ahora
-            'area_servicio_id'  => 'required|integer',
-            'usuario_id_autor'  => 'required|integer',
-            'estado'            => 'required|in:borrador,publicado',
-            'fecha_publicacion' => 'required|date',
+            'actualizacion_titulo'            => 'required|string|max:255',
+            'actualizacion_version'           => 'required|string|max:255',
+            'actualizacion_contenido'         => 'required|string',
+            'actualizacion_resumen'           => 'required|string',
+            'actualizacion_imagen_destacada'  => 'nullable|string', // Asumo que envías una URL estática por ahora
+            'actualizacion_area_servicio_id'  => 'required|integer',
+            'actualizacion_usuario_id_autor'  => 'required|integer',
+            'actualizacion_estado'            => 'required|in:borrador,publicado',
+            // 'actualizacion_fecha_publicacion' => 'required|date',
+            // 'actualizacion_fecha_creacion'    => 'required|date',
             
             // Validación para el arreglo de múltiples imágenes
             'imagenes'          => 'nullable|array',
@@ -75,10 +77,11 @@ class UpdateBlogController extends Controller
     {
         // Traemos todas las actualizaciones, ordenadas por las más recientes primero,
         // y le pedimos a Laravel que incluya las imágenes asociadas.
-        $actualizaciones = UpdateBlog::with('photos')
+        $actualizaciones = UpdateBlog::with('imagenes')
                             ->orderBy('id', 'desc')
-                            ->get();
-
+                            ->paginate(8);
         return response()->json($actualizaciones);
     }
+
+    // HACER SELECT DE ID AREA E ID AUTOR ?
 }

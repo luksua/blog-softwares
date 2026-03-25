@@ -1,9 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\UpdateBlogController;
+use App\Http\Controllers\Admin\UpdateBlogAdminController;
+use App\Http\Controllers\Employee\UpdateBlogController;
 
-Route::post('/admin/actualizaciones', [UpdateBlogController::class, 'store']);
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);
+Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'index']);
+Route::post('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
+
