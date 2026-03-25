@@ -8,20 +8,19 @@
             </div>
 
             <ul>
-                <li>
-                    <i>🏠</i>
-                    <span v-if="isExpanded">Inicio</span>
-                </li>
+                <router-link to="/" custom v-slot="{ navigate }">
+                    <li @click="navigate" style="cursor: pointer;">
+                        <i>🏠</i>
+                        <span v-if="isExpanded">Inicio</span>
+                    </li>
+                </router-link>
 
-                <li>
-                    <i>📦</i>
-                    <span v-if="isExpanded">Versiones</span>
-                </li>
-
-                <li>
-                    <i>➕</i>
-                    <span v-if="isExpanded">Nueva</span>
-                </li>
+                <router-link to="/nuevo" custom v-slot="{ navigate }">
+                    <li @click="navigate" style="cursor: pointer;">
+                        <i>➕</i>
+                        <span v-if="isExpanded">Nueva Versión</span>
+                    </li>
+                </router-link>
             </ul>
         </aside>
 

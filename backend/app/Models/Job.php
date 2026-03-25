@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Job extends Model
 {
+    // nombre de la tabla en la bd
+    protected $table = 'cargos';
+
     // llave primaria
     protected $primaryKey = 'cargo_id';
 
@@ -15,3 +18,5 @@ class Job extends Model
         'cargo_area',
     ];
 }
+
+// id, titulo, contenido, resumen, miniatura, area_servicio, usuario_id_autor, estado, fecha_creacion, fecha_publicacion
