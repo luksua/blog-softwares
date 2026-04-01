@@ -70,7 +70,7 @@
 
       <div class="d-flex justify-content-end gap-2 mt-4">
         <button type="button" class="btn btn-secondary" @click="$emit('cerrar')">Cancelar</button>
-        <button type="submit" class="btn btn-primary" :disabled="enviando">
+        <button type="submit" class="btn-primary" :disabled="enviando">
           {{ enviando ? 'Guardando...' : 'Guardar Registro' }}
         </button>
       </div>
@@ -235,22 +235,4 @@ const limpiarFormulario = () => {
   text-align: right;
 }
 
-button {
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-button:disabled {
-  background-color: #9e9e9e;
-  cursor: not-allowed;
-}
-
-button:hover:not(:disabled) {
-  background-color: #45a049;
-}
 </style>

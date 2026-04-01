@@ -6,7 +6,7 @@
                 <h2>Actualizaciones</h2>
             </div>
             <div class="col-lg-2 text-end">
-                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                <button type="button" class="btn-primary" data-bs-toggle="modal"
                     data-bs-target="#modalNuevoRegistro">
                     + Nuevo Registro
                 </button>
@@ -29,7 +29,7 @@
                 <div class="modal-content">
 
                     <div class="modal-header bg-light">
-                        <h5 class="modal-title fw-bold" id="modalLabel">Crear Nueva Actualización</h5>
+                        <h5 class="modal-title fw-bold" id="modalLabel">Registrar Nueva Actualización</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
                             id="btnCerrarModal"></button>
                     </div>
