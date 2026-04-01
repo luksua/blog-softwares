@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use App\Models\UpdateBlog;
 use Illuminate\Support\Facades\Storage;
@@ -83,5 +84,17 @@ class UpdateBlogAdminController extends Controller
         return response()->json($actualizaciones);
     }
 
-    // HACER SELECT DE ID AREA E ID AUTOR ?
+    public function getAreas()
+    {
+        // Traemos solo los campos que necesitamos para que la consulta sea rápida.
+        // Asumo que tu tabla tiene las columnas 'id' y 'nombre' (o 'name'). 
+        // Cámbialo si se llama diferente.
+        $areas = Area::select('area_servicio_id', 'area_servicio_nombre')
+                             ->orderBy('area_servicio_nombre', 'asc')
+                             ->get();
+
+        return response()->json([
+            'data' => $areas
+        ]);
+    }
 }
