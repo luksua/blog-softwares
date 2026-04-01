@@ -166,10 +166,10 @@ const formatearFecha = (fechaString: string) => {
 
 const mapearClaseEstado = (estado: string) => {
   const estadoMin = estado.toLowerCase();
-  if (estadoMin === 'publicado') return 'estado-green';
-  if (estadoMin === 'borrador') return 'estado-yellow';
-  if (estadoMin === 'revision') return 'estado-red';
-  return 'estado-gray';
+  if (estadoMin === 'publicado') return 'estado-green'; 
+  if (estadoMin === 'borrador') return 'estado-yellow'; 
+  if (estadoMin === 'revision') return 'estado-red';    
+  if (estadoMin === 'inactivo') return 'estado-dark-gray';
 };
 
 const cambiarPagina = (pagina: number) => {
@@ -238,6 +238,12 @@ defineExpose({
   border-radius: 8px;
   color: #6b7280;
   border: 1px dashed #e5e7eb;
+}
+
+.estado-dark-gray { 
+  background-color: #e5e7eb; 
+  color: #374151; 
+  text-decoration: line-through; /* Opcional: un tachado sutil para que sea obvio que está inactivo */
 }
 
 .table-container {

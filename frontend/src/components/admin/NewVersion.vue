@@ -7,25 +7,29 @@
         <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
 
-      <div class="mb-3">
-        <label for="version" class="form-label fw-bold">Número de Version:</label>
-        <input type="text" id="version" class="form-control" v-model="registro.version" required />
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="version" class="form-label fw-bold">Número de Versión:</label>
+          <input type="text" id="version" class="form-control" v-model="registro.version" required />
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="miniatura" class="form-label fw-bold">URL de la Miniatura (Portada):</label>
+          <input type="url" id="miniatura" class="form-control" v-model="registro.imagen_destacada"
+            placeholder="https://..." />
+        </div>
       </div>
 
       <div class="mb-3">
-        <label for="resumen" class="form-label fw-bold">Resumen:</label>
+        <label for="resumen" class="form-label fw-bold">Resumen corto:</label>
         <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
       </div>
 
-      <div class="mb-3">
-        <label for="contenido" class="form-label fw-bold">Contenido:</label>
-        <textarea id="contenido" class="form-control" v-model="registro.contenido" rows="4" required></textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="miniatura" class="form-label fw-bold">URL de la Miniatura:</label>
-        <input type="url" id="miniatura" class="form-control" v-model="registro.imagen_destacada"
-          placeholder="https://..." />
+      <div class="mb-4">
+        <label class="form-label fw-bold">Contenido:</label>
+        <div class="editor-container">
+          <QuillEditor theme="snow" v-model:content="registro.contenido" contentType="html" :options="opcionesEditor"
+            @ready="manejarArrastreImagen" placeholder="Escribe tu actualización aquí. Puedes arrastrar imágenes..." />
+        </div>
       </div>
 
       <div class="row">
@@ -40,9 +44,9 @@
         </div>
 
         <div class="col-md-6 mb-3">
-          <label for="usuario_id_autor" class="form-label fw-bold">ID Autor (Automático):</label>
+          <label for="usuario_id_autor" class="form-label fw-bold">ID Autor:</label>
           <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor" disabled
-            required title="Se asignará tu ID de usuario automáticamente" />
+            required />
         </div>
       </div>
 
@@ -50,9 +54,9 @@
         <div class="col-md-6 mb-3">
           <label for="estado" class="form-label fw-bold">Estado:</label>
           <select id="estado" class="form-select" v-model="registro.estado" required>
-            <option value="borrador">Borrador</option>
-            <option value="revision">En Revisión</option>
-            <option value="publicado">Publicado</option>
+            <option v-for="estado in listaEstados" :key="estado.id" :value="estado.id">
+              {{ estado.nombre }}
+            </option>
           </select>
         </div>
         <div class="col-md-6 mb-3">
@@ -62,28 +66,10 @@
         </div>
       </div>
 
-      <div class="mb-3">
-        <label for="imagenes" class="form-label fw-bold">Imágenes de la Galería:</label>
-        <input type="file" id="imagenes" class="form-control" multiple accept="image/png, image/jpeg, image/webp"
-          @change="manejarSeleccionImagenes" />
-      </div>
-
-      <div v-if="previsualizaciones.length > 0" class="mb-3">
-        <p class="fw-bold mb-2">Vista previa:</p>
-        <div class="d-flex flex-wrap gap-2">
-          <div v-for="(url, index) in previsualizaciones" :key="index" class="position-relative">
-            <img :src="url" alt="Previa" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;" />
-            <button type="button" @click="quitarImagen(index)"
-              class="btn btn-danger btn-sm position-absolute top-0 start-100 translate-middle rounded-circle p-1"
-              style="width: 24px; height: 24px; line-height: 0.5;">X</button>
-          </div>
-        </div>
-      </div>
-
       <div class="d-flex justify-content-end gap-2 mt-4">
         <button type="button" class="btn btn-secondary" @click="$emit('cerrar')">Cancelar</button>
         <button type="submit" class="btn-primary" :disabled="enviando">
-          {{ enviando ? 'Guardando...' : 'Guardar Registro' }}
+          {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
         </button>
       </div>
 
@@ -94,12 +80,14 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue';
 import api from '../../api/api';
-// Si tu type NewVersion requiere que area sea null al inicio, asegúrate de que el select lo soporte
-import type { NewVersion } from '../../types/newVersion.ts';
-import type { Area } from '../../types/areas.ts';
+import type { NewVersion } from '../../types/newVersion';
+import type { Area } from '../../types/areas';
 
-// --- MOCK DE AUTENTICACIÓN ---
-// Cuando tengas Auth (ej. con Pinia o leyendo de localStorage), cambias este valor.
+// QUILL
+import type Quill from 'quill';
+import { QuillEditor } from '@vueup/vue-quill';
+import '@vueup/vue-quill/dist/vue-quill.snow.css';
+
 const idUsuarioLogueado = 1;
 
 const registro = reactive<NewVersion>({
@@ -108,65 +96,119 @@ const registro = reactive<NewVersion>({
   contenido: '',
   resumen: '',
   imagen_destacada: '',
-  area_servicio_id: '' as any, // Inicializado vacío para el select
-  usuario_id_autor: idUsuarioLogueado, // Asignación automática del autor
+  area_servicio_id: '' as any,
+  usuario_id_autor: idUsuarioLogueado,
   estado: 'borrador',
   fecha_creacion: new Date().toISOString().split('T')[0],
-  fecha_publicacion: new Date().toISOString().split('T')[0]
+  fecha_publicacion: new Date().toISOString().split('T')[0],
+  imagenes_quill: []
 });
 
 const listaAreas = ref<Area[]>([]);
-
-const obtenerAreas = async () => {
-  try {
-    const respuesta = await api.get('/admin/area-servicio'); 
-    listaAreas.value = respuesta.data.data;
-  } catch (error) {
-    console.error('Error al cargar las áreas:', error);
-    alert('No se pudieron cargar las áreas disponibles.');
-  }
-};
-
-// Estados para manejar las imágenes y el botón
-const archivosImagenes = ref<File[]>([]);
-const previsualizaciones = ref<string[]>([]);
+const listaEstados = ref<{ id: string, nombre: string }[]>([]);
 const enviando = ref(false);
-
 const emit = defineEmits(['cerrar', 'recargar-lista']);
 
-// Se ejecuta apenas carga el componente
-onMounted(() => {
-  obtenerAreas();
+// AÑADIDO: Unificamos los onMounted en uno solo para mejor orden
+onMounted(async () => {
+  try {
+    const resAreas = await api.get('/admin/area-servicio');
+    listaAreas.value = resAreas.data.data;
+  } catch (error) {
+    console.error('Error al cargar las áreas:', error);
+  }
+
+  try {
+    const resEstados = await api.get('/admin/estados-actualizacion');
+    listaEstados.value = resEstados.data.data;
+  } catch (error) {
+    console.error('Error al cargar los estados:', error);
+  }
 });
 
-// Procesa los archivos cuando el usuario los selecciona
-const manejarSeleccionImagenes = (event: Event) => {
-  const target = event.target as HTMLInputElement;
+// --- INICIO: LÓGICA DE IMÁGENES PARA QUILL ---
 
-  if (target.files) {
-    const nuevosArchivos = Array.from(target.files);
-    archivosImagenes.value.push(...nuevosArchivos);
-    nuevosArchivos.forEach(archivo => {
-      previsualizaciones.value.push(URL.createObjectURL(archivo));
-    });
+// 1. Función compartida que sube la imagen a Laravel
+const subirImagenAlServidor = async (file: File, quillInstance: Quill, index: number) => {
+  try {
+    const formData = new FormData();
+    formData.append('imagen', file);
+
+    // Asegúrate de tener esta ruta creada en tu Laravel
+    const respuesta = await api.post('/admin/subir-imagen-blog', formData);
+
+    // Inserta la URL que devuelve Laravel dentro del editor
+    quillInstance.insertEmbed(index, 'image', respuesta.data.url);
+  } catch (error) {
+    console.error('Error subiendo imagen:', error);
+    alert('Hubo un error al subir la imagen.');
   }
-  target.value = '';
 };
 
-const quitarImagen = (index: number) => {
-  URL.revokeObjectURL(previsualizaciones.value[index]);
-  previsualizaciones.value.splice(index, 1);
-  archivosImagenes.value.splice(index, 1);
+// 2. Evento para cuando el usuario ARRASTRA la imagen
+const manejarArrastreImagen = (quillInstance: Quill) => {
+  const root = quillInstance.root;
+
+  root.addEventListener('drop', async (e: DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      const file = e.dataTransfer.files[0];
+      if (/^image\//.test(file.type)) {
+        const range = quillInstance.getSelection(true);
+        await subirImagenAlServidor(file, quillInstance, range.index);
+      }
+    }
+  }, false);
 };
 
-// Envía los datos al backend
+// 3. Configuración para el BOTÓN de imagen en la barra de herramientas
+const opcionesEditor = {
+  // Envolvemos todo en "modules" porque ahora usamos la propiedad :options
+  modules: {
+    toolbar: {
+      container: [
+        ['bold', 'italic', 'underline'],
+        [{ 'header': 1 }, { 'header': 2 }],
+        ['image', 'link'] 
+      ],
+      handlers: {
+        // SOLUCIÓN AL ERROR DE TS: Le decimos explícitamente a TypeScript 
+        // que "this" será inyectado dinámicamente usando (this: any)
+        image: function(this: any) { 
+          const quill = this.quill as Quill;
+          
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'image/*');
+          input.click();
+
+          input.onchange = async () => {
+            if (input.files && input.files.length > 0) {
+              const file = input.files[0];
+              const range = quill.getSelection(true);
+              
+              // Llamamos a nuestra función que sube la imagen al servidor
+              await subirImagenAlServidor(file, quill, range.index);
+            }
+          };
+        }
+      }
+    }
+  }
+};
+// --- FIN: LÓGICA DE IMÁGENES PARA QUILL ---
+
 const guardarRegistro = async () => {
+  if (!registro.contenido || registro.contenido === '<p><br></p>') {
+    alert('El contenido del blog no puede estar vacío.');
+    return;
+  }
+
   enviando.value = true;
 
   try {
     const formData = new FormData();
 
-    // Textos y números
     formData.append('actualizacion_titulo', registro.titulo);
     formData.append('actualizacion_version', registro.version);
     formData.append('actualizacion_contenido', registro.contenido);
@@ -176,20 +218,14 @@ const guardarRegistro = async () => {
     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor));
     formData.append('actualizacion_estado', registro.estado);
     formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '');
-
-    // Imágenes físicas
-    archivosImagenes.value.forEach((archivo) => {
-      formData.append('imagenes[]', archivo);
-    });
+    formData.append('imagenes_quill', JSON.stringify(registro.imagenes_quill));
 
     await api.post('/admin/actualizaciones', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'application/json' }
     });
 
     alert('¡Registro guardado con éxito!');
     limpiarFormulario();
-
-    // Los emits van AQUÍ, después de que el guardado fue exitoso
     emit('recargar-lista');
     emit('cerrar');
 
@@ -202,7 +238,6 @@ const guardarRegistro = async () => {
 };
 
 const limpiarFormulario = () => {
-  // CORRECCIÓN: Se deben limpiar las propiedades usando las llaves de tu interface `NewVersion`
   Object.assign(registro, {
     titulo: '',
     version: '',
@@ -210,51 +245,42 @@ const limpiarFormulario = () => {
     resumen: '',
     imagen_destacada: '',
     area_servicio_id: '' as any,
-    usuario_id_autor: idUsuarioLogueado, // Mantenemos el ID del autor
+    usuario_id_autor: idUsuarioLogueado,
     estado: 'borrador',
     fecha_publicacion: new Date().toISOString().split('T')[0]
   });
-
-  previsualizaciones.value.forEach(url => URL.revokeObjectURL(url));
-  previsualizaciones.value = [];
-  archivosImagenes.value = [];
 };
 </script>
 
 <style scoped>
-/* Tus estilos se mantienen exactamente igual */
+.editor-container {
+  background-color: white;
+  border-radius: 4px;
+}
+
+:deep(.ql-editor) {
+  min-height: 300px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+:deep(.ql-toolbar) {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+:deep(.ql-container) {
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
 .form-container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 20px;
   background-color: #f9f9f9;
   border-radius: 8px;
   font-family: sans-serif;
-}
-
-.form-group {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-group label {
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #333;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.form-actions {
-  margin-top: 20px;
-  text-align: right;
 }
 </style>

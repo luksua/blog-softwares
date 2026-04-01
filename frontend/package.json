@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/bootstrap": "^5.2.10",
     "@types/node": "^24.12.0",
+    "@types/quill": "^2.0.14",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/tsconfig": "^0.9.0",
     "typescript": "~5.9.3",

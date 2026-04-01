@@ -29,7 +29,7 @@
 
             <!-- NAVBAR -->
             <header class="navbar navbar-image">
-                <img src="../assets/Asotrauma3.png" alt="logo" class="logo" />
+                <a href="/"><img src="../assets/Asotrauma3.png" alt="logo" class="logo" /></a>
                 <button class="btn-primary">
                     <span class="icon">→</span>
                     Iniciar Sesión

@@ -12,11 +12,12 @@ class UpdateBlogController extends Controller
 {
     public function index()
     {
-        // Traemos todas las actualizaciones, ordenadas por las más recientes primero,
+        // Traemos solo las actualizaciones PUBLICADAS, ordenadas por las más recientes,
         // y le pedimos a Laravel que incluya las imágenes asociadas.
         $actualizaciones = UpdateBlog::with('imagenes')
+            ->where('actualizacion_estado', 'publicado') // <-- Agregas esta línea
             ->orderBy('id', 'desc')
-            ->paginate(9);
+            ->paginate(5);
 
         return response()->json($actualizaciones);
     }
