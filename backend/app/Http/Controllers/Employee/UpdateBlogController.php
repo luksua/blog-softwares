@@ -17,7 +17,7 @@ class UpdateBlogController extends Controller
         $actualizaciones = UpdateBlog::with('imagenes')
             ->where('actualizacion_estado', 'publicado') // <-- Agregas esta línea
             ->orderBy('id', 'desc')
-            ->paginate(5);
+            ->paginate(6);
 
         return response()->json($actualizaciones);
     }

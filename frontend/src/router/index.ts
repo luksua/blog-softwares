@@ -1,26 +1,57 @@
 // src/router/index.ts
 import { createRouter, createWebHistory } from 'vue-router';
 
-// Importamos el Layout y la Lista que acabamos de crear
-import MainLayout from '../layouts/MainLayout.vue'; // Tu layout con el sidebar
+import MainLayout from '../layouts/MainLayout.vue';
 import HomePage from '../features/employee/HomePage.vue';
 import HomePageAdmin from '../features/admin/HomePage.vue';
+import ListaActualizaciones from '../components/employees/List.vue';
+import VerActualizacion from '../components/employees/ListVersion.vue';
+import VerActualizacionAdmin from '../components/admin/ListVersion.vue';
+import EditarActualizacionAdmin from '../components/admin/EditVersion.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: '/',
-      component: MainLayout, 
+      component: MainLayout,
       children: [
         {
-          path: '', // La ruta por defecto cuando entras a /
+          path: '',
           name: 'inicio',
-          component: HomePage // Se mostrará dentro del <router-view>
-        }
-      ]
-    }
-  ]
+          component: HomePageAdmin,
+        },
+        {
+          path: '/admin',
+          name: 'inicioAdmin',
+          component: HomePageAdmin,
+        },
+        {
+          path: 'employee/actualizaciones',
+          name: 'employee-actualizaciones',
+          component: ListaActualizaciones,
+        },
+        {
+          path: 'employee/actualizaciones/:id',
+          name: 'employee-actualizaciones-show',
+          component: VerActualizacion,
+          props: true,
+        },
+        {
+          path: 'admin/actualizaciones/:id',
+          name: 'admin-actualizaciones-show',
+          component: VerActualizacionAdmin,
+          props: true,
+        },
+        {
+          path: 'admin/actualizaciones/:id',
+          name: 'admin-actualizaciones-edit',
+          component: EditarActualizacionAdmin,
+          props: true,
+        },
+      ],
+    },
+  ],
 });
 
 export default router;

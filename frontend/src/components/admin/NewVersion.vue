@@ -1,7 +1,6 @@
 <template>
   <div>
     <form @submit.prevent="guardarRegistro">
-
       <div class="mb-3">
         <label for="titulo" class="form-label fw-bold">Título:</label>
         <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
@@ -30,10 +29,7 @@
 
       <div class="mb-4">
         <label class="form-label fw-bold">Contenido:</label>
-        <div class="editor-container">
-          <QuillEditor theme="snow" v-model:content="registro.contenido" contentType="html" :options="opcionesEditor"
-            @ready="manejarArrastreImagen" placeholder="Escribe tu actualización aquí. Puedes arrastrar imágenes..." />
-        </div>
+        <div id="editorjs" class="editor-container border p-3"></div>
       </div>
 
       <div class="row">
@@ -71,7 +67,7 @@
       </div>
 
       <div class="d-flex justify-content-end gap-2 mt-4">
-        <button type="button" class="btn btn-secondary" @click="$emit('cerrar')">Cancelar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn-primary" :disabled="enviando">
           {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
         </button>
@@ -82,21 +78,25 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import api from '../../api/api';
 import type { NewVersion } from '../../types/newVersion';
 import type { Area } from '../../types/areas';
-// Variables para manejar la portada
+
+// Importaciones de Editor.js
+import EditorJS from '@editorjs/editorjs';
+import Header from '@editorjs/header';
+import ImageTool from '@editorjs/image';
+import List from '@editorjs/list';
+
 const archivoMiniatura = ref<File | null>(null);
 const previewMiniatura = ref<string | null>(null);
 
-// Función que captura el archivo y genera la vista previa
 const manejarArchivoMiniatura = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
     const file = target.files[0];
     archivoMiniatura.value = file;
-    // Generar una URL temporal para mostrar la vista previa en el HTML
     previewMiniatura.value = URL.createObjectURL(file);
   } else {
     archivoMiniatura.value = null;
@@ -104,17 +104,12 @@ const manejarArchivoMiniatura = (event: Event) => {
   }
 };
 
-// QUILL
-import type Quill from 'quill';
-import { QuillEditor } from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
-
 const idUsuarioLogueado = 1;
 
 const registro = reactive<NewVersion>({
   titulo: '',
   version: '',
-  contenido: '',
+  contenido: '', 
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: '' as any,
@@ -122,7 +117,7 @@ const registro = reactive<NewVersion>({
   estado: 'borrador',
   fecha_creacion: new Date().toISOString().split('T')[0],
   fecha_publicacion: new Date().toISOString().split('T')[0],
-  imagenes_quill: []
+  imagenes_quill: [] // Puedes renombrar esto o eliminarlo si ya no llevas el tracking manual
 });
 
 const listaAreas = ref<Area[]>([]);
@@ -130,8 +125,11 @@ const listaEstados = ref<{ id: string, nombre: string }[]>([]);
 const enviando = ref(false);
 const emit = defineEmits(['cerrar', 'recargar-lista']);
 
-// AÑADIDO: Unificamos los onMounted en uno solo para mejor orden
+// Referencia para guardar la instancia de Editor.js
+const editorInstance = ref<EditorJS | null>(null);
+
 onMounted(async () => {
+  // Cargar áreas y estados
   try {
     const resAreas = await api.get('/admin/area-servicio');
     listaAreas.value = resAreas.data.data;
@@ -145,82 +143,63 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error al cargar los estados:', error);
   }
-});
 
-// --- INICIO: LÓGICA DE IMÁGENES PARA QUILL ---
-
-// 1. Función compartida que sube la imagen a Laravel
-const subirImagenAlServidor = async (file: File, quillInstance: Quill, index: number) => {
-  try {
-    const formData = new FormData();
-    formData.append('imagen', file);
-
-    // Asegúrate de tener esta ruta creada en tu Laravel
-    const respuesta = await api.post('/admin/subir-imagen-blog', formData);
-
-    // Inserta la URL que devuelve Laravel dentro del editor
-    quillInstance.insertEmbed(index, 'image', respuesta.data.url);
-  } catch (error) {
-    console.error('Error subiendo imagen:', error);
-    alert('Hubo un error al subir la imagen.');
-  }
-};
-
-// 2. Evento para cuando el usuario ARRASTRA la imagen
-const manejarArrastreImagen = (quillInstance: Quill) => {
-  const root = quillInstance.root;
-
-  root.addEventListener('drop', async (e: DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-      const file = e.dataTransfer.files[0];
-      if (/^image\//.test(file.type)) {
-        const range = quillInstance.getSelection(true);
-        await subirImagenAlServidor(file, quillInstance, range.index);
-      }
-    }
-  }, false);
-};
-
-// 3. Configuración para el BOTÓN de imagen en la barra de herramientas
-const opcionesEditor = {
-  // Envolvemos todo en "modules" porque ahora usamos la propiedad :options
-  modules: {
-    toolbar: {
-      container: [
-        ['bold', 'italic', 'underline'],
-        [{ 'header': 1 }, { 'header': 2 }],
-        ['image', 'link']
-      ],
-      handlers: {
-        // SOLUCIÓN AL ERROR DE TS: Le decimos explícitamente a TypeScript 
-        // que "this" será inyectado dinámicamente usando (this: any)
-        image: function (this: any) {
-          const quill = this.quill as Quill;
-
-          const input = document.createElement('input');
-          input.setAttribute('type', 'file');
-          input.setAttribute('accept', 'image/*');
-          input.click();
-
-          input.onchange = async () => {
-            if (input.files && input.files.length > 0) {
-              const file = input.files[0];
-              const range = quill.getSelection(true);
-
-              // Llamamos a nuestra función que sube la imagen al servidor
-              await subirImagenAlServidor(file, quill, range.index);
+  // --- INICIALIZAR EDITOR.JS ---
+  editorInstance.value = new EditorJS({
+    holder: 'editorjs',
+    placeholder: 'Escribe tu actualización aquí. Puedes arrastrar imágenes...',
+    tools: {
+      header: Header,
+      list: List,
+      image: {
+        class: ImageTool,
+        config: {
+          // Usamos un uploader personalizado para aprovechar tu configuración de Axios
+          uploader: {
+            async uploadByFile(file: File) {
+              try {
+                const formData = new FormData();
+                formData.append('imagen', file);
+                
+                // Enviamos a tu backend en Laravel
+                const respuesta = await api.post('/admin/subir-imagen-blog', formData);
+                
+                // Editor.js exige retornar el éxito y la URL en este formato específico
+                return {
+                  success: 1,
+                  file: {
+                    url: respuesta.data.url
+                  }
+                };
+              } catch (error) {
+                console.error('Error subiendo imagen:', error);
+                alert('Hubo un error al subir la imagen.');
+                return { success: 0 };
+              }
             }
-          };
+          }
         }
       }
     }
+  });
+});
+
+// Limpiar la instancia de Editor.js cuando se destruye el componente
+onBeforeUnmount(() => {
+  if (editorInstance.value) {
+    editorInstance.value.destroy();
   }
-};
-// --- FIN: LÓGICA DE IMÁGENES PARA QUILL ---
+});
 
 const guardarRegistro = async () => {
-  if (!registro.contenido || registro.contenido === '<p><br></p>') {
+  // 1. Extraer los datos del editor
+  let outputData;
+  if (editorInstance.value) {
+    outputData = await editorInstance.value.save();
+  }
+
+  // Validar si está vacío (Editor.js devuelve un array de bloques)
+  if (!outputData || outputData.blocks.length === 0) {
     alert('El contenido del blog no puede estar vacío.');
     return;
   }
@@ -232,10 +211,12 @@ const guardarRegistro = async () => {
 
     formData.append('actualizacion_titulo', registro.titulo);
     formData.append('actualizacion_version', registro.version);
-    formData.append('actualizacion_contenido', registro.contenido);
+    
+    // Convertimos los bloques JSON a un string para guardarlo en la base de datos
+    formData.append('actualizacion_contenido', JSON.stringify(outputData));
+    
     formData.append('actualizacion_resumen', registro.resumen);
 
-    // Si hay una imagen seleccionada, la agregamos al FormData
     if (archivoMiniatura.value) {
       formData.append('actualizacion_imagen_destacada', archivoMiniatura.value);
     }
@@ -244,7 +225,6 @@ const guardarRegistro = async () => {
     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor));
     formData.append('actualizacion_estado', registro.estado);
     formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '');
-    formData.append('imagenes_quill', JSON.stringify(registro.imagenes_quill));
 
     await api.post('/admin/actualizaciones', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
@@ -276,13 +256,16 @@ const limpiarFormulario = () => {
     fecha_publicacion: new Date().toISOString().split('T')[0]
   });
   
-  // Limpiar archivo y vista previa
   archivoMiniatura.value = null;
   previewMiniatura.value = null;
   
-  // Limpiar el input file visualmente
   const inputMiniatura = document.getElementById('miniatura') as HTMLInputElement;
   if (inputMiniatura) inputMiniatura.value = '';
+
+  // Limpiar también el editor visualmente
+  if (editorInstance.value) {
+    editorInstance.value.clear();
+  }
 };
 </script>
 
@@ -290,24 +273,10 @@ const limpiarFormulario = () => {
 .editor-container {
   background-color: white;
   border-radius: 4px;
-}
-
-:deep(.ql-editor) {
   min-height: 300px;
-  font-size: 1rem;
-  font-family: inherit;
 }
 
-:deep(.ql-toolbar) {
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-  background-color: #f8f9fa;
-}
-
-:deep(.ql-container) {
-  border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 4px;
-}
+/* Puedes borrar los estilos de :deep(.ql-editor) y relacionados a Quill */
 
 .form-container {
   max-width: 800px;

@@ -8,43 +8,57 @@ use Illuminate\Http\Request;
 use App\Models\UpdateBlog;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Http\Resources\ActualizacionResource;
 
 class UpdateBlogAdminController extends Controller
 {
-    public function store(Request $request)
+public function store(Request $request)
     {
-        // 1. Validación de los datos que llegan desde el FormData de Vue
-        $request->validate([
+        // 1. Validación de los datos
+        $datosValidados = $request->validate([
             'actualizacion_titulo'            => 'required|string|max:255',
             'actualizacion_version'           => 'required|string|max:255',
-            'actualizacion_contenido'         => 'required|string',
+            'actualizacion_contenido'         => 'required|string', // Aquí viene el JSON de Editor.js como string
             'actualizacion_resumen'           => 'required|string',
-            'actualizacion_imagen_destacada'  => 'nullable|string',
+            
+            // ✅ CAMBIO 1: Validamos que sea un archivo de imagen, no un string
+            'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048', 
+            
             'actualizacion_area_servicio_id'  => 'required|integer',
             'actualizacion_usuario_id_autor'  => 'required|integer',
             'actualizacion_estado'            => 'required|in:borrador,revision,publicado,inactivo',
-
-            // Validamos el campo de las rutas de imágenes que manda Quill desde Vue
-            'imagenes_quill'                  => 'nullable|string',
+            'imagenes_quill'                  => 'nullable|string', // Mantenido si aún guardas trackers manuales
         ]);
 
         try {
-            // Iniciamos la transacción de seguridad
             DB::beginTransaction();
 
-            // 2. Crear el registro principal en 'actualizaciones_blog'
-            // Ignoramos 'imagenes_quill' para que Laravel no intente meter el JSON en la tabla principal
-            $actualizacion = UpdateBlog::create($request->except(['imagenes', 'imagenes_quill']));
+            // 2. Preparamos los datos base (excluyendo los campos conflictivos temporalmente)
+            $datosParaGuardar = collect($datosValidados)
+                ->except(['actualizacion_imagen_destacada', 'imagenes_quill'])
+                ->toArray();
 
-            // 3. GUARDAR LAS RUTAS DE LAS IMÁGENES DE QUILL
+            // ✅ CAMBIO 2: Si viene una imagen física, la guardamos en el disco
+            if ($request->hasFile('actualizacion_imagen_destacada')) {
+                // Esto guarda el archivo en 'storage/app/public/blog/portadas'
+                // y devuelve la ruta (ej: "blog/portadas/AJs83...jpg")
+                $rutaImagen = $request->file('actualizacion_imagen_destacada')->store('blog/portadas', 'public');
+                
+                // Inyectamos ESA RUTA de texto en nuestro array de datos para la BD
+                $datosParaGuardar['actualizacion_imagen_destacada'] = $rutaImagen;
+            }
+
+            // 3. Crear el registro principal en 'actualizaciones_blog'
+            $actualizacion = UpdateBlog::create($datosParaGuardar);
+
+            // 4. (Opcional) GUARDAR LAS RUTAS DE LAS IMÁGENES EXTRA
+            // Nota: Con Editor.js las imágenes ya se suben por otro endpoint, 
+            // pero si mantienes tu lógica manual de arrays, aquí está:
             if ($request->filled('imagenes_quill')) {
-
-                // Decodificamos el arreglo JSON que Vue nos mandó
                 $rutasImagenes = json_decode($request->imagenes_quill, true);
 
                 if (is_array($rutasImagenes)) {
                     foreach ($rutasImagenes as $ruta) {
-                        // Guardamos la ruta limpia en la base de datos usando la relación
                         $actualizacion->imagenes()->create([
                             'ruta_imagen' => $ruta
                         ]);
@@ -52,16 +66,14 @@ class UpdateBlogAdminController extends Controller
                 }
             }
 
-            // Si todo salió bien, confirmamos los cambios en la BD
             DB::commit();
 
-            // 4. Retornar respuesta al frontend, cargando el registro junto con sus imágenes
             return response()->json([
                 'mensaje' => 'Registro e imágenes guardados con éxito',
                 'data' => $actualizacion->load('imagenes')
             ], 201);
+
         } catch (\Exception $e) {
-            // Si algo falla, deshacemos cualquier cambio en la base de datos
             DB::rollBack();
 
             return response()->json([
@@ -123,22 +135,28 @@ class UpdateBlogAdminController extends Controller
         ]);
     }
 
-    public function subirImagenQuill(Request $request)
+    public function subirImagenEditor(Request $request)
     {
         $request->validate([
-            // Cambiamos 'image' por 'file' y quitamos 'mimes' momentáneamente para probar
-            'imagen' => 'required|file|max:5120', 
+            // ✅ IMPORTANTE: Vuelve a poner 'mimes' y 'image'. 
+            // Dejar solo 'file' sin mimes es peligroso porque un usuario malintencionado 
+            // podría subir un archivo .php o .exe camuflado.
+            'imagen' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
         if ($request->hasFile('imagen')) {
+            // Guarda la imagen en storage/app/public/blog_images
             $path = $request->file('imagen')->store('blog_images', 'public');
 
+            // Devuelve la URL completa para que Editor.js la dibuje en el texto
             return response()->json([
                 'url' => asset('storage/' . $path),
-                'path' => $path 
+                'path' => $path // Opcional, pero útil si luego quieres borrarla
             ]);
         }
-        // ...
+
+        // Es buena práctica retornar un error si no llegó la imagen
+        return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
     }
 
     public function show($id)
@@ -146,9 +164,7 @@ class UpdateBlogAdminController extends Controller
         // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
         $actualizacion = UpdateBlog::with('imagenes')->findOrFail($id);
 
-        return response()->json([
-            'data' => $actualizacion
-        ]);
+        return new ActualizacionResource($actualizacion);
     }
 
     // public function subirImagenQuill(Request $request)

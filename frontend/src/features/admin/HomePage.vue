@@ -6,8 +6,7 @@
                 <h2>Actualizaciones</h2>
             </div>
             <div class="col-lg-2 text-end">
-                <button type="button" class="btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#modalNuevoRegistro">
+                <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoRegistro">
                     + Nuevo Registro
                 </button>
             </div>
@@ -57,10 +56,10 @@ const componenteLista = ref<InstanceType<typeof List> | null>(null);
 
 // esta función atrapa el evento del formulario y manda a llamar a la función de la lista
 const avisarALaLista = () => {
-  if (componenteLista.value) {
-    // Envolvemos la variable en ( ... as any) para calmar a TypeScript
-    (componenteLista.value as any).obtenerActualizaciones();
-  }
+    if (componenteLista.value) {
+        // Envolvemos la variable en ( ... as any) para calmar a TypeScript
+        (componenteLista.value as any).obtenerActualizaciones();
+    }
 };
 
 const cerrarModalBootstrap = () => {

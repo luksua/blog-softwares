@@ -14,4 +14,5 @@ Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'sh
 
 // (POST)
 Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);
-Route::post('/admin/subir-imagen-blog', [UpdateBlogAdminController::class, 'subirImagenQuill']);
+Route::post('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'update']);
+Route::post('/admin/subir-imagen-blog', [UpdateBlogAdminController::class, 'subirImagenEditor']);

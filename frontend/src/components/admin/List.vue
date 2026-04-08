@@ -34,7 +34,7 @@
         </thead>
 
         <tbody>
-          <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro">
+          <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro" @click="verDetalles(item.id)">
             <td class="cell-titulo">
               <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
             </td>
@@ -56,22 +56,25 @@
                   {{ formatearFecha(item.actualizacion_fecha_creacion) }}
                 </span>
               </div>
-             </td>
+            </td>
 
             <td class="cell-estado">
               <span :class="['badge-estado', mapearClaseEstado(item.actualizacion_estado)]">
                 {{ item.actualizacion_estado }}
               </span>
-             </td>
+            </td>
 
             <td class="cell-acciones">
               <div class="icon-group">
-                <button title="Editar" class="btn-icon" @click="editarActualizacion(item)">✎</button>
-                <button title="Ver" class="btn-icon" @click="verDetalles(item)">👁</button>
-                <button title="Eliminar" class="btn-icon" @click="confirmarEliminar(item)">🗑</button>
+                <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
+                  @click.stop="editarActualizacion(item.id)">
+                  ✎
+                </button>
+                <button title="Ver" class="btn-icon" @click.stop="verDetalles(item.id)">👁</button>
+                <button title="Eliminar" class="btn-icon" @click.stop="confirmarEliminar(item)">🗑</button>
               </div>
-             </td>
-           </tr>
+            </td>
+          </tr>
         </tbody>
       </table>
 
@@ -116,12 +119,51 @@
       </div>
     </div>
   </div>
+
+  <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header bg-light">
+          <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+            id="btnCerrarModal"></button>
+        </div>
+
+        <div class="modal-body">
+          <Edit v-if="idEditando" :id="idEditando" @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
+        </div>
+
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router'
 import api from '../../api/api';
 import type { Version } from '../../types/version';
+import Edit from '../../components/admin/EditVersion.vue';
+
+const router = useRouter()
+
+const cerrarModalBootstrap = () => {
+    const botonCerrar = document.getElementById('btnCerrarModal');
+    if (botonCerrar) {
+        botonCerrar.click();
+    }
+};
+
+const cerrarModalEdicion = () => {
+  idEditando.value = null;
+  cerrarModalBootstrap();
+};
+
+const actualizacionGuardada = async () => {
+  await obtenerActualizaciones(paginaActual.value);
+  cerrarModalEdicion();
+};
 
 const actualizaciones = ref<Version[]>([]);
 const cargando = ref(true);
@@ -139,18 +181,18 @@ const paginasMostradas = computed(() => {
   const maxPages = 5;
   const current = paginaActual.value;
   const total = totalPaginas.value;
-  
+
   if (total <= maxPages) {
     return Array.from({ length: total }, (_, i) => i + 1);
   }
-  
+
   let start = Math.max(1, current - 2);
   let end = Math.min(total, start + maxPages - 1);
-  
+
   if (end - start + 1 < maxPages) {
     start = Math.max(1, end - maxPages + 1);
   }
-  
+
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 });
 
@@ -197,12 +239,17 @@ const cambiarPagina = (pagina: number) => {
   }
 };
 
-const verDetalles = (item: Version) => {
-  console.log('Ver detalles:', item);
+const verDetalles = (id: number) => {
+  router.push({
+    name: 'admin-actualizaciones-show',
+    params: { id },
+  });
 };
 
-const editarActualizacion = (item: Version) => {
-  console.log('Editar:', item);
+const idEditando = ref<number | null>(null);
+
+const editarActualizacion = (id: number) => {
+  idEditando.value = id;
 };
 
 const confirmarEliminar = (item: Version) => {
@@ -274,7 +321,8 @@ defineExpose({
   border-top: 3px solid var(--warning);
 }
 
-.error-icon, .empty-icon {
+.error-icon,
+.empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
 }
@@ -372,11 +420,26 @@ defineExpose({
 }
 
 /* Columnas */
-.col-titulo { width: 35%; }
-.col-version { width: 15%; }
-.col-fecha { width: 20%; }
-.col-estado { width: 15%; }
-.col-acciones { width: 15%; text-align: right; }
+.col-titulo {
+  width: 35%;
+}
+
+.col-version {
+  width: 15%;
+}
+
+.col-fecha {
+  width: 20%;
+}
+
+.col-estado {
+  width: 15%;
+}
+
+.col-acciones {
+  width: 15%;
+  text-align: right;
+}
 
 /* Celda título */
 .titulo-texto {
@@ -414,7 +477,8 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-.fecha-publicado, .fecha-creado {
+.fecha-publicado,
+.fecha-creado {
   font-size: 0.85rem;
   transition: var(--transition-smooth);
 }
@@ -668,8 +732,13 @@ defineExpose({
 
 /* Animaciones */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -677,6 +746,7 @@ defineExpose({
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

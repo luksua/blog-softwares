@@ -88,7 +88,7 @@ const obtenerDetalle = async () => {
 }
 
 const volver = () => {
-  router.push({ name: 'employee-actualizaciones' })
+  router.push({ name: 'inicioAdmin' })
 }
 
 const formatearFecha = (fechaString: string) => {

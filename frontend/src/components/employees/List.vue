@@ -1,32 +1,28 @@
 <template>
   <div class="contenedor-lista">
+    <div v-if="cargando" class="estado-mensaje">
+      <div class="spinner-border text-primary mb-3" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p>Cargando actualizaciones...</p>
+    </div>
 
-    <VerActualizacion v-if="idSeleccionado" :id="idSeleccionado" @cerrar="idSeleccionado = null" />
+    <div v-else-if="error" class="estado-mensaje error">
+      <div class="error-icon">⚠️</div>
+      <p>{{ error }}</p>
+      <button @click="obtenerActualizaciones(1)" class="btn-retry">Reintentar</button>
+    </div>
+
+    <div v-else-if="actualizaciones.length === 0" class="estado-mensaje vacio">
+      <div class="empty-icon">📭</div>
+      <h3>No hay actualizaciones para mostrar</h3>
+      <p>Aún no se ha registrado ninguna publicación en el sistema.</p>
+    </div>
 
     <div v-else>
-      <div v-if="cargando" class="estado-mensaje">
-        <div class="spinner-border text-primary mb-3" role="status">
-          <span class="visually-hidden">Cargando...</span>
-        </div>
-        <p>Cargando actualizaciones...</p>
-      </div>
-
-      <div v-else-if="error" class="estado-mensaje error">
-        <div class="error-icon">⚠️</div>
-        <p>{{ error }}</p>
-        <button @click="obtenerActualizaciones(1)" class="btn-retry">Reintentar</button>
-      </div>
-
-      <div v-else-if="actualizaciones.length === 0" class="estado-mensaje vacio">
-        <div class="empty-icon">📭</div>
-        <h3>No hay actualizaciones para mostrar</h3>
-        <p>Aún no se ha registrado ninguna publicación en el sistema.</p>
-      </div>
-
-      <div v-else>
-        <div class="lista-feed">
-          <div v-for="item in actualizaciones" :key="item.id" class="tarjeta-changelog">
-
+      <div class="row lista-feed g-4">
+        <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-md-6 col-lg-6">
+          <div class="tarjeta-changelog h-100">
             <div class="tarjeta-header">
               <div class="header-left">
                 <span :class="['badge-estado', item.actualizacion_estado || 'publicado']">
@@ -43,11 +39,17 @@
               <h2 class="titulo-version">
                 {{ item.actualizacion_titulo }}
               </h2>
+
               <p class="resumen">{{ item.actualizacion_resumen }}</p>
 
               <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                <img :src="item.actualizacion_imagen_destacada" alt="Imagen destacada" class="imagen-destacada" />
+                <img
+                  :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
+                  alt="Imagen destacada"
+                  class="imagen-destacada"
+                />
               </div>
+
               <div v-else class="sin-imagen">
                 <span>🖼️</span>
                 <p>Sin imagen destacada</p>
@@ -56,105 +58,121 @@
 
             <div class="tarjeta-pie">
               <div class="tags-container">
-                <span class="tag-gris">📸 {{ item.actualizacion_imagenes ? item.actualizacion_imagenes : 0 }}
-                  imágenes</span>
+                <span class="tag-gris">
+                  📸 {{ item.actualizacion_imagenes ? item.actualizacion_imagenes : 0 }} imágenes
+                </span>
               </div>
 
               <button class="btn-enlace" @click="verDetalle(item.id)">
                 Ver más ➔
               </button>
             </div>
-
           </div>
         </div>
+      </div>
 
-        <div class="paginacion-container">
-          <div class="info-paginacion">
-            Mostrando {{ actualizaciones.length }} de {{ totalRegistros }} registros
-          </div>
-
-          <nav aria-label="Navegación">
-            <ul class="pagination custom-pagination pagination-sm mb-0">
-              <li class="page-item" :class="{ disabled: paginaActual === 1 }">
-                <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual - 1)">«</a>
-              </li>
-
-              <li v-for="pag in totalPaginas" :key="pag" class="page-item" :class="{ active: paginaActual === pag }">
-                <a class="page-link" href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
-              </li>
-
-              <li class="page-item" :class="{ disabled: paginaActual === totalPaginas }">
-                <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual + 1)">»</a>
-              </li>
-            </ul>
-          </nav>
+      <div class="paginacion-container">
+        <div class="info-paginacion">
+          Mostrando {{ actualizaciones.length }} de {{ totalRegistros }} registros
         </div>
+
+        <nav aria-label="Navegación">
+          <ul class="pagination custom-pagination pagination-sm mb-0">
+            <li class="page-item" :class="{ disabled: paginaActual === 1 }">
+              <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual - 1)">«</a>
+            </li>
+
+            <li
+              v-for="pag in totalPaginas"
+              :key="pag"
+              class="page-item"
+              :class="{ active: paginaActual === pag }"
+            >
+              <a class="page-link" href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
+            </li>
+
+            <li class="page-item" :class="{ disabled: paginaActual === totalPaginas }">
+              <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual + 1)">»</a>
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import api from '../../api/api';
-import type { Version } from '../../types/version';
-import VerActualizacion from './ListVersion.vue';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../../api/api'
+import type { Version } from '../../types/version'
 
-const idSeleccionado = ref<number | null>(null);
+const router = useRouter()
+
+const obtenerUrlImagen = (ruta: string) => {
+  if (!ruta) return ''
+  if (ruta.startsWith('http')) return ruta
+
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  return `${baseUrl}/storage/${ruta}`
+}
+
+const actualizaciones = ref<Version[]>([])
+const cargando = ref(true)
+const error = ref('')
+
+const paginaActual = ref(1)
+const totalPaginas = ref(1)
+const totalRegistros = ref(0)
 
 const verDetalle = (id: number) => {
-  idSeleccionado.value = id;
+  router.push({
+    name: 'employee-actualizaciones-show',
+    params: { id },
+  });
 };
 
-const actualizaciones = ref<Version[]>([]);
-const cargando = ref(true);
-const error = ref('');
-
-const paginaActual = ref(1);
-const totalPaginas = ref(1);
-const totalRegistros = ref(0);
-
 const obtenerActualizaciones = async (pagina: number = 1) => {
-  cargando.value = true;
-  error.value = '';
+  cargando.value = true
+  error.value = ''
 
   try {
     const respuesta = await api.get('/employee/actualizaciones', {
       params: { page: pagina }
-    });
+    })
 
-    actualizaciones.value = respuesta.data.data;
-    paginaActual.value = respuesta.data.current_page;
-    totalPaginas.value = respuesta.data.last_page;
-    totalRegistros.value = respuesta.data.total;
-
+    actualizaciones.value = respuesta.data.data
+    paginaActual.value = respuesta.data.current_page
+    totalPaginas.value = respuesta.data.last_page
+    totalRegistros.value = respuesta.data.total
   } catch (err) {
-    console.error('Error al cargar la lista:', err);
-    error.value = 'Error al conectar con el servidor.';
+    console.error('Error al cargar la lista:', err)
+    error.value = 'Error al conectar con el servidor.'
   } finally {
-    cargando.value = false;
+    cargando.value = false
   }
-};
+}
 
 const cambiarPagina = (pagina: number) => {
   if (pagina >= 1 && pagina <= totalPaginas.value) {
-    obtenerActualizaciones(pagina);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    obtenerActualizaciones(pagina)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-};
+}
 
 const formatearFecha = (fechaString: string) => {
-  if (!fechaString) return 'Sin fecha';
+  if (!fechaString) return 'Sin fecha'
+
   return new Date(fechaString).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  });
-};
+  })
+}
 
 onMounted(() => {
-  obtenerActualizaciones(1);
-});
+  obtenerActualizaciones(1)
+})
 </script>
 
 <style scoped>
@@ -205,13 +223,6 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Lista feed */
-.lista-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
 /* Tarjeta */
 .tarjeta-changelog {
   border: 1px solid #eaeaea;
@@ -219,6 +230,8 @@ onMounted(() => {
   background-color: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .tarjeta-changelog:hover {
@@ -318,6 +331,10 @@ onMounted(() => {
 /* Cuerpo */
 .tarjeta-cuerpo {
   padding: 24px;
+  /* Hacemos que el cuerpo ocupe el espacio disponible para empujar el pie (si aplicaste el tip anterior) */
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .titulo-version {
@@ -325,6 +342,11 @@ onMounted(() => {
   font-weight: 700;
   color: #1a1a1a;
   margin: 0 0 10px 0;
+
+  /* OPCIONAL: Limitar el título a 1 sola línea */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .resumen {
@@ -332,14 +354,35 @@ onMounted(() => {
   color: #555;
   line-height: 1.6;
   margin: 0 0 20px 0;
+
+  /* Configuración del contenedor necesaria para el truncamiento */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+
+  /* ✅ Propiedad estándar (para el futuro) */
+  line-clamp: 3;
+  /* ✅ Propiedad con prefijo (para soporte actual y retrocompatibilidad) */
+  -webkit-line-clamp: 2;
+
+  /* Ocultar lo que sobra y añadir los puntos suspensivos */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Imagen destacada */
+/* Para que la imagen siempre quede al fondo del cuerpo, independientemente de si el texto es de 1 o 3 líneas */
+.imagen-container,
+.sin-imagen {
+  margin-top: auto;
+  /* Esto empuja la imagen hacia abajo */
+}
+
+/* Contenedor de la imagen */
 .imagen-container {
   margin-top: 20px;
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .imagen-container:hover {
@@ -349,20 +392,31 @@ onMounted(() => {
 
 .imagen-destacada {
   width: 100%;
-  height: auto;
-  max-height: 400px;
+  aspect-ratio: 22 / 8;
+  /* Esto dicta la altura dinámicamente */
   object-fit: cover;
   display: block;
+  object-position: center;
 }
 
+/* Estado cuando no hay imagen */
 .sin-imagen {
   margin-top: 20px;
-  padding: 40px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-radius: 12px;
-  text-align: center;
-  color: #9ca3af;
   border: 2px dashed #e1e7f0;
+  color: #9ca3af;
+
+  /* ✅ Obligamos a que el estado vacío mida exactamente lo mismo que una foto */
+  width: 100%;
+  aspect-ratio: 22 / 8;
+
+  /* ✅ Usamos Flexbox para centrar el icono y el texto perfectamente */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .sin-imagen span {
