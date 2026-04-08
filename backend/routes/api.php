@@ -11,8 +11,11 @@ Route::get('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
 Route::get('/admin/area-servicio', [UpdateBlogAdminController::class, 'getAreas']);
 Route::get('/admin/estados-actualizacion', [UpdateBlogAdminController::class, 'getStatus']);
 Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
+Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
 
 // (POST)
 Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);
 Route::post('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'update']);
+Route::post('/admin/actualizaciones/{id}/inactivar', [UpdateBlogAdminController::class, 'inactivar']);
+Route::post('/admin/actualizaciones/{id}/activar', [UpdateBlogAdminController::class, 'activar']);
 Route::post('/admin/subir-imagen-blog', [UpdateBlogAdminController::class, 'subirImagenEditor']);

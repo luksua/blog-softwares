@@ -55,3 +55,8 @@ const router = createRouter({
 });
 
 export default router;
+
+// front para cada version
+// mejorar los modales de las alertas
+// cambiar los emojis de las acciones
+// cambiar 

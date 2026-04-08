@@ -1,5 +1,5 @@
 <template>
-  <div class="vista-detalle-container">
+  <div class="vista-detalle-container p-5">
     <div v-if="cargando" class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -7,7 +7,7 @@
       <p class="mt-2">Cargando actualización...</p>
     </div>
 
-    <div v-else-if="actualizacion" class="card shadow-sm">
+    <div v-else-if="actualizacion" class="">
       <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
         <div class="pb-5 d-flex justify-content-start">
           <button class="btn btn-secondary" @click="volver">
@@ -120,7 +120,7 @@ watch(() => props.id, () => {
 
 <style scoped>
 .vista-detalle-container {
-  max-width: 900px;
+  max-width: auto;
   margin: 0 auto;
 }
 

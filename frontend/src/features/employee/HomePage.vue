@@ -16,8 +16,7 @@
     </div>
 </template>
 <script setup lang="ts">
-// Cambié el nombre de la importación a 'List' para que sea más intuitivo, 
-// pero llama exactamente al componente que acabas de crear.
+
 import List from '../../components/employees/List.vue';
 
 // Borramos la importación de MainLayout de aquí

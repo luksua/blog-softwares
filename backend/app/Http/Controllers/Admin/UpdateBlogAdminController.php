@@ -12,7 +12,7 @@ use App\Http\Resources\ActualizacionResource;
 
 class UpdateBlogAdminController extends Controller
 {
-public function store(Request $request)
+    public function store(Request $request)
     {
         // 1. Validación de los datos
         $datosValidados = $request->validate([
@@ -20,10 +20,10 @@ public function store(Request $request)
             'actualizacion_version'           => 'required|string|max:255',
             'actualizacion_contenido'         => 'required|string', // Aquí viene el JSON de Editor.js como string
             'actualizacion_resumen'           => 'required|string',
-            
+
             // ✅ CAMBIO 1: Validamos que sea un archivo de imagen, no un string
-            'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048', 
-            
+            'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+
             'actualizacion_area_servicio_id'  => 'required|integer',
             'actualizacion_usuario_id_autor'  => 'required|integer',
             'actualizacion_estado'            => 'required|in:borrador,revision,publicado,inactivo',
@@ -43,7 +43,7 @@ public function store(Request $request)
                 // Esto guarda el archivo en 'storage/app/public/blog/portadas'
                 // y devuelve la ruta (ej: "blog/portadas/AJs83...jpg")
                 $rutaImagen = $request->file('actualizacion_imagen_destacada')->store('blog/portadas', 'public');
-                
+
                 // Inyectamos ESA RUTA de texto en nuestro array de datos para la BD
                 $datosParaGuardar['actualizacion_imagen_destacada'] = $rutaImagen;
             }
@@ -72,7 +72,6 @@ public function store(Request $request)
                 'mensaje' => 'Registro e imágenes guardados con éxito',
                 'data' => $actualizacion->load('imagenes')
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -166,6 +165,61 @@ public function store(Request $request)
 
         return new ActualizacionResource($actualizacion);
     }
+
+    public function inactivar($id)
+    {
+        $actualizacion = UpdateBlog::findOrFail($id);
+
+        $actualizacion->actualizacion_estado = 'inactivo';
+        $actualizacion->save();
+
+        return response()->json([
+            'message' => 'Actualización inactivada correctamente'
+        ], 200);
+    }
+
+    public function activar($id)
+    {
+        $actualizacion = UpdateBlog::findOrFail($id);
+
+        $actualizacion->actualizacion_estado = 'publicado';
+        $actualizacion->save();
+
+        return response()->json([
+            'message' => 'Actualización activada correctamente'
+        ], 200);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $actualizacion = UpdateBlog::findOrFail($id);
+
+        $data = $request->validate([
+            'actualizacion_titulo' => 'sometimes|required|string|max:255',
+            'actualizacion_version' => 'sometimes|required|string|max:50',
+            'actualizacion_estado' => 'sometimes|required|in:publicado,borrador,revision,inactivo',
+            'actualizacion_fecha_publicacion' => 'nullable|date',
+            'actualizacion_fecha_creacion' => 'nullable|date',
+            'actualizacion_contenido' => 'required|array',
+        ]);
+
+        $actualizacion->update($data);
+
+        $actualizacion->update([
+            'actualizacion_titulo' => $request->actualizacion_titulo,
+            'actualizacion_version' => $request->actualizacion_version,
+            'actualizacion_estado' => $request->actualizacion_estado,
+            'actualizacion_fecha_publicacion' => $request->actualizacion_fecha_publicacion,
+            'actualizacion_fecha_creacion' => $request->actualizacion_fehca_creacion,
+            'actualizacion_contenido' => $request->actualizacion_contenido,
+        ]);
+
+        return response()->json([
+            'message' => 'Actualización editada correctamente',
+            'data' => $actualizacion
+        ]);
+    }
+
 
     // public function subirImagenQuill(Request $request)
     // {

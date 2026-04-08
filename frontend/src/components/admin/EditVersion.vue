@@ -57,10 +57,7 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-bold">Contenido</label>
-                    <textarea v-model="form.actualizacion_contenido" class="form-control" rows="10"></textarea>
-                    <div v-if="errores.actualizacion_contenido" class="text-danger small mt-1">
-                        {{ errores.actualizacion_contenido[0] }}
-                    </div>
+                    <div ref="editorHolder" class="editor-container border p-3"></div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4">
@@ -79,74 +76,77 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { reactive, ref, watch } from 'vue';
 import api from '../../api/api';
 
 const props = defineProps<{
-    id: string | number
+  id: string | number
 }>();
 
-const router = useRouter();
+const emit = defineEmits(['guardado', 'cerrar']);
 
 const cargando = ref(true);
 const guardando = ref(false);
 const mensajeOk = ref('');
-
 const errores = ref<Record<string, string[]>>({});
 
 const form = reactive({
-    actualizacion_titulo: '',
-    actualizacion_version: '',
-    actualizacion_resumen: '',
-    actualizacion_fecha_publicacion: '',
-    actualizacion_estado: 'borrador',
-    actualizacion_contenido: ''
+  actualizacion_titulo: '',
+  actualizacion_version: '',
+  actualizacion_resumen: '',
+  actualizacion_fecha_publicacion: '',
+  actualizacion_estado: 'borrador',
+  actualizacion_contenido: ''
 });
 
 const cargarRegistro = async () => {
-    cargando.value = true;
-    errores.value = {};
+  cargando.value = true;
+  errores.value = {};
+  mensajeOk.value = '';
 
-    try {
-        const respuesta = await api.get(`/admin/actualizaciones/${props.id}`);
-        const data = respuesta.data.data;
+  try {
+    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`);
+    const data = respuesta.data.data;
 
-        form.actualizacion_titulo = data.actualizacion_titulo ?? '';
-        form.actualizacion_version = data.actualizacion_version ?? '';
-        form.actualizacion_resumen = data.actualizacion_resumen ?? '';
-        form.actualizacion_fecha_publicacion = data.actualizacion_fecha_publicacion ?? '';
-        form.actualizacion_estado = data.actualizacion_estado ?? 'borrador';
-        form.actualizacion_contenido = data.actualizacion_contenido ?? '';
-    } catch (error) {
-        console.error('Error al cargar registro:', error);
-    } finally {
-        cargando.value = false;
-    }
+    form.actualizacion_titulo = data.actualizacion_titulo ?? '';
+    form.actualizacion_version = data.actualizacion_version ?? '';
+    form.actualizacion_resumen = data.actualizacion_resumen ?? '';
+    form.actualizacion_fecha_publicacion = data.actualizacion_fecha_publicacion ?? '';
+    form.actualizacion_estado = data.actualizacion_estado ?? 'borrador';
+    form.actualizacion_contenido = data.actualizacion_contenido ?? '';
+  } catch (error) {
+    console.error('Error al cargar registro:', error);
+  } finally {
+    cargando.value = false;
+  }
 };
 
 const guardarCambios = async () => {
-    guardando.value = true;
-    errores.value = {};
-    mensajeOk.value = '';
+  guardando.value = true;
+  errores.value = {};
+  mensajeOk.value = '';
 
-    try {
-        await api.put(`/admin/actualizaciones/${props.id}`, form);
+  try {
+    await api.post(`/admin/actualizaciones/${props.id}`, form);
+    emit('guardado');
+  } catch (error: any) {
+    console.error('Error al guardar:', error);
 
-        mensajeOk.value = 'Actualización editada correctamente.';
-        router.push('/admin/actualizaciones');
-    } catch (error: any) {
-        console.error('Error al guardar:', error);
-
-        if (error.response?.status === 422) {
-            errores.value = error.response.data.errors || {};
-        }
-    } finally {
-        guardando.value = false;
+    if (error.response?.status === 422) {
+      errores.value = error.response.data.errors || {};
     }
+  } finally {
+    guardando.value = false;
+  }
 };
 
-onMounted(() => {
-    cargarRegistro();
-});
+watch(
+  () => props.id,
+  () => {
+    if (props.id) {
+      cargarRegistro();
+    }
+  },
+  { immediate: true }
+);
 </script>

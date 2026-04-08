@@ -71,7 +71,19 @@
                   ✎
                 </button>
                 <button title="Ver" class="btn-icon" @click.stop="verDetalles(item.id)">👁</button>
-                <button title="Eliminar" class="btn-icon" @click.stop="confirmarEliminar(item)">🗑</button>
+                <div v-if="item.actualizacion_estado !== 'inactivo'">
+                  <button title="Archivar" class="btn-icon" data-bs-toggle="modal"
+                    data-bs-target="#modalEliminarRegistro" @click.stop="confirmarEliminar(item)">
+                    🗑
+                  </button>
+                </div>
+
+                <div v-else>
+                  <button title="Desarchivar" class="btn-icon" data-bs-toggle="modal"
+                    data-bs-target="#modalDesarchivarRegistro" @click.stop="confirmarActivar(item)">
+                    ♻️ 
+                  </button>
+                </div>
               </div>
             </td>
           </tr>
@@ -100,21 +112,63 @@
       </div>
     </div>
 
-    <!-- Modal de eliminación moderno -->
-    <div class="modal-overlay" v-if="mostrarModalEliminar" @click.self="cerrarModal">
-      <div class="modal-moderno">
-        <div class="modal-header">
-          <h5>Confirmar eliminación</h5>
-          <button class="modal-close" @click="cerrarModal">×</button>
+    <!-- Modal de eliminación -->
+    <div class="modal fade" id="modalEliminarRegistro" ref="modalEliminarRef" tabindex="-1"
+      aria-labelledby="modalEliminarLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEliminarLabel">Confirmar inactivado</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p>¿Estás seguro de que deseas archivar la actualización?</p>
+            <strong class="modal-item-title">
+              {{ itemAEliminar?.actualizacion_titulo }}
+            </strong>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="button" class="btn btn-danger" @click="inactivarActualizacion">
+              Inactivar
+            </button>
+          </div>
         </div>
-        <div class="modal-body">
-          <p>¿Estás seguro de que deseas eliminar la actualización</p>
-          <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
-          <p class="text-danger small mt-3">⚠️ Esta acción no se puede deshacer.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-cancelar" @click="cerrarModal">Cancelar</button>
-          <button class="btn-eliminar-modal" @click="eliminarActualizacion">Eliminar</button>
+      </div>
+    </div>
+
+    <!-- Modal de activacion -->
+    <div class="modal fade" id="modalDesarchivarRegistro" ref="modalEliminarRef" tabindex="-1"
+      aria-labelledby="modalEliminarLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalEliminarLabel">Confirmar Activar</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p>¿Estás seguro de que deseas desarchivar la actualización?</p>
+             <strong>Se actualizará el estado del registro a <em>Publicado</em></strong>
+            <strong class="modal-item-title">
+              {{ itemAEliminar?.actualizacion_titulo }}
+            </strong>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="button" class="btn-primary" @click="activarActualizacion">
+              Activar
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -126,12 +180,13 @@
 
         <div class="modal-header bg-light">
           <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-            id="btnCerrarModal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
+            @click="cerrarModalEdicion"></button>
         </div>
 
         <div class="modal-body">
-          <Edit v-if="idEditando" :id="idEditando" @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
+          <Edit v-if="idEditando" :key="idEditando" :id="idEditando" @guardado="actualizacionGuardada"
+            @cerrar="cerrarModalEdicion" />
         </div>
 
       </div>
@@ -145,14 +200,15 @@ import { useRouter } from 'vue-router'
 import api from '../../api/api';
 import type { Version } from '../../types/version';
 import Edit from '../../components/admin/EditVersion.vue';
+import { Modal } from 'bootstrap';
 
 const router = useRouter()
 
 const cerrarModalBootstrap = () => {
-    const botonCerrar = document.getElementById('btnCerrarModal');
-    if (botonCerrar) {
-        botonCerrar.click();
-    }
+  const botonCerrar = document.getElementById('btnCerrarModal');
+  if (botonCerrar) {
+    botonCerrar.click();
+  }
 };
 
 const cerrarModalEdicion = () => {
@@ -174,7 +230,6 @@ const totalPaginas = ref(1);
 const totalRegistros = ref(0);
 
 const itemAEliminar = ref<Version | null>(null);
-const mostrarModalEliminar = ref(false);
 
 // Computed para mostrar páginas con límite
 const paginasMostradas = computed(() => {
@@ -254,26 +309,76 @@ const editarActualizacion = (id: number) => {
 
 const confirmarEliminar = (item: Version) => {
   itemAEliminar.value = item;
-  mostrarModalEliminar.value = true;
 };
 
-const cerrarModal = () => {
-  mostrarModalEliminar.value = false;
-  itemAEliminar.value = null;
+const confirmarActivar = (item: Version) => {
+  itemAEliminar.value = item;
 };
 
-const eliminarActualizacion = async () => {
+const inactivarActualizacion = async () => {
   if (!itemAEliminar.value) return;
 
+  const modalElement = document.getElementById('modalEliminarRegistro');
+  const modalInstance = modalElement
+    ? Modal.getOrCreateInstance(modalElement)
+    : null;
+
   try {
-    await api.delete(`/admin/actualizaciones/${itemAEliminar.value.id}`);
-    await obtenerActualizaciones(paginaActual.value);
-    cerrarModal();
+    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/inactivar`);
+
+    if (modalElement && modalInstance) {
+      modalElement.addEventListener(
+        'hidden.bs.modal',
+        async () => {
+          itemAEliminar.value = null;
+          await obtenerActualizaciones(paginaActual.value);
+        },
+        { once: true }
+      );
+
+      modalInstance.hide();
+    } else {
+      itemAEliminar.value = null;
+      await obtenerActualizaciones(paginaActual.value);
+    }
   } catch (err) {
-    console.error('Error al eliminar:', err);
-    error.value = 'No se pudo eliminar la actualización.';
+    console.error('Error al inactivar:', err);
+    error.value = 'No se pudo inactivar la actualización.';
   }
 };
+
+const activarActualizacion = async () => {
+  if (!itemAEliminar.value) return;
+
+  const modalElement = document.getElementById('modalDesarchivarRegistro');
+  const modalInstance = modalElement
+    ? Modal.getOrCreateInstance(modalElement)
+    : null;
+
+  try {
+    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/activar`);
+
+    if (modalElement && modalInstance) {
+      modalElement.addEventListener(
+        'hidden.bs.modal',
+        async () => {
+          itemAEliminar.value = null;
+          await obtenerActualizaciones(paginaActual.value);
+        },
+        { once: true }
+      );
+
+      modalInstance.hide();
+    } else {
+      itemAEliminar.value = null;
+      await obtenerActualizaciones(paginaActual.value);
+    }
+  } catch (err) {
+    console.error('Error al activar:', err);
+    error.value = 'No se pudo activar la actualización.';
+  }
+};
+
 
 onMounted(() => {
   obtenerActualizaciones(1);
@@ -524,7 +629,6 @@ defineExpose({
 .estado-dark-gray {
   background-color: #e5e7eb;
   color: #374151;
-  text-decoration: line-through;
 }
 
 .estado-gray {
@@ -622,56 +726,6 @@ defineExpose({
   cursor: not-allowed;
 }
 
-/* Modal moderno */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  animation: fadeIn 0.2s ease;
-}
-
-.modal-moderno {
-  background: white;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: var(--shadow-lg);
-  animation: slideUp 0.3s ease;
-}
-
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #e1e7f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-header h5 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #1a202c;
-}
-
-.modal-close {
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #9ca3af;
-  transition: var(--transition);
-  line-height: 1;
-}
-
 .modal-close:hover {
   color: var(--primary);
 }
@@ -714,43 +768,9 @@ defineExpose({
   border-color: var(--primary);
 }
 
-.btn-eliminar-modal {
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: var(--transition);
-  font-weight: 500;
-}
-
 .btn-eliminar-modal:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
-}
-
-/* Animaciones */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Responsive */

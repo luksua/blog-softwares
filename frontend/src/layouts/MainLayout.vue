@@ -27,23 +27,23 @@
           </li>
         </router-link>
 
-        <router-link to="/nuevo" custom v-slot="{ navigate, isActive }">
+        <router-link to="" custom v-slot="{ navigate, isActive }">
           <li 
             @click="navigate" 
             :class="['nav-item', { active: isActive }]"
           >
             <i class="nav-icon">➕</i>
-            <span class="nav-text" v-show="isExpanded">Nueva Versión</span>
-            <div class="tooltip" v-if="!isExpanded">Nueva Versión</div>
+            <span class="nav-text" v-show="isExpanded">Guardados</span>
+            <div class="tooltip" v-if="!isExpanded">Guardados</div>
           </li>
         </router-link>
       </ul>
 
-      <div class="sidebar-footer" v-if="isExpanded">
+      <!-- <div class="sidebar-footer" v-if="isExpanded">
         <div class="version-info">
           <small>v2.0.0</small>
         </div>
-      </div>
+      </div> -->
     </aside>
 
     <div class="main">
