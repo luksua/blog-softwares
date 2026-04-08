@@ -1,5 +1,5 @@
 <template>
-  <div class="contenedor-lista-tabla container-fluid py-4">
+  <div class="contenedor-lista-tabla">
     <div v-if="cargando" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -7,31 +7,26 @@
       <p>Cargando actualizaciones...</p>
     </div>
 
-    <div v-else-if="error" class="estado-mensaje error alert alert-danger alert-dismissible fade show" role="alert">
-      {{ error }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      <div class="mt-3">
-        <button @click="obtenerActualizaciones()" class="btn btn-outline-danger btn-sm">
-          Reintentar
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="actualizaciones.length === 0" class="estado-mensaje vacio">
-      <div class="icono-vacio display-4 mb-3">📄</div>
-      <h3>No hay actualizaciones para mostrar</h3>
-      <p>Aún no se ha registrado ninguna actualización en el sistema.</p>
-      <button class="btn btn-primary btn-sm mt-3">
-        Crear primera actualización
+    <div v-else-if="error" class="estado-mensaje error">
+      <div class="error-icon">⚠️</div>
+      <p>{{ error }}</p>
+      <button @click="obtenerActualizaciones()" class="btn-retry">
+        Reintentar
       </button>
     </div>
 
-    <div v-else class="table-container shadow-sm rounded">
+    <div v-else-if="actualizaciones.length === 0" class="estado-mensaje vacio">
+      <div class="empty-icon">📭</div>
+      <h3>No hay registros para mostrar</h3>
+      <p>Aún no se ha registrado ninguna actualización en el sistema.</p>
+    </div>
+
+    <div v-else class="table-container">
       <table class="base-table">
         <thead>
           <tr>
             <th class="col-titulo">TÍTULO</th>
-            <th class="col-version">VERSION</th>
+            <th class="col-version">VERSIÓN</th>
             <th class="col-fecha">FECHA</th>
             <th class="col-estado">ESTADO</th>
             <th class="col-acciones">ACCIONES</th>
@@ -39,31 +34,35 @@
         </thead>
 
         <tbody>
-          <tr v-for="item in actualizaciones" :key="item.id">
+          <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro">
             <td class="cell-titulo">
-              {{ item.actualizacion_titulo }}
+              <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
             </td>
 
             <td class="cell-version">
-              <span class="badge bg-secondary bg-opacity-10 text-dark border px-2 py-1">
+              <span class="version-badge">
                 v{{ item.actualizacion_version }}
               </span>
             </td>
 
             <td class="cell-fecha">
-              <span v-if="item.actualizacion_estado === 'publicado'">
-                P: {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
-              </span>
-              <span v-else class="text-muted">
-                C: {{ formatearFecha(item.actualizacion_fecha_creacion) }}
-              </span>
-            </td>
+              <div class="fecha-info">
+                <span v-if="item.actualizacion_estado === 'publicado'" class="fecha-publicado">
+                  <span class="fecha-label">Publicado:</span>
+                  {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
+                </span>
+                <span v-else class="fecha-creado">
+                  <span class="fecha-label">Creado:</span>
+                  {{ formatearFecha(item.actualizacion_fecha_creacion) }}
+                </span>
+              </div>
+             </td>
 
             <td class="cell-estado">
               <span :class="['badge-estado', mapearClaseEstado(item.actualizacion_estado)]">
                 {{ item.actualizacion_estado }}
               </span>
-            </td>
+             </td>
 
             <td class="cell-acciones">
               <div class="icon-group">
@@ -71,46 +70,48 @@
                 <button title="Ver" class="btn-icon" @click="verDetalles(item)">👁</button>
                 <button title="Eliminar" class="btn-icon" @click="confirmarEliminar(item)">🗑</button>
               </div>
-            </td>
-          </tr>
+             </td>
+           </tr>
         </tbody>
       </table>
 
-      <div class="bg-white px-4 py-3 border-top d-flex justify-content-between align-items-center">
-        <div class="text-muted small">
-          Mostrando {{ actualizaciones.length }} registros en esta página (Total: {{ totalRegistros }})
+      <div class="table-footer">
+        <div class="info-registros">
+          Mostrando {{ actualizaciones.length }} registros en esta página
+          <span class="total-registros">(Total: {{ totalRegistros }})</span>
         </div>
-        <nav aria-label="Navegación de página">
-          <ul class="pagination pagination-sm mb-0 custom-pagination">
-            <li class="page-item" :class="{ disabled: paginaActual === 1 }">
-              <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual - 1)">«</a>
+
+        <nav v-if="totalPaginas > 1" aria-label="Navegación de página">
+          <ul class="pagination-moderno">
+            <li :class="{ disabled: paginaActual === 1 }">
+              <a href="#" @click.prevent="cambiarPagina(paginaActual - 1)">‹</a>
             </li>
-            <li v-for="pag in totalPaginas" :key="pag" class="page-item" :class="{ active: paginaActual === pag }">
-              <a class="page-link" href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
+            <li v-for="pag in paginasMostradas" :key="pag" :class="{ active: paginaActual === pag }">
+              <a href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
             </li>
-            <li class="page-item" :class="{ disabled: paginaActual === totalPaginas }">
-              <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual + 1)">»</a>
+            <li :class="{ disabled: paginaActual === totalPaginas }">
+              <a href="#" @click.prevent="cambiarPagina(paginaActual + 1)">›</a>
             </li>
           </ul>
         </nav>
       </div>
     </div>
 
-    <div class="modal fade" id="modalEliminar" tabindex="-1" ref="modalEliminar">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-          <div class="modal-header">
-            <h5 class="modal-title">Confirmar eliminación</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <p>¿Estás seguro de que deseas eliminar la actualización <strong>{{ itemAEliminar?.actualizacion_titulo }}</strong>?</p>
-            <p class="text-danger small mb-0">Esta acción no se puede deshacer.</p>
-          </div>
-          <div class="modal-footer border-top-0">
-            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-danger" @click="eliminarActualizacion">Eliminar</button>
-          </div>
+    <!-- Modal de eliminación moderno -->
+    <div class="modal-overlay" v-if="mostrarModalEliminar" @click.self="cerrarModal">
+      <div class="modal-moderno">
+        <div class="modal-header">
+          <h5>Confirmar eliminación</h5>
+          <button class="modal-close" @click="cerrarModal">×</button>
+        </div>
+        <div class="modal-body">
+          <p>¿Estás seguro de que deseas eliminar la actualización</p>
+          <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
+          <p class="text-danger small mt-3">⚠️ Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancelar" @click="cerrarModal">Cancelar</button>
+          <button class="btn-eliminar-modal" @click="eliminarActualizacion">Eliminar</button>
         </div>
       </div>
     </div>
@@ -118,11 +119,9 @@
 </template>
 
 <script setup lang="ts">
-// Quitamos 'computed' de las importaciones porque ya no se usa
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import api from '../../api/api';
 import type { Version } from '../../types/version';
-import { Modal } from 'bootstrap';
 
 const actualizaciones = ref<Version[]>([]);
 const cargando = ref(true);
@@ -133,8 +132,27 @@ const totalPaginas = ref(1);
 const totalRegistros = ref(0);
 
 const itemAEliminar = ref<Version | null>(null);
-const modalEliminar = ref<HTMLElement | null>(null);
-let modalInstance: Modal | null = null;
+const mostrarModalEliminar = ref(false);
+
+// Computed para mostrar páginas con límite
+const paginasMostradas = computed(() => {
+  const maxPages = 5;
+  const current = paginaActual.value;
+  const total = totalPaginas.value;
+  
+  if (total <= maxPages) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  
+  let start = Math.max(1, current - 2);
+  let end = Math.min(total, start + maxPages - 1);
+  
+  if (end - start + 1 < maxPages) {
+    start = Math.max(1, end - maxPages + 1);
+  }
+  
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+});
 
 const obtenerActualizaciones = async (page = 1) => {
   cargando.value = true;
@@ -166,10 +184,11 @@ const formatearFecha = (fechaString: string) => {
 
 const mapearClaseEstado = (estado: string) => {
   const estadoMin = estado.toLowerCase();
-  if (estadoMin === 'publicado') return 'estado-green'; 
-  if (estadoMin === 'borrador') return 'estado-yellow'; 
-  if (estadoMin === 'revision') return 'estado-red';    
+  if (estadoMin === 'publicado') return 'estado-green';
+  if (estadoMin === 'borrador') return 'estado-yellow';
+  if (estadoMin === 'revision') return 'estado-red';
   if (estadoMin === 'inactivo') return 'estado-dark-gray';
+  return 'estado-gray';
 };
 
 const cambiarPagina = (pagina: number) => {
@@ -188,9 +207,12 @@ const editarActualizacion = (item: Version) => {
 
 const confirmarEliminar = (item: Version) => {
   itemAEliminar.value = item;
-  if (modalInstance) {
-    modalInstance.show();
-  }
+  mostrarModalEliminar.value = true;
+};
+
+const cerrarModal = () => {
+  mostrarModalEliminar.value = false;
+  itemAEliminar.value = null;
 };
 
 const eliminarActualizacion = async () => {
@@ -199,23 +221,15 @@ const eliminarActualizacion = async () => {
   try {
     await api.delete(`/admin/actualizaciones/${itemAEliminar.value.id}`);
     await obtenerActualizaciones(paginaActual.value);
-    if (modalInstance) {
-      modalInstance.hide();
-    }
+    cerrarModal();
   } catch (err) {
     console.error('Error al eliminar:', err);
     error.value = 'No se pudo eliminar la actualización.';
-  } finally {
-    itemAEliminar.value = null;
   }
 };
 
 onMounted(() => {
   obtenerActualizaciones(1);
-
-  if (modalEliminar.value) {
-    modalInstance = new Modal(modalEliminar.value);
-  }
 });
 
 defineExpose({
@@ -224,60 +238,129 @@ defineExpose({
 </script>
 
 <style scoped>
+/* Variables del sistema */
+:root {
+  --primary: #077E9D;
+  --secondary: #025B7D;
+  --warning: #FCBB1C;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
 .contenedor-lista-tabla {
   width: 100%;
-  max-width: 1100px;
+  max-width: 1400px;
   margin: 0 auto;
-  font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Estados de carga y error */
 .estado-mensaje {
   text-align: center;
-  padding: 40px;
-  background-color: #f9fafb;
-  border-radius: 8px;
+  padding: 60px 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
   color: #6b7280;
-  border: 1px dashed #e5e7eb;
 }
 
-.estado-dark-gray { 
-  background-color: #e5e7eb; 
-  color: #374151; 
-  text-decoration: line-through; /* Opcional: un tachado sutil para que sea obvio que está inactivo */
+.estado-mensaje.error {
+  border-top: 3px solid #ef4444;
 }
 
+.estado-mensaje.vacio {
+  border-top: 3px solid var(--warning);
+}
+
+.error-icon, .empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.btn-retry {
+  margin-top: 20px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Contenedor de la tabla con borde y sombra */
 .table-container {
-  background-color: white;
+  background: white;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid #e1e7f0;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
 }
 
+.table-container:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Tabla */
 .base-table {
   width: 100%;
   border-collapse: collapse;
 }
 
 .base-table thead tr {
-  background-color: #0d2141;
-  color: white;
-  text-align: left;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 }
 
 .base-table th {
   padding: 15px 20px;
+  color: white;
   font-weight: bold;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
   border: none;
 }
 
 .base-table tbody tr {
   border-bottom: 1px solid #e1e7f0;
-  transition: background-color 0.2s;
+  transition: var(--transition-smooth);
 }
 
+/* EFECTO HOVER: Oscurecer y mover ligeramente */
 .base-table tbody tr:hover {
-  background-color: #f9fafb;
+  background-color: rgba(0, 0, 0, 0.04);
+  transform: translateX(5px) scale(1.01);
+  box-shadow: -4px 0 0 var(--primary);
+  cursor: pointer;
+}
+
+/* Efecto adicional para las celdas */
+.base-table tbody tr:hover td {
+  color: #1a202c;
+}
+
+.base-table tbody tr:hover .titulo-texto {
+  color: var(--primary);
+}
+
+.base-table tbody tr:hover .version-badge {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  border-color: transparent;
+  transform: scale(1.05);
+}
+
+.base-table tbody tr:hover .btn-icon {
+  transform: scale(1.1);
 }
 
 .base-table td {
@@ -285,19 +368,66 @@ defineExpose({
   font-size: 0.95rem;
   color: #555c68;
   vertical-align: middle;
+  transition: var(--transition-smooth);
 }
 
+/* Columnas */
 .col-titulo { width: 35%; }
 .col-version { width: 15%; }
 .col-fecha { width: 20%; }
 .col-estado { width: 15%; }
 .col-acciones { width: 15%; text-align: right; }
 
-.cell-titulo {
+/* Celda título */
+.titulo-texto {
   font-weight: 600;
   color: #1a202c;
+  transition: var(--transition-smooth);
 }
 
+/* Badge de versión */
+.version-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #f0f2f5;
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #e1e7f0;
+  transition: var(--transition-smooth);
+}
+
+/* Fecha */
+.fecha-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fecha-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #9ca3af;
+  letter-spacing: 0.5px;
+  transition: var(--transition-smooth);
+}
+
+.fecha-publicado, .fecha-creado {
+  font-size: 0.85rem;
+  transition: var(--transition-smooth);
+}
+
+.fecha-publicado {
+  color: var(--primary);
+}
+
+.fecha-creado {
+  color: #9ca3af;
+}
+
+/* Badges de estado - Estilos originales */
 .badge-estado {
   display: inline-block;
   padding: 4px 10px;
@@ -305,15 +435,40 @@ defineExpose({
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
+  transition: var(--transition-smooth);
 }
 
-.estado-green { background-color: #e6f7e9; color: #2e7d32; }
-.estado-yellow { background-color: #fef8e3; color: #f9a825; }
-.estado-red { background-color: #fdeaea; color: #d32f2f; }
-.estado-gray { background-color: #f2f4f7; color: #5f6671; }
+.base-table tbody tr:hover .badge-estado {
+  transform: scale(1.05);
+}
 
-.cell-acciones { text-align: right; }
+.estado-green {
+  background-color: #e6f7e9;
+  color: #2e7d32;
+}
 
+.estado-yellow {
+  background-color: #fef8e3;
+  color: #f9a825;
+}
+
+.estado-red {
+  background-color: #fdeaea;
+  color: #d32f2f;
+}
+
+.estado-dark-gray {
+  background-color: #e5e7eb;
+  color: #374151;
+  text-decoration: line-through;
+}
+
+.estado-gray {
+  background-color: #f2f4f7;
+  color: #5f6671;
+}
+
+/* Iconos de acción - Estilo original */
 .icon-group {
   display: flex;
   gap: 15px;
@@ -327,27 +482,248 @@ defineExpose({
   color: #9ca3af;
   font-size: 1.1rem;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: var(--transition-smooth);
 }
 
-.btn-icon:hover { color: #4b5563; }
-
-.custom-pagination .page-link {
-  color: #0d2141;
-  border: none;
-  margin: 0 2px;
-  border-radius: 4px;
+.btn-icon:hover {
+  color: #4b5563;
 }
 
-.custom-pagination .page-item.active .page-link {
-  background-color: #0d2141;
+/* Footer de la tabla */
+.table-footer {
+  padding: 16px 24px;
+  background: white;
+  border-top: 1px solid #e1e7f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.info-registros {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.total-registros {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* Paginación moderna */
+.pagination-moderno {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pagination-moderno li {
+  display: inline-block;
+}
+
+.pagination-moderno li a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  background: white;
+  color: var(--primary);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: var(--transition);
+  border: 1px solid #e1e7f0;
+}
+
+.pagination-moderno li.active a {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
+  border-color: transparent;
+  box-shadow: var(--shadow-sm);
 }
 
-.custom-pagination .page-link:hover:not(.active) {
-  background-color: #f2f4f7;
+.pagination-moderno li:not(.disabled):not(.active) a:hover {
+  background: #f0f2f5;
+  transform: translateY(-2px);
+  border-color: var(--primary);
 }
 
-.shadow-sm { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important; }
-.rounded { border-radius: 6px !important; }
+.pagination-moderno li.disabled a {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modal moderno */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-moderno {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e1e7f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h5 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--primary);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-item-title {
+  display: block;
+  color: var(--primary);
+  font-size: 1rem;
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #f0f7fa;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e1e7f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancelar {
+  padding: 10px 20px;
+  background: white;
+  border: 1px solid #e1e7f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.btn-cancelar:hover {
+  background: #f8fafc;
+  border-color: var(--primary);
+}
+
+.btn-eliminar-modal {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.btn-eliminar-modal:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .base-table thead {
+    display: none;
+  }
+
+  .base-table tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #e1e7f0;
+  }
+
+  /* Efecto hover en móvil */
+  .base-table tbody tr:hover {
+    transform: translateX(4px) scale(1.02);
+  }
+
+  .base-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f2f5;
+  }
+
+  .base-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.8rem;
+  }
+
+  .table-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .icon-group {
+    justify-content: center;
+  }
+}
 </style>

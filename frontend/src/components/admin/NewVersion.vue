@@ -13,9 +13,13 @@
           <input type="text" id="version" class="form-control" v-model="registro.version" required />
         </div>
         <div class="col-md-6 mb-3">
-          <label for="miniatura" class="form-label fw-bold">URL de la Miniatura (Portada):</label>
-          <input type="url" id="miniatura" class="form-control" v-model="registro.imagen_destacada"
-            placeholder="https://..." />
+          <label for="miniatura" class="form-label fw-bold">Miniatura (Portada):</label>
+          <input type="file" id="miniatura" class="form-control" accept="image/*" @change="manejarArchivoMiniatura" />
+
+          <div v-if="previewMiniatura" class="mt-2 text-center">
+            <img :src="previewMiniatura" alt="Vista previa" class="img-thumbnail"
+              style="max-height: 120px; border-radius: 8px;" />
+          </div>
         </div>
       </div>
 
@@ -82,6 +86,23 @@ import { reactive, ref, onMounted } from 'vue';
 import api from '../../api/api';
 import type { NewVersion } from '../../types/newVersion';
 import type { Area } from '../../types/areas';
+// Variables para manejar la portada
+const archivoMiniatura = ref<File | null>(null);
+const previewMiniatura = ref<string | null>(null);
+
+// Función que captura el archivo y genera la vista previa
+const manejarArchivoMiniatura = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+    archivoMiniatura.value = file;
+    // Generar una URL temporal para mostrar la vista previa en el HTML
+    previewMiniatura.value = URL.createObjectURL(file);
+  } else {
+    archivoMiniatura.value = null;
+    previewMiniatura.value = null;
+  }
+};
 
 // QUILL
 import type Quill from 'quill';
@@ -169,14 +190,14 @@ const opcionesEditor = {
       container: [
         ['bold', 'italic', 'underline'],
         [{ 'header': 1 }, { 'header': 2 }],
-        ['image', 'link'] 
+        ['image', 'link']
       ],
       handlers: {
         // SOLUCIÓN AL ERROR DE TS: Le decimos explícitamente a TypeScript 
         // que "this" será inyectado dinámicamente usando (this: any)
-        image: function(this: any) { 
+        image: function (this: any) {
           const quill = this.quill as Quill;
-          
+
           const input = document.createElement('input');
           input.setAttribute('type', 'file');
           input.setAttribute('accept', 'image/*');
@@ -186,7 +207,7 @@ const opcionesEditor = {
             if (input.files && input.files.length > 0) {
               const file = input.files[0];
               const range = quill.getSelection(true);
-              
+
               // Llamamos a nuestra función que sube la imagen al servidor
               await subirImagenAlServidor(file, quill, range.index);
             }
@@ -213,7 +234,12 @@ const guardarRegistro = async () => {
     formData.append('actualizacion_version', registro.version);
     formData.append('actualizacion_contenido', registro.contenido);
     formData.append('actualizacion_resumen', registro.resumen);
-    formData.append('actualizacion_imagen_destacada', registro.imagen_destacada || '');
+
+    // Si hay una imagen seleccionada, la agregamos al FormData
+    if (archivoMiniatura.value) {
+      formData.append('actualizacion_imagen_destacada', archivoMiniatura.value);
+    }
+
     formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id));
     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor));
     formData.append('actualizacion_estado', registro.estado);
@@ -221,7 +247,7 @@ const guardarRegistro = async () => {
     formData.append('imagenes_quill', JSON.stringify(registro.imagenes_quill));
 
     await api.post('/admin/actualizaciones', formData, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'multipart/form-data' }
     });
 
     alert('¡Registro guardado con éxito!');
@@ -249,6 +275,14 @@ const limpiarFormulario = () => {
     estado: 'borrador',
     fecha_publicacion: new Date().toISOString().split('T')[0]
   });
+  
+  // Limpiar archivo y vista previa
+  archivoMiniatura.value = null;
+  previewMiniatura.value = null;
+  
+  // Limpiar el input file visualmente
+  const inputMiniatura = document.getElementById('miniatura') as HTMLInputElement;
+  if (inputMiniatura) inputMiniatura.value = '';
 };
 </script>
 
