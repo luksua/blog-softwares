@@ -21,45 +21,41 @@
 
     <div v-else>
       <div class="row lista-feed g-4">
-        <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-md-6 col-lg-6">
+        <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-md-6 col-lg-4">
           <div class="tarjeta-changelog h-100">
+            
             <div class="tarjeta-header">
-              <div class="header-left">
-                <span :class="['badge-estado', item.actualizacion_estado || 'publicado']">
-                  {{ item.actualizacion_estado || 'Publicado' }}
-                </span>
-                <span class="version-number">
-                  v{{ item.actualizacion_version || '0.0' }}
-                </span>
-              </div>
-              <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
-            </div>
-
-            <div class="tarjeta-cuerpo">
-              <h2 class="titulo-version">
-                {{ item.actualizacion_titulo }}
-              </h2>
-
-              <p class="resumen">{{ item.actualizacion_resumen }}</p>
-
               <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                <img
-                  :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
-                  alt="Imagen destacada"
-                  class="imagen-destacada"
-                />
+                <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                  class="imagen-destacada" />
               </div>
-
               <div v-else class="sin-imagen">
                 <span>🖼️</span>
                 <p>Sin imagen destacada</p>
               </div>
             </div>
 
+            <div class="tarjeta-cuerpo pt-3" @click="verDetalle(item.id)">
+              <div class="metadatos-top">
+                <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                <span class="separador">|</span>
+                <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+                <!-- <span :class="['badge-estado', item.actualizacion_estado || 'publicado']">
+                  {{ item.actualizacion_estado || 'Publicado' }}
+                </span> -->
+              </div>
+
+              <h2 class="titulo-version">
+                {{ item.actualizacion_titulo }}
+              </h2>
+
+              <p class="resumen">{{ item.actualizacion_resumen }}</p>
+            </div>
+
             <div class="tarjeta-pie">
               <div class="tags-container">
                 <span class="tag-gris">
-                  📸 {{ item.actualizacion_imagenes ? item.actualizacion_imagenes : 0 }} imágenes
+                  {{ item.area_servicio.area_servicio_nombre }}
                 </span>
               </div>
 
@@ -82,12 +78,7 @@
               <a class="page-link" href="#" @click.prevent="cambiarPagina(paginaActual - 1)">«</a>
             </li>
 
-            <li
-              v-for="pag in totalPaginas"
-              :key="pag"
-              class="page-item"
-              :class="{ active: paginaActual === pag }"
-            >
+            <li v-for="pag in totalPaginas" :key="pag" class="page-item" :class="{ active: paginaActual === pag }">
               <a class="page-link" href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
             </li>
 
@@ -239,179 +230,42 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
-/* Header mejorado */
+/* Header de la tarjeta modificado para la imagen arriba */
 .tarjeta-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #eaeaea;
+  padding: 0; /* Sin padding para que la imagen toque los bordes */
+  display: block;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.badge-estado {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-
-.badge-estado {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  padding: 4px 10px;
-  border-radius: 4px;
-  background-color: #e8f5e9;
-  /* Estilo STABLE (Verde claro) */
-  color: #2e7d32;
-  letter-spacing: 0.5px;
-}
-
-/* Colores dinámicos por si tienes varios estados (opcional) */
-.badge-estado.revision {
-  background-color: #fff3e0;
-  color: #ef6c00;
-}
-
-.badge-estado.borrador {
-  background-color: #e3f2fd;
-  color: #1565c0;
-}
-
-
-/* Estados */
-.badge-estado.publicado {
-  background-color: #e6f7e9;
-  color: #2e7d32;
-}
-
-.badge-estado.revision {
-  background-color: #fff3e0;
-  color: #ef6c00;
-}
-
-.badge-estado.borrador {
-  background-color: #e3f2fd;
-  color: #1565c0;
-}
-
-.badge-estado.inactivo {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-/* Número de versión */
-.version-number {
-  display: inline-block;
-  padding: 4px 10px;
-  background: white;
-  color: #077E9D;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  border: 1px solid #e1e7f0;
-}
-
-.fecha {
-  font-size: 0.85rem;
-  color: #888;
-}
-
-/* Cuerpo */
-.tarjeta-cuerpo {
-  padding: 24px;
-  /* Hacemos que el cuerpo ocupe el espacio disponible para empujar el pie (si aplicaste el tip anterior) */
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.titulo-version {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 10px 0;
-
-  /* OPCIONAL: Limitar el título a 1 sola línea */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.resumen {
-  font-size: 1rem;
-  color: #555;
-  line-height: 1.6;
-  margin: 0 0 20px 0;
-
-  /* Configuración del contenedor necesaria para el truncamiento */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-
-  /* ✅ Propiedad estándar (para el futuro) */
-  line-clamp: 3;
-  /* ✅ Propiedad con prefijo (para soporte actual y retrocompatibilidad) */
-  -webkit-line-clamp: 2;
-
-  /* Ocultar lo que sobra y añadir los puntos suspensivos */
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Para que la imagen siempre quede al fondo del cuerpo, independientemente de si el texto es de 1 o 3 líneas */
-.imagen-container,
-.sin-imagen {
-  margin-top: auto;
-  /* Esto empuja la imagen hacia abajo */
-}
-
-/* Contenedor de la imagen */
+/* Contenedor de la imagen arreglado */
 .imagen-container {
-  margin-top: 20px;
-  border-radius: 12px;
+  margin-top: 0;
+  border-radius: 0;
   overflow: hidden;
-  transition: all 0.3s ease;
   width: 100%;
-}
-
-.imagen-container:hover {
-  transform: scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .imagen-destacada {
   width: 100%;
   aspect-ratio: 22 / 8;
-  /* Esto dicta la altura dinámicamente */
   object-fit: cover;
   display: block;
   object-position: center;
+  transition: all 0.3s ease;
+}
+
+.imagen-container:hover .imagen-destacada {
+  transform: scale(1.02);
 }
 
 /* Estado cuando no hay imagen */
 .sin-imagen {
-  margin-top: 20px;
+  margin-top: 0;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-radius: 12px;
-  border: 2px dashed #e1e7f0;
+  border-radius: 0;
+  border-bottom: 1px solid #e1e7f0;
   color: #9ca3af;
-
-  /* ✅ Obligamos a que el estado vacío mida exactamente lo mismo que una foto */
   width: 100%;
   aspect-ratio: 22 / 8;
-
-  /* ✅ Usamos Flexbox para centrar el icono y el texto perfectamente */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -430,14 +284,108 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
+/* Cuerpo */
+.tarjeta-cuerpo {
+  padding: 10px 15px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+/* Metadatos como en la imagen (Fecha | Versión | Estado) */
+.metadatos-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.separador {
+  color: #a0aec0;
+  font-weight: 300;
+}
+
+.fecha {
+  font-size: 0.95rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.version-number {
+  display: inline-block;
+  padding: 4px 10px;
+  background: white;
+  color: #077E9D;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #e1e7f0;
+}
+
+.badge-estado {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  letter-spacing: 0.5px;
+}
+
+.badge-estado.revision {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.badge-estado.borrador {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge-estado.publicado {
+  background-color: #e6f7e9;
+  color: #2e7d32;
+}
+
+.badge-estado.inactivo {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.titulo-version {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 10px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resumen {
+  font-size: 1rem;
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Pie mejorado */
 .tarjeta-pie {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  background: #fafbfc;
-  border-top: 1px solid #eaeaea;
+  padding: 8px 24px;
+  margin-top: auto;
 }
 
 .tags-container {
@@ -519,17 +467,6 @@ onMounted(() => {
 @media (max-width: 768px) {
   .contenedor-lista {
     padding: 16px;
-  }
-
-  .tarjeta-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .header-left {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .tarjeta-pie {

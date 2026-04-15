@@ -27,7 +27,7 @@
             aria-labelledby="modalLabel" aria-hidden="true">
             <div class="modal-dialog modal-xl">
                 <div class="modal-content">
-                    <div class="modal-header bg-light">
+                    <div class="modal-header">
                         <h5 class="modal-title fw-bold" id="modalLabel">Registrar Nueva Actualización</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -78,5 +78,11 @@ const cerrarModalBootstrap = () => {
 //   document.body.style.paddingRight = '';
 // };
 
-
 </script>
+
+<style scoped>
+.modal-header {
+    border-bottom: none;
+    border-top: 3px solid var(--warning);
+}
+</style>

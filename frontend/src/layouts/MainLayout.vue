@@ -459,7 +459,7 @@ onUnmounted(() => {
 
 .content-card {
   background: white;
-  border-radius: 20px;
+  /* border-radius: 20px; */
   box-shadow: var(--shadow-sm);
   padding: 24px;
   min-height: calc(100vh - 190px);

@@ -158,7 +158,7 @@
 
           <div class="modal-body">
             <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
-            
+
             <strong class="modal-item-title">
               {{ itemAEliminar?.actualizacion_titulo }}
             </strong>
@@ -179,10 +179,10 @@
   </div>
 
   <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
 
-        <div class="modal-header bg-light">
+        <div class="modal-header">
           <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
             @click="cerrarModalEdicion"></button>
@@ -812,5 +812,10 @@ defineExpose({
   .icon-group {
     justify-content: center;
   }
+}
+
+.modal-header {
+  border-bottom: none;
+  border-top: 3px solid var(--warning);
 }
 </style>

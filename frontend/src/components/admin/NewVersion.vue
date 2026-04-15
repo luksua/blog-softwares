@@ -1,18 +1,18 @@
 <template>
   <div>
-    <form @submit.prevent="guardarRegistro">
+    <form @submit.prevent="guardarRegistro" class="form-container-x">
       <div class="mb-3">
-        <label for="titulo" class="form-label fw-bold">Título:</label>
+        <label for="titulo" class="form-label fw-bold">Título *</label>
         <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
 
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label for="version" class="form-label fw-bold">Número de Versión:</label>
+          <label for="version" class="form-label fw-bold">Número de Versión</label>
           <input type="text" id="version" class="form-control" v-model="registro.version" required />
         </div>
         <div class="col-md-6 mb-3">
-          <label for="miniatura" class="form-label fw-bold">Miniatura (Portada):</label>
+          <label for="miniatura" class="form-label fw-bold">Portada</label>
           <input type="file" id="miniatura" class="form-control" accept="image/*" @change="manejarArchivoMiniatura" />
 
           <div v-if="previewMiniatura" class="mt-2 text-center">
@@ -23,18 +23,18 @@
       </div>
 
       <div class="mb-3">
-        <label for="resumen" class="form-label fw-bold">Resumen corto:</label>
+        <label for="resumen" class="form-label fw-bold">Resumen</label>
         <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
       </div>
 
       <div class="mb-4">
-        <label class="form-label fw-bold">Contenido:</label>
+        <label class="form-label fw-bold">Contenido *</label>
         <div id="editorjs" class="editor-container border p-3"></div>
       </div>
 
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label for="area_servicio" class="form-label fw-bold">Área:</label>
+          <label for="area_servicio" class="form-label fw-bold">Área *</label>
           <select id="area_servicio" class="form-select" v-model="registro.area_servicio_id" required>
             <option value="" disabled>Selecciona un área...</option>
             <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
@@ -52,7 +52,7 @@
 
       <div class="row">
         <div class="col-md-6 mb-3">
-          <label for="estado" class="form-label fw-bold">Estado:</label>
+          <label for="estado" class="form-label fw-bold">Estado</label>
           <select id="estado" class="form-select" v-model="registro.estado" required>
             <option v-for="estado in listaEstados" :key="estado.id" :value="estado.id">
               {{ estado.nombre }}

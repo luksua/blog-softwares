@@ -9,19 +9,21 @@
 
     <div v-else>
       <form @submit.prevent="guardarCambios">
-        <div class="mb-3">
-          <label class="form-label fw-bold">Título</label>
-          <input v-model="form.titulo" type="text" class="form-control" />
-          <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
-            {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label fw-bold">Título</label>
+            <input v-model="form.titulo" type="text" class="form-control" />
+            <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
+              {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
+            </div>
           </div>
-        </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-bold">Versión</label>
-          <input v-model="form.version" type="text" class="form-control" />
-          <div v-if="errores.version || errores.actualizacion_version" class="text-danger small mt-1">
-            {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
+          <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">Versión</label>
+            <input v-model="form.version" type="text" class="form-control" />
+            <div v-if="errores.version || errores.actualizacion_version" class="text-danger small mt-1">
+              {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
+            </div>
           </div>
         </div>
 
@@ -32,21 +34,22 @@
             {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
           </div>
         </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-bold">Estado</label>
-          <select v-model="form.estado" class="form-select">
-            <option value="borrador">Borrador</option>
-            <option value="revision">Revisión</option>
-            <option value="publicado">Publicado</option>
-            <option value="inactivo">Inactivo</option>
-          </select>
-          <div v-if="errores.estado || errores.actualizacion_estado" class="text-danger small mt-1">
-            {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Estado</label>
+            <select v-model="form.estado" class="form-select">
+              <option value="borrador">Borrador</option>
+              <option value="revision">Revisión</option>
+              <option value="publicado">Publicado</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+            <div v-if="errores.estado || errores.actualizacion_estado" class="text-danger small mt-1">
+              {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
+            </div>
           </div>
-        </div>
 
-        <!-- <div class="mb-3">
+
+          <!-- <div class="mb-3">
           <template v-if="form.estado !== 'publicado'">
             <label class="form-label fw-bold">Fecha de creación</label>
             <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
@@ -68,27 +71,29 @@
           </template>
 </div> -->
 
-        <div class="mb-3">
-          <template v-if="form.estado !== 'publicado'">
-            <label class="form-label fw-bold">Fecha de creación</label>
-            <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
-            <div class="form-text mt-1">
-              Registro no publicado. Mostrando fecha de creación.
-            </div>
-          </template>
+          <div class="col-md-6 mb-3">
+            <template v-if="form.estado !== 'publicado'">
+              <label class="form-label fw-bold">Fecha de creación</label>
+              <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
+              <div class="form-text mt-1">
+                Registro no publicado. Mostrando fecha de creación.
+              </div>
+            </template>
 
-          <template v-else>
-            <label class="form-label fw-bold text-success">Fecha de publicación</label>
-            <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success" readonly />
-            <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-              class="text-danger small mt-1">
-              {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
-            </div>
-            <div class="form-text mt-1 text-success fw-bold">
-              <i class="bi bi-check-circle me-1"></i>
-              El registro se publicará con esta fecha.
-            </div>
-          </template>
+            <template v-else>
+              <label class="form-label fw-bold text-success">Fecha de publicación</label>
+              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success"
+                readonly />
+              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                class="text-danger small mt-1">
+                {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
+              </div>
+              <div class="form-text mt-1 text-success fw-bold">
+                <i class="bi bi-check-circle me-1"></i>
+                El registro se publicará con esta fecha.
+              </div>
+            </template>
+          </div>
         </div>
 
         <div class="mb-3">

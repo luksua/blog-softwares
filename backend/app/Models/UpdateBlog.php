@@ -27,11 +27,16 @@ class UpdateBlog extends Model
         // 'actualizacion_fecha_creacion',
         // 'actualizacion_fecha_actualizacion',
         'actualizacion_fecha_publicacion',
-        
+
     ];
 
     public function imagenes()
     {
         return $this->hasMany(PhotoUpdate::class, 'actualizacion_id');
+    }
+
+    public function areaServicio()
+    {
+        return $this->belongsTo(Area::class, 'actualizacion_area_servicio_id');
     }
 }
