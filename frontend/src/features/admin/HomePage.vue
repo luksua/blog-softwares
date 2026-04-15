@@ -1,5 +1,5 @@
 <template>
-    <div class="pagina-principal container mt-4">
+    <div class="pagina-principal container-fluid mt-4">
 
         <div class="row align-items-center mb-4">
             <div class="col-lg-10">
@@ -24,7 +24,7 @@
         </div>
 
         <div class="modal fade" id="modalNuevoRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
 
                     <div class="modal-header bg-light">
@@ -33,7 +33,7 @@
                             id="btnCerrarModal"></button>
                     </div>
 
-                    <div class="modal-body">
+                    <div class="modal-body p-4">
                         <Store @recargar-lista="avisarALaLista" @cerrar="cerrarModalBootstrap" />
                     </div>
 
