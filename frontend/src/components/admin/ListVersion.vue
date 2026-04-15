@@ -158,7 +158,6 @@ watch(() => props.id, () => {
   width: 100%;             /* Ocupa todo el ancho disponible que le deje el sidebar */
   max-width: 1400px;       /* Un tope máximo muy grande (puedes poner 100% si prefieres no tener límite) */
   margin: 0 auto;          /* Se centra dentro de su espacio, no de la pantalla */
-  padding: 24px;
 }
 
 /* Estado de carga */

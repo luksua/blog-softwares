@@ -21,7 +21,6 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_contenido'         => 'required|string', // Aquí viene el JSON de Editor.js como string
             'actualizacion_resumen'           => 'required|string',
 
-            // ✅ CAMBIO 1: Validamos que sea un archivo de imagen, no un string
             'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
 
             'actualizacion_area_servicio_id'  => 'required|integer',
@@ -84,9 +83,7 @@ class UpdateBlogAdminController extends Controller
 
     public function index()
     {
-        // Traemos todas las actualizaciones, ordenadas por las más recientes primero,
-        // y le pedimos a Laravel que incluya las imágenes asociadas.
-        // NOTA: Como este es el AdminController, está bien traer todos los estados.
+        // Traemos todas las actualizaciones, ordenadas por las más recientes primero
         $actualizaciones = UpdateBlog::with('imagenes')
             ->orderBy('id', 'desc')
             ->paginate(8);
@@ -183,6 +180,8 @@ class UpdateBlogAdminController extends Controller
         $actualizacion = UpdateBlog::findOrFail($id);
 
         $actualizacion->actualizacion_estado = 'publicado';
+        $actualizacion->actualizacion_fecha_publicacion = now();
+
         $actualizacion->save();
 
         return response()->json([

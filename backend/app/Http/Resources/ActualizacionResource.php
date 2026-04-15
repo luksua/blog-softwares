@@ -17,12 +17,13 @@ class ActualizacionResource extends JsonResource
             'actualizacion_version' => $this->actualizacion_version,
             'actualizacion_titulo' => $this->actualizacion_titulo,
             'actualizacion_fecha_publicacion' => $this->actualizacion_fecha_publicacion,
+            'actualizacion_fecha_creacion' => $this->actualizacion_fecha_creacion,
             'actualizacion_imagen_destacada' => $this->actualizacion_imagen_destacada,
             'actualizacion_resumen' => $this->actualizacion_resumen,
 
             // JSON original, por si lo necesitas
             'actualizacion_contenido' => $this->actualizacion_contenido,
-
+            'actualizacion_estado' => $this->actualizacion_estado,
             // HTML listo para Vue
             'actualizacion_contenido_html' => $renderer->render($this->actualizacion_contenido),
         ];

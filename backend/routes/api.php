@@ -11,7 +11,6 @@ Route::get('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
 Route::get('/admin/area-servicio', [UpdateBlogAdminController::class, 'getAreas']);
 Route::get('/admin/estados-actualizacion', [UpdateBlogAdminController::class, 'getStatus']);
 Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
-Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
 
 // (POST)
 Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);

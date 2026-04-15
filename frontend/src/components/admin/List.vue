@@ -78,14 +78,14 @@
                 <div v-if="item.actualizacion_estado !== 'inactivo'">
                   <button title="Archivar" class="btn-icon" data-bs-toggle="modal"
                     data-bs-target="#modalEliminarRegistro" @click.stop="confirmarEliminar(item)">
-                    <i class="bi bi-trash-fill"></i>
+                    <i class="bi bi-x-lg"></i>
                   </button>
                 </div>
 
                 <div v-else>
                   <button title="Desarchivar" class="btn-icon" data-bs-toggle="modal"
                     data-bs-target="#modalDesarchivarRegistro" @click.stop="confirmarActivar(item)">
-                    <i class="bi bi-recycle"></i>
+                    <i class="bi bi-check-lg"></i>
                   </button>
                 </div>
               </div>
@@ -122,12 +122,12 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalEliminarLabel">Confirmar inactivado</h5>
+            <h5 class="modal-title" id="modalEliminarLabel">¿Deseas desactivar este registro?</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
           <div class="modal-body">
-            <p>¿Estás seguro de que deseas archivar la actualización?</p>
+            <p>Al desactivar, ya no aparecerá en las búsquedas activas ni se podrá leer en la página.</p>
             <strong class="modal-item-title">
               {{ itemAEliminar?.actualizacion_titulo }}
             </strong>
@@ -139,7 +139,7 @@
             </button>
 
             <button type="button" class="btn btn-danger" @click="inactivarActualizacion">
-              Inactivar
+              Aceptar
             </button>
           </div>
         </div>
@@ -152,13 +152,13 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalEliminarLabel">Confirmar Activar</h5>
+            <h5 class="modal-title" id="modalEliminarLabel">¿Deseas activar este registro?</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
           <div class="modal-body">
-            <p>¿Estás seguro de que deseas desarchivar la actualización?</p>
-            <strong>Se actualizará el estado del registro a <em>Publicado</em></strong>
+            <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
+            
             <strong class="modal-item-title">
               {{ itemAEliminar?.actualizacion_titulo }}
             </strong>
@@ -179,7 +179,7 @@
   </div>
 
   <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
       <div class="modal-content">
 
         <div class="modal-header bg-light">

@@ -3,7 +3,7 @@ export interface NewVersion {
   id?: number | null;
   titulo: string;
   version: string;
-  contenido: string;
+  contenido: any;
   resumen: string;
   imagen_destacada: string;
   area_servicio_id: number | null;
