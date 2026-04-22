@@ -69,7 +69,7 @@
       </header>
 
       <main class="content">
-        <div class="content-card">
+        <div class="content-card-2" :class="['content-card', { 'no-padding': $route.meta.sinPadding }]">
           <router-view />
         </div>
       </main>
@@ -471,6 +471,10 @@ onUnmounted(() => {
   box-shadow: var(--shadow-md);
 }
 
+.no-padding {
+  padding: 0 !important;
+}
+
 /* ========== FOOTER MODERNO ========== */
 .footer {
   background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
@@ -560,7 +564,7 @@ onUnmounted(() => {
     padding: 16px;
   }
 
-  .content-card {
+  .content-card-2 {
     padding: 16px;
     min-height: calc(100vh - 160px);
   }
@@ -585,7 +589,7 @@ onUnmounted(() => {
     padding: 20px;
   }
   
-  .content-card {
+  .content-card-2 {
     padding: 20px;
   }
 }

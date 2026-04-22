@@ -36,12 +36,18 @@ const router = createRouter({
           name: 'employee-actualizaciones-show',
           component: VerActualizacion,
           props: true,
+          meta: {
+            sinPadding: true
+          }
         },
         {
           path: 'admin/actualizaciones/:id',
           name: 'admin-actualizaciones-show',
           component: VerActualizacionAdmin,
           props: true,
+          meta: {
+            sinPadding: true
+          }
         },
         {
           path: 'admin/actualizaciones/:id',

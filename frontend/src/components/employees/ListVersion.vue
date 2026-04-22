@@ -8,60 +8,63 @@
     </div>
 
     <div v-else-if="actualizacion" class="detalle-card">
-      <div class="col-lg-9">
-        <!-- Botón volver -->
-        <div class="detalle-header">
-          <button class="btn-volver" @click="volver">
-            <span class="arrow-icon">←</span>
-            Volver
-          </button>
-        </div>
+      <div class="hero-banner" :class="{ 'sin-imagen': !actualizacion.actualizacion_imagen_destacada }">
 
-        <!-- Badges de información -->
-        <div class="info-badges">
-          <span class="version-badge">
-            v{{ actualizacion.actualizacion_version }}
-          </span>
-          <span :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]">
-            <span class="estado-dot"></span>
-            {{ actualizacion.actualizacion_estado || 'Publicado' }}
-          </span>
-        </div>
+        <button class="btn-volver hero-btn-pos" @click="volver">
+          <span class="arrow-icon">←</span>
+          Volver
+        </button>
 
-        <!-- Título -->
-        <h1 class="detalle-titulo">
-          {{ actualizacion.actualizacion_titulo }}
-        </h1>
+        <img v-if="actualizacion.actualizacion_imagen_destacada"
+          :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada" class="hero-image" />
 
-        <!-- Fecha -->
-        <p class="detalle-fecha">
-          Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
-        </p>
+        <div class="hero-overlay"></div>
 
-        <!-- Imagen destacada -->
-        <div v-if="actualizacion.actualizacion_imagen_destacada" class="imagen-destacada-container">
-          <img :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada"
-            class="imagen-destacada" />
-        </div>
-
-        <!-- Resumen -->
-        <div class="resumen-container">
-          <p class="resumen-texto">
-            {{ actualizacion.actualizacion_resumen }}
-          </p>
-        </div>
-
-        <!-- Contenido completo -->
-        <div class="contenido-container">
-          <div class="contenido-header">
-            <!-- <span class="contenido-icon">📄</span> -->
-            <h3>Contenido completo</h3>
+        <div class="hero-content">
+          <div class="hero-top-info">
+            <h1 class="hero-titulo">
+              {{ actualizacion.actualizacion_titulo }}
+            </h1>
           </div>
-          <div class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
+
+          <div class="hero-bottom-info">
+            <div class="hero-meta-left">
+              <span class="version-badge">
+                v{{ actualizacion.actualizacion_version }}
+              </span>
+              <span class="fecha-texto">
+                Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
+              </span>
+            </div>
+
+            <div class="hero-meta-right">
+              <span :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]">
+                <span class="estado-dot"></span>
+                {{ actualizacion.actualizacion_estado || 'Publicado' }}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="col-lg-3">
-        <h1>aaaaaaaaa</h1>
+      <div class="row">
+        <div class="col-lg-8">
+          <div class="resumen-container">
+            <p class="resumen-texto">
+              {{ actualizacion.actualizacion_resumen }}
+            </p>
+          </div>
+
+          <div class="contenido-container">
+            <div class="contenido-header">
+              <h3>Contenido completo</h3>
+            </div>
+            <div class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <h2>También te puede interesar</h2>
+          <h2>También te puede interesar</h2>
+        </div>
       </div>
     </div>
 
@@ -155,9 +158,10 @@ watch(() => props.id, () => {
 }
 
 .vista-detalle-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 24px;
+  /* CAMBIO CLAVE: Todo el contenedor padre ahora ocupa el 100% del espacio que le den */
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 /* Estado de carga */
@@ -168,26 +172,74 @@ watch(() => props.id, () => {
   border-radius: 20px;
   box-shadow: var(--shadow-sm);
   color: #6b7280;
+  max-width: 800px;
+  margin: 40px auto;
 }
 
 /* Tarjeta principal */
 .detalle-card {
   background: white;
-  border-radius: 24px;
+  border-radius: 0 0 24px 24px;
+  /* Quitamos bordes redondeados arriba porque toca los bordes de la pantalla/sidebar */
   box-shadow: var(--shadow-md);
   overflow: hidden;
   transition: var(--transition);
 }
 
-.detalle-card:hover {
-  box-shadow: var(--shadow-lg);
+/* --- HERO BANNER (OCUPA EL 100%) --- */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  /* La imagen ahora abarca todo lo ancho */
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 0;
+  /* Sin bordes para que parezca un banner real de lado a lado */
+  overflow: hidden;
+  background-color: var(--secondary);
 }
 
-/* Header con botón volver */
-.detalle-header {
-  padding: 24px 32px 0 32px;
+.hero-banner.sin-imagen {
+  min-height: 200px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 }
 
+.hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 35%, rgba(15, 23, 42, 0.0) 100%);
+  z-index: 2;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 3;
+  padding: 30px 25% 24px 25%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+
+/* --- ESTILOS ORIGINALES RESTAURADOS --- */
+
+/* Botón Volver Original */
 .btn-volver {
   display: inline-flex;
   align-items: center;
@@ -201,11 +253,11 @@ watch(() => props.id, () => {
   padding: 8px 16px;
   border-radius: 10px;
   transition: var(--transition);
-  background: rgba(7, 126, 157, 0.1);
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .btn-volver:hover {
-  background: rgba(7, 126, 157, 0.2);
+  background: rgba(255, 255, 255, 1);
   transform: translateX(-4px);
 }
 
@@ -214,39 +266,37 @@ watch(() => props.id, () => {
   transition: var(--transition);
 }
 
-.btn-volver:hover .arrow-icon {
-  transform: translateX(-4px);
+.hero-btn-pos {
+  position: absolute;
+  top: 20px;
+  left: 25%;
+  z-index: 4;
 }
 
-/* Badges de información */
-.info-badges {
-  display: flex;
-  gap: 12px;
-  padding: 0 32px;
-  margin-top: 16px;
-}
-
+/* Badge Versión Original */
 .version-badge {
   display: inline-block;
   padding: 6px 14px;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-radius: 30px;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   font-family: 'Courier New', monospace;
   box-shadow: var(--shadow-sm);
 }
 
+/* Badges de Estado Originales */
 .estado-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 30px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
   text-transform: capitalize;
+  box-shadow: var(--shadow-sm);
 }
 
 .estado-dot {
@@ -304,119 +354,108 @@ watch(() => props.id, () => {
   background: #2196f3;
 }
 
-/* Título */
-.detalle-titulo {
-  font-size: 2rem;
+/* Textos sobre el Banner */
+.hero-titulo {
+  color: white;
+  font-size: 2.2rem;
   font-weight: 700;
-  color: #1a202c;
-  margin: 20px 32px 12px 32px;
-  line-height: 1.3;
+  margin: 0 0 16px 0;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Fecha */
-.detalle-fecha {
-  font-size: 0.9rem;
-  color: #6b7280;
-  margin: 0 32px 24px 32px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e8ecf0;
+.fecha-texto {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Imagen destacada */
-.imagen-destacada-container {
-  margin: 0 32px 32px 32px;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+.hero-bottom-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.imagen-destacada-container:hover {
-  transform: scale(1.02);
-  box-shadow: var(--shadow-md);
+.hero-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.imagen-destacada {
-  width: 100%;
-  max-height: 450px;
-  object-fit: cover;
-  display: block;
+.hero-meta-right {
+  display: flex;
+  align-items: center;
 }
 
-/* Resumen */
+/* --- RESUMEN Y CONTENIDO (AHORA SON MÁS ESTRECHOS Y CENTRADOS) --- */
 .resumen-container {
-  margin: 0 32px 32px 32px;
-  padding: 20px 24px;
-  background: linear-gradient(135deg, #f0f7fa 0%, #e8f4f8 100%);
-  border-radius: 16px;
+  max-width: 800px;
+  /* Ancho máximo para no cansar la vista */
+  margin: 40px auto 32px auto;
+  /* Margin "auto" a los lados lo centra perfectamente */
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 12px;
   border-left: 4px solid var(--primary);
 }
 
 .resumen-texto {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   line-height: 1.6;
-  color: #2c3e50;
+  color: #334155;
   margin: 0;
-  font-weight: 500;
 }
 
-/* Contenido completo */
 .contenido-container {
-  margin: 0 32px 32px 32px;
-  padding: 24px;
-  /* background: #fafbfc;
-  border-radius: 16px;
-  border: 1px solid #e8ecf0; */
+  max-width: 800px;
+  /* Ancho máximo para el contenido completo */
+  margin: 0 auto 60px auto;
+  /* Centrado igual que el resumen */
+  padding: 0 20px;
+  /* Un poco de padding lateral por si las pantallas se hacen pequeñas */
 }
 
 .contenido-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   padding-bottom: 12px;
-  border-bottom: 2px solid var(--primary);
-}
-
-.contenido-icon {
-  font-size: 1.5rem;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .contenido-header h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  color: var(--primary);
+  color: #0f172a;
 }
 
 /* EditorJS contenido */
 .editorjs-editor {
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 1rem;
-  line-height: 1.7;
-  color: #2c3e50;
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #334155;
 }
 
 :deep(.editorjs-editor p) {
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
 }
 
 :deep(.editorjs-editor h1),
 :deep(.editorjs-editor h2),
 :deep(.editorjs-editor h3) {
-  margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
-  color: #1a202c;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #0f172a;
 }
 
 :deep(.editorjs-editor ul),
 :deep(.editorjs-editor ol) {
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
   padding-left: 2rem;
-}
-
-:deep(.editorjs-editor li) {
-  margin-bottom: 0.5rem;
 }
 
 :deep(.editorjs-editor img) {
@@ -424,33 +463,8 @@ watch(() => props.id, () => {
   height: auto;
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  margin: 20px auto;
+  margin: 24px auto;
   display: block;
-}
-
-:deep(.editorjs-editor blockquote) {
-  border-left: 4px solid var(--primary);
-  padding-left: 20px;
-  margin: 20px 0;
-  color: #4a5568;
-  font-style: italic;
-}
-
-:deep(.editorjs-editor pre) {
-  background: #1e293b;
-  color: #e2e8f0;
-  padding: 16px;
-  border-radius: 12px;
-  overflow-x: auto;
-  margin: 20px 0;
-}
-
-:deep(.editorjs-editor code) {
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.9em;
-  color: #d32f2f;
 }
 
 /* Error container */
@@ -460,6 +474,8 @@ watch(() => props.id, () => {
   background: white;
   border-radius: 20px;
   box-shadow: var(--shadow-sm);
+  max-width: 800px;
+  margin: 40px auto;
 }
 
 .error-icon {
@@ -490,57 +506,42 @@ watch(() => props.id, () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .vista-detalle-container {
-    padding: 16px;
+  .hero-banner {
+    min-height: 250px;
   }
 
-  .detalle-header {
-    padding: 20px 20px 0 20px;
+  .hero-content {
+    padding: 60px 20px 20px 20px;
   }
 
-  .info-badges {
-    padding: 0 20px;
-  }
-
-  .detalle-titulo {
-    font-size: 1.5rem;
-    margin: 16px 20px 8px 20px;
-  }
-
-  .detalle-fecha {
-    margin: 0 20px 16px 20px;
-  }
-
-  .imagen-destacada-container {
-    margin: 0 20px 24px 20px;
+  .hero-titulo {
+    font-size: 1.8rem;
   }
 
   .resumen-container {
-    margin: 0 20px 24px 20px;
+    margin: 24px 20px;
     padding: 16px;
   }
 
   .contenido-container {
-    margin: 0 20px 20px 20px;
-    padding: 16px;
+    margin: 0 20px 32px 20px;
   }
 
-  .resumen-texto {
-    font-size: 0.95rem;
+  .hero-btn-pos {
+    left: 20px;
+    top: 16px;
   }
 }
 
 @media (max-width: 480px) {
-  .detalle-titulo {
-    font-size: 1.3rem;
+  .hero-titulo {
+    font-size: 1.5rem;
   }
 
-  .info-badges {
-    flex-wrap: wrap;
-  }
-
-  .contenido-header h3 {
-    font-size: 1rem;
+  .hero-bottom-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

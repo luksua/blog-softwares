@@ -15,112 +15,175 @@
       </button>
     </div>
 
-    <div v-else-if="actualizaciones.length === 0" class="estado-mensaje vacio">
+    <div v-else-if="actualizaciones.length === 0 && !hayFiltrosActivos" class="estado-mensaje vacio">
       <div class="empty-icon">📭</div>
       <h3>No hay registros para mostrar</h3>
       <p>Aún no se ha registrado ninguna actualización en el sistema.</p>
     </div>
 
-    <div v-else class="table-container">
-      <table class="base-table">
-        <thead>
-          <tr>
-            <th class="col-titulo">TÍTULO</th>
-            <th class="col-version">VERSIÓN</th>
-            <th class="col-fecha">FECHA</th>
-            <th class="col-estado">ESTADO</th>
-            <th class="col-acciones">ACCIONES</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro" @click="verDetalles(item.id)">
-            <td class="cell-titulo">
-              <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
-            </td>
-
-            <td class="cell-version">
-              <span class="version-badge">
-                v{{ item.actualizacion_version }}
-              </span>
-            </td>
-
-            <td class="cell-fecha">
-              <div class="fecha-info">
-                <span v-if="item.actualizacion_estado === 'publicado'" class="fecha-publicado">
-                  <span class="fecha-label">Publicado:</span>
-                  {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
-                </span>
-                <span v-else class="fecha-creado">
-                  <span class="fecha-label">Creado:</span>
-                  {{ formatearFecha(item.actualizacion_fecha_creacion) }}
-                </span>
-              </div>
-            </td>
-
-            <td class="cell-estado">
-              <span :class="['badge-estado', mapearClaseEstado(item.actualizacion_estado)]">
-                {{ item.actualizacion_estado }}
-              </span>
-            </td>
-
-            <td class="cell-acciones">
-              <div class="icon-group">
-                <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
-                  @click.stop="editarActualizacion(item.id)">
-                  <i class="bi bi-pencil-square"></i>
-                </button>
-
-                <button title="Ver" class="btn-icon" @click.stop="verDetalles(item.id)">
-                  <i class="bi bi-eye"></i>
-                </button>
-
-                <div v-if="item.actualizacion_estado !== 'inactivo'">
-                  <button title="Archivar" class="btn-icon" @click.stop="confirmarEliminar(item)">
-                    <i class="bi bi-x-lg"></i>
-                  </button>
-                </div>
-
-                <div v-else>
-                  <button title="Desarchivar" class="btn-icon" @click.stop="confirmarActivar(item)">
-                    <i class="bi bi-check-lg"></i>
-                  </button>
-                </div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="table-footer">
-        <div class="info-registros">
-          Mostrando {{ actualizaciones.length }} registros en esta página
-          <span class="total-registros">(Total: {{ totalRegistros }})</span>
+    <div v-else class="tabla-con-filtros">
+      <!-- Filtros -->
+      <div class="filtros-barra">
+        <div class="filtro-grupo filtro-busqueda">
+          <label for="busqueda">Buscar por nombre</label>
+          <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
+            placeholder="Escribe el título de la actualización..." />
         </div>
 
-        <nav v-if="totalPaginas > 1" aria-label="Navegación de página">
-          <ul class="pagination-moderno">
-            <li :class="{ disabled: paginaActual === 1 }">
-              <a href="#" @click.prevent="cambiarPagina(paginaActual - 1)">‹</a>
-            </li>
-            <li v-for="pag in paginasMostradas" :key="pag" :class="{ active: paginaActual === pag }">
-              <a href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
-            </li>
-            <li :class="{ disabled: paginaActual === totalPaginas }">
-              <a href="#" @click.prevent="cambiarPagina(paginaActual + 1)">›</a>
-            </li>
-          </ul>
-        </nav>
+        <div class="filtro-grupo">
+          <label for="fechaDesde">Fecha desde</label>
+          <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="fechaHasta">Fecha hasta</label>
+          <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="estado">Estado</label>
+          <select id="estado" v-model="filtros.estado" class="filtro-input" :disabled="cargandoFiltros">
+            <option value="">Todos</option>
+            <option v-for="estado in estadosDisponibles" :key="estado.id" :value="estado.id">
+              {{ estado.nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filtro-grupo">
+          <label for="area">Área</label>
+          <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
+            <option value="">Todas</option>
+            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+              :value="Number(area.area_servicio_id)">
+              {{ area.area_servicio_nombre }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filtro-acciones">
+          <button class="btn-limpiar" @click="limpiarFiltros">
+            Limpiar
+          </button>
+        </div>
+      </div>
+
+      <div v-if="actualizaciones.length === 0 && hayFiltrosActivos" class="estado-mensaje vacio">
+        <div class="empty-icon">🔎</div>
+        <h3>No hay resultados</h3>
+        <p>No se encontraron actualizaciones con los filtros aplicados.</p>
+      </div>
+
+      <div v-else class="table-container">
+        <table class="base-table">
+          <thead>
+            <tr>
+              <th class="col-titulo">TÍTULO</th>
+              <th class="col-area">ÁREA</th>
+              <th class="col-version">VERSIÓN</th>
+              <th class="col-fecha">FECHA</th>
+              <th class="col-estado">ESTADO</th>
+              <th class="col-acciones">ACCIONES</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro" @click="verDetalles(item.id)">
+              <td class="cell-titulo" data-label="Título">
+                <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
+              </td>
+
+              <td class="cell-area" data-label="Área">
+                <span class="area-texto">{{ obtenerNombreArea(item) }}</span>
+              </td>
+
+              <td class="cell-version" data-label="Versión">
+                <span class="version-badge">
+                  v{{ item.actualizacion_version }}
+                </span>
+              </td>
+
+              <td class="cell-fecha" data-label="Fecha">
+                <div class="fecha-info">
+                  <span v-if="item.actualizacion_estado === 'publicado'" class="fecha-publicado">
+                    <span class="fecha-label">Publicado:</span>
+                    {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
+                  </span>
+                  <span v-else class="fecha-creado">
+                    <span class="fecha-label">Creado:</span>
+                    {{ formatearFecha(item.actualizacion_fecha_creacion) }}
+                  </span>
+                </div>
+              </td>
+
+              <td class="cell-estado" data-label="Estado">
+                <span :class="['badge-estado', mapearClaseEstado(item.actualizacion_estado)]">
+                  {{ item.actualizacion_estado }}
+                </span>
+              </td>
+
+              <td class="cell-acciones" data-label="Acciones">
+                <div class="icon-group">
+                  <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
+                    @click.stop="editarActualizacion(item.id)">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+
+                  <button title="Ver" class="btn-icon" @click.stop="verDetalles(item.id)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+                  <div v-if="item.actualizacion_estado !== 'inactivo'">
+                    <button title="Archivar" class="btn-icon" @click.stop="confirmarEliminar(item)">
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+
+                  <div v-else>
+                    <button title="Desarchivar" class="btn-icon" @click.stop="confirmarActivar(item)">
+                      <i class="bi bi-check-lg"></i>
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <div class="info-registros">
+            Mostrando {{ actualizaciones.length }} registros en esta página
+            <span class="total-registros">(Total: {{ totalRegistros }})</span>
+          </div>
+
+          <nav v-if="totalPaginas > 1" aria-label="Navegación de página">
+            <ul class="pagination-moderno">
+              <li :class="{ disabled: paginaActual === 1 }">
+                <a href="#" @click.prevent="cambiarPagina(paginaActual - 1)">‹</a>
+              </li>
+
+              <li v-for="pag in paginasMostradas" :key="pag" :class="{ active: paginaActual === pag }">
+                <a href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
+              </li>
+
+              <li :class="{ disabled: paginaActual === totalPaginas }">
+                <a href="#" @click.prevent="cambiarPagina(paginaActual + 1)">›</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
       </div>
     </div>
 
     <!-- Modal de eliminación -->
-    <div class="modal fade" id="modalEliminarRegistro" ref="modalEliminarRef" tabindex="-1"
-      aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal fade" id="modalEliminarRegistro" tabindex="-1" aria-labelledby="modalEliminarLabel"
+      aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalEliminarLabel">¿Deseas desactivar este registro?</h5>
+            <h5 class="modal-title" id="modalEliminarLabel">
+              ¿Deseas desactivar este registro?
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
@@ -144,18 +207,23 @@
       </div>
     </div>
 
-    <!-- Modal de activacion -->
-    <div class="modal fade" id="modalDesarchivarRegistro" ref="modalEliminarRef" tabindex="-1"
-      aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <!-- Modal de activación -->
+    <div class="modal fade" id="modalDesarchivarRegistro" tabindex="-1" aria-labelledby="modalDesarchivarLabel"
+      aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalEliminarLabel">¿Deseas activar este registro?</h5>
+            <h5 class="modal-title" id="modalDesarchivarLabel">
+              ¿Deseas activar este registro?
+            </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
 
           <div class="modal-body">
-            <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
+            <p>
+              Al activar el registro, se actualizará el estado del registro a
+              <strong>Publicado</strong>
+            </p>
 
             <strong class="modal-item-title">
               {{ itemAEliminar?.actualizacion_titulo }}
@@ -167,7 +235,7 @@
               Cancelar
             </button>
 
-            <button type="button" class="btn-primary" @click="activarActualizacion">
+            <button type="button" class="btn btn-primary" @click="activarActualizacion">
               Activar
             </button>
           </div>
@@ -179,7 +247,6 @@
   <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
-
         <div class="modal-header">
           <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
@@ -190,223 +257,322 @@
           <Edit v-if="idEditando" :key="idEditando" :id="idEditando" @guardado="actualizacionGuardada"
             @cerrar="cerrarModalEdicion" />
         </div>
-
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick } from 'vue';
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../api/api';
-import type { Version } from '../../types/version';
-import Edit from '../../components/admin/EditVersion.vue';
-import { Modal } from 'bootstrap';
+import api from '../../api/api'
+import type { Version, AreaServicio } from '../../types/version';
+import Edit from '../../components/admin/EditVersion.vue'
+import { Modal } from 'bootstrap'
+
+type AreaFiltro = {
+  area_servicio_id: number | string
+  area_servicio_nombre: string
+}
+
+type EstadoFiltro = {
+  id: string
+  nombre: string
+}
 
 const router = useRouter()
 
-const cerrarModalBootstrap = () => {
-  const botonCerrar = document.getElementById('btnCerrarModal');
-  if (botonCerrar) {
-    botonCerrar.click();
-  }
-};
+const ENDPOINT_AREAS = '/admin/area-servicio'
+const ENDPOINT_STATUS = '/admin/estados-actualizacion'
 
-const cerrarModalEdicion = () => {
-  idEditando.value = null;
-  cerrarModalBootstrap();
-};
+const actualizaciones = ref<Version[]>([])
+const cargando = ref(true)
+const error = ref('')
 
-const actualizacionGuardada = async () => {
-  await obtenerActualizaciones(paginaActual.value);
-  cerrarModalEdicion();
-};
+const paginaActual = ref(1)
+const totalPaginas = ref(1)
+const totalRegistros = ref(0)
 
-const actualizaciones = ref<Version[]>([]);
-const cargando = ref(true);
-const error = ref('');
+const itemAEliminar = ref<Version | null>(null)
+const idEditando = ref<number | null>(null)
 
-const paginaActual = ref(1);
-const totalPaginas = ref(1);
-const totalRegistros = ref(0);
+const filtros = ref<{
+  busqueda: string
+  fechaDesde: string
+  fechaHasta: string
+  estado: string
+  areaServicioId: number | ''
+}>({
+  busqueda: '',
+  fechaDesde: '',
+  fechaHasta: '',
+  estado: '',
+  areaServicioId: ''
+})
 
-const itemAEliminar = ref<Version | null>(null);
+const areasDisponibles = ref<AreaFiltro[]>([])
+const estadosDisponibles = ref<EstadoFiltro[]>([])
+const cargandoFiltros = ref(false)
 
-// Computed para mostrar páginas con límite
+const hayFiltrosActivos = computed(() => {
+  return Boolean(
+    filtros.value.busqueda ||
+    filtros.value.fechaDesde ||
+    filtros.value.fechaHasta ||
+    filtros.value.estado ||
+    filtros.value.areaServicioId
+  )
+})
+
 const paginasMostradas = computed(() => {
-  const maxPages = 5;
-  const current = paginaActual.value;
-  const total = totalPaginas.value;
+  const maxPages = 5
+  const current = paginaActual.value
+  const total = totalPaginas.value
 
   if (total <= maxPages) {
-    return Array.from({ length: total }, (_, i) => i + 1);
+    return Array.from({ length: total }, (_, i) => i + 1)
   }
 
-  let start = Math.max(1, current - 2);
-  let end = Math.min(total, start + maxPages - 1);
+  let start = Math.max(1, current - 2)
+  let end = Math.min(total, start + maxPages - 1)
 
   if (end - start + 1 < maxPages) {
-    start = Math.max(1, end - maxPages + 1);
+    start = Math.max(1, end - maxPages + 1)
   }
 
-  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-});
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+})
 
-const obtenerActualizaciones = async (page = 1) => {
-  cargando.value = true;
-  error.value = '';
+const cerrarModalBootstrap = () => {
+  const botonCerrar = document.getElementById('btnCerrarModal')
+  if (botonCerrar) botonCerrar.click()
+}
+
+const cerrarModalEdicion = () => {
+  idEditando.value = null
+  cerrarModalBootstrap()
+}
+
+const actualizacionGuardada = async () => {
+  await obtenerActualizaciones(paginaActual.value)
+  cerrarModalEdicion()
+}
+
+const obtenerCatalogosFiltros = async () => {
+  cargandoFiltros.value = true
 
   try {
-    const respuesta = await api.get(`/admin/actualizaciones?page=${page}`);
+    const [areasResp, estadosResp] = await Promise.all([
+      api.get(ENDPOINT_AREAS),
+      api.get(ENDPOINT_STATUS)
+    ])
 
-    actualizaciones.value = respuesta.data.data;
-
-    paginaActual.value = respuesta.data.current_page;
-    totalPaginas.value = respuesta.data.last_page;
-    totalRegistros.value = respuesta.data.total;
-
+    areasDisponibles.value = areasResp.data?.data || []
+    estadosDisponibles.value = estadosResp.data?.data || []
   } catch (err) {
-    console.error('Error al cargar la lista:', err);
-    error.value = 'No se pudo conectar con el servidor para obtener los datos.';
+    console.error('Error al cargar catálogos de filtros:', err)
   } finally {
-    cargando.value = false;
+    cargandoFiltros.value = false
   }
-};
+}
+
+const obtenerActualizaciones = async (page = 1) => {
+  cargando.value = true
+  error.value = ''
+
+  try {
+    const params = new URLSearchParams()
+    params.append('page', String(page))
+
+    if (filtros.value.busqueda.trim()) {
+      params.append('busqueda', filtros.value.busqueda.trim())
+    }
+
+    if (filtros.value.fechaDesde) {
+      params.append('fecha_desde', filtros.value.fechaDesde)
+    }
+
+    if (filtros.value.fechaHasta) {
+      params.append('fecha_hasta', filtros.value.fechaHasta)
+    }
+
+    if (filtros.value.estado) {
+      params.append('estado', filtros.value.estado)
+    }
+
+    if (filtros.value.areaServicioId !== '') {
+      params.append('area_servicio_id', String(filtros.value.areaServicioId))
+    }
+
+    const respuesta = await api.get(`/admin/actualizaciones?${params.toString()}`)
+
+    actualizaciones.value = respuesta.data.data
+    paginaActual.value = respuesta.data.current_page
+    totalPaginas.value = respuesta.data.last_page
+    totalRegistros.value = respuesta.data.total
+  } catch (err) {
+    console.error('Error al cargar la lista:', err)
+    error.value = 'No se pudo conectar con el servidor para obtener los datos.'
+  } finally {
+    cargando.value = false
+  }
+}
+
+const limpiarFiltros = () => {
+  filtros.value = {
+    busqueda: '',
+    fechaDesde: '',
+    fechaHasta: '',
+    estado: '',
+    areaServicioId: ''
+  }
+}
 
 const formatearFecha = (fechaString: string) => {
-  if (!fechaString) return 'Sin fecha';
-  const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: '2-digit' };
-  const fechaStr = new Date(fechaString).toLocaleDateString('en-US', opciones);
-  return fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1);
-};
+  if (!fechaString) return 'Sin fecha'
+
+  const opciones: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit'
+  }
+
+  const fechaStr = new Date(fechaString).toLocaleDateString('es-ES', opciones)
+  return fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
+}
 
 const mapearClaseEstado = (estado: string) => {
-  const estadoMin = estado.toLowerCase();
-  if (estadoMin === 'publicado') return 'estado-green';
-  if (estadoMin === 'borrador') return 'estado-yellow';
-  if (estadoMin === 'revision') return 'estado-red';
-  if (estadoMin === 'inactivo') return 'estado-dark-gray';
-  return 'estado-gray';
-};
+  const estadoMin = (estado || '').toLowerCase()
+
+  if (estadoMin === 'publicado') return 'estado-green'
+  if (estadoMin === 'borrador') return 'estado-yellow'
+  if (estadoMin === 'revision') return 'estado-red'
+  if (estadoMin === 'inactivo') return 'estado-dark-gray'
+
+  return 'estado-gray'
+}
+
+let filtroTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch(
+  filtros,
+  () => {
+    if (filtroTimeout) clearTimeout(filtroTimeout)
+
+    filtroTimeout = setTimeout(() => {
+      obtenerActualizaciones(1)
+    }, 400)
+  },
+  { deep: true }
+)
+
+const obtenerNombreArea = (item: Version) => {
+  return item.area_servicio?.area_servicio_nombre || 'Sin área'
+}
 
 const cambiarPagina = (pagina: number) => {
   if (pagina >= 1 && pagina <= totalPaginas.value && pagina !== paginaActual.value) {
-    obtenerActualizaciones(pagina);
+    obtenerActualizaciones(pagina)
   }
-};
+}
 
 const verDetalles = (id: number) => {
   router.push({
     name: 'admin-actualizaciones-show',
-    params: { id },
-  });
-};
-
-const idEditando = ref<number | null>(null);
+    params: { id }
+  })
+}
 
 const editarActualizacion = (id: number) => {
-  idEditando.value = id;
-};
+  idEditando.value = id
+}
 
 const confirmarEliminar = async (item: Version) => {
-  itemAEliminar.value = item;
-  
-  await nextTick();
-  
-  // CORREGIDO: Aquí debe ser el modal de eliminar
-  const modalElement = document.getElementById('modalEliminarRegistro');
+  itemAEliminar.value = item
+
+  await nextTick()
+
+  const modalElement = document.getElementById('modalEliminarRegistro')
   if (modalElement) {
-    const modalInstance = Modal.getOrCreateInstance(modalElement);
-    modalInstance.show();
+    const modalInstance = Modal.getOrCreateInstance(modalElement)
+    modalInstance.show()
   }
-};
+}
 
 const confirmarActivar = async (item: Version) => {
-  itemAEliminar.value = item;
-  
-  await nextTick();
-  
-  const modalElement = document.getElementById('modalDesarchivarRegistro');
+  itemAEliminar.value = item
+
+  await nextTick()
+
+  const modalElement = document.getElementById('modalDesarchivarRegistro')
   if (modalElement) {
-    const modalInstance = Modal.getOrCreateInstance(modalElement);
-    modalInstance.show();
+    const modalInstance = Modal.getOrCreateInstance(modalElement)
+    modalInstance.show()
   }
-};
+}
 
 const limpiarFondoModal = () => {
-  const backdrops = document.querySelectorAll('.modal-backdrop');
-  backdrops.forEach(backdrop => backdrop.remove());
-  document.body.classList.remove('modal-open');
-  document.body.style.overflow = '';
-  document.body.style.paddingRight = '';
+  const backdrops = document.querySelectorAll('.modal-backdrop')
+  backdrops.forEach(backdrop => backdrop.remove())
+  document.body.classList.remove('modal-open')
+  document.body.style.overflow = ''
+  document.body.style.paddingRight = ''
 }
 
 const inactivarActualizacion = async () => {
-  if (!itemAEliminar.value) return;
+  if (!itemAEliminar.value) return
 
-  // 1. Obtenemos el modal de Bootstrap
-  const modalElement = document.getElementById('modalEliminarRegistro');
-  const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null;
+  const modalElement = document.getElementById('modalEliminarRegistro')
+  const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
 
   try {
-    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/inactivar`);
+    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/inactivar`)
 
-    itemAEliminar.value = null;
-    await obtenerActualizaciones(paginaActual.value);
+    itemAEliminar.value = null
+    await obtenerActualizaciones(paginaActual.value)
 
-    if (modalInstance) modalInstance.hide();
-    limpiarFondoModal();
-
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
   } catch (err) {
-    console.error('Error al inactivar:', err);
-    if (modalInstance) modalInstance.hide();
-    limpiarFondoModal();
+    console.error('Error al inactivar:', err)
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
   }
-};
+}
 
 const activarActualizacion = async () => {
-  if (!itemAEliminar.value) return;
+  if (!itemAEliminar.value) return
 
-  // 1. Obtenemos el modal de Bootstrap
-  const modalElement = document.getElementById('modalDesarchivarRegistro');
-  const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null;
+  const modalElement = document.getElementById('modalDesarchivarRegistro')
+  const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
 
   try {
-    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/activar`);
+    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/activar`)
 
-    itemAEliminar.value = null;
-    await obtenerActualizaciones(paginaActual.value);
+    itemAEliminar.value = null
+    await obtenerActualizaciones(paginaActual.value)
 
-    // 2. Ocultamos el modal usando la instancia de Bootstrap
-    if (modalInstance) {
-      modalInstance.hide();
-    }
-
-    // 3. SEGURO CONTRA FALLOS: Si el backdrop oscuro se queda, lo eliminamos a la fuerza
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
-
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
   } catch (err) {
-    console.error('Error al activar:', err);
-    error.value = 'No se pudo activar la actualización.';
+    console.error('Error al activar:', err)
+    error.value = 'No se pudo activar la actualización.'
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
   }
-};
+}
 
-onMounted(() => {
-  obtenerActualizaciones(1);
-});
+onMounted(async () => {
+  await obtenerCatalogosFiltros()
+  await obtenerActualizaciones(1)
+})
 
 defineExpose({
   obtenerActualizaciones
-});
+})
 </script>
 
 <style scoped>
-/* Variables del sistema */
 :root {
   --primary: #077E9D;
   --secondary: #025B7D;
@@ -424,7 +590,6 @@ defineExpose({
   margin: 0 auto;
 }
 
-/* Estados de carga y error */
 .estado-mensaje {
   text-align: center;
   padding: 60px 40px;
@@ -465,7 +630,97 @@ defineExpose({
   box-shadow: var(--shadow-md);
 }
 
-/* Contenedor de la tabla con borde y sombra */
+.tabla-con-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filtros-barra {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr)) auto;
+  gap: 16px;
+  align-items: end;
+  background: white;
+  border: 1px solid #e1e7f0;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filtro-grupo label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filtro-input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #d7deea;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  color: #374151;
+  background: #fff;
+  transition: var(--transition);
+}
+
+.filtro-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
+}
+
+.filtro-input:disabled {
+  background: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.filtro-acciones {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.btn-filtrar,
+.btn-limpiar {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-filtrar {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+}
+
+.btn-limpiar {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e1e7f0;
+}
+
+.btn-filtrar:hover,
+.btn-limpiar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
 .table-container {
   background: white;
   border-radius: 16px;
@@ -479,7 +734,6 @@ defineExpose({
   box-shadow: var(--shadow-lg);
 }
 
-/* Tabla */
 .base-table {
   width: 100%;
   border-collapse: collapse;
@@ -504,7 +758,6 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-/* EFECTO HOVER: Oscurecer y mover ligeramente */
 .base-table tbody tr:hover {
   background-color: rgba(0, 0, 0, 0.04);
   transform: translateX(5px) scale(1.01);
@@ -512,7 +765,6 @@ defineExpose({
   cursor: pointer;
 }
 
-/* Efecto adicional para las celdas */
 .base-table tbody tr:hover td {
   color: #1a202c;
 }
@@ -528,8 +780,9 @@ defineExpose({
   transform: scale(1.05);
 }
 
+.base-table tbody tr:hover .badge-estado,
 .base-table tbody tr:hover .btn-icon {
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 .base-table td {
@@ -540,36 +793,42 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-/* Columnas */
 .col-titulo {
-  width: 35%;
+  width: 28%;
+}
+
+.col-area {
+  width: 16%;
 }
 
 .col-version {
-  width: 15%;
+  width: 12%;
 }
 
 .col-fecha {
-  width: 20%;
+  width: 18%;
 }
 
 .col-estado {
-  width: 15%;
+  width: 12%;
 }
 
 .col-acciones {
-  width: 15%;
+  width: 14%;
   text-align: right;
 }
 
-/* Celda título */
 .titulo-texto {
   font-weight: 600;
   color: #1a202c;
   transition: var(--transition-smooth);
 }
 
-/* Badge de versión */
+.area-texto {
+  color: #4b5563;
+  font-weight: 500;
+}
+
 .version-badge {
   display: inline-block;
   padding: 4px 10px;
@@ -582,7 +841,27 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-/* Fecha */
+.filtro-busqueda {
+  grid-column: span 2;
+}
+
+@media (max-width: 1024px) {
+  .filtro-busqueda {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .filtro-busqueda {
+    grid-column: span 1;
+  }
+}
+
+/* 
+.filtro-input::placeholder {
+  color: #9ca3af;
+} */
+
 .fecha-info {
   display: flex;
   flex-direction: column;
@@ -612,7 +891,6 @@ defineExpose({
   color: #9ca3af;
 }
 
-/* Badges de estado - Estilos originales */
 .badge-estado {
   display: inline-block;
   padding: 4px 10px;
@@ -621,10 +899,6 @@ defineExpose({
   font-weight: 600;
   text-transform: capitalize;
   transition: var(--transition-smooth);
-}
-
-.base-table tbody tr:hover .badge-estado {
-  transform: scale(1.05);
 }
 
 .estado-green {
@@ -652,7 +926,6 @@ defineExpose({
   color: #5f6671;
 }
 
-/* Iconos de acción - Estilo original */
 .icon-group {
   display: flex;
   gap: 15px;
@@ -673,7 +946,6 @@ defineExpose({
   color: #4b5563;
 }
 
-/* Footer de la tabla */
 .table-footer {
   padding: 16px 24px;
   background: white;
@@ -695,7 +967,6 @@ defineExpose({
   font-weight: 500;
 }
 
-/* Paginación moderna */
 .pagination-moderno {
   display: flex;
   gap: 8px;
@@ -742,8 +1013,9 @@ defineExpose({
   cursor: not-allowed;
 }
 
-.modal-close:hover {
-  color: var(--primary);
+.modal-header {
+  border-bottom: none;
+  border-top: 3px solid var(--warning);
 }
 
 .modal-item-title {
@@ -765,27 +1037,16 @@ defineExpose({
   gap: 12px;
 }
 
-.btn-cancelar {
-  padding: 10px 20px;
-  background: white;
-  border: 1px solid #e1e7f0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: var(--transition);
-  font-weight: 500;
+@media (max-width: 1024px) {
+  .filtros-barra {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .filtro-acciones {
+    grid-column: 1 / -1;
+  }
 }
 
-.btn-cancelar:hover {
-  background: #f8fafc;
-  border-color: var(--primary);
-}
-
-.btn-eliminar-modal:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Responsive */
 @media (max-width: 768px) {
   .base-table thead {
     display: none;
@@ -799,7 +1060,6 @@ defineExpose({
     border: 1px solid #e1e7f0;
   }
 
-  /* Efecto hover en móvil */
   .base-table tbody tr:hover {
     transform: translateX(4px) scale(1.02);
   }
@@ -808,8 +1068,10 @@ defineExpose({
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
     padding: 12px 16px;
     border-bottom: 1px solid #f0f2f5;
+    text-align: right;
   }
 
   .base-table td::before {
@@ -817,6 +1079,7 @@ defineExpose({
     font-weight: 600;
     color: var(--primary);
     font-size: 0.8rem;
+    text-align: left;
   }
 
   .table-footer {
@@ -829,8 +1092,14 @@ defineExpose({
   }
 }
 
-.modal-header {
-  border-bottom: none;
-  border-top: 3px solid var(--warning);
+@media (max-width: 640px) {
+  .filtros-barra {
+    grid-template-columns: 1fr;
+  }
+
+  .filtro-acciones {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 </style>

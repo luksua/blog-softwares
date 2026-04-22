@@ -67,7 +67,7 @@ class UpdateBlogAdminController extends Controller
 
             DB::commit();
 
-           return response()->json([
+            return response()->json([
                 'message' => 'Registro guardado con éxito',
                 'data' => $actualizacion->load('imagenes')
             ], 201);
@@ -81,12 +81,32 @@ class UpdateBlogAdminController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        // Traemos todas las actualizaciones, ordenadas por las más recientes primero
-        $actualizaciones = UpdateBlog::with('imagenes')
-            ->orderBy('id', 'desc')
-            ->paginate(8);
+        $query = UpdateBlog::with(['areaServicio', 'imagenes'])
+            ->orderByDesc('id');
+
+        if ($request->filled('busqueda')) {
+            $query->where('actualizacion_titulo', 'like', '%' . $request->busqueda . '%');
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('actualizacion_fecha_publicacion', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('actualizacion_fecha_publicacion', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('actualizacion_estado', $request->estado);
+        }
+
+        if ($request->filled('area_servicio_id')) {
+            $query->where('actualizacion_area_servicio_id', (int) $request->area_servicio_id);
+        }
+
+        $actualizaciones = $query->paginate(10);
 
         return response()->json($actualizaciones);
     }
