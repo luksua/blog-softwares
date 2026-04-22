@@ -9,11 +9,15 @@ export interface Version {
   actualizacion_fecha_publicacion: string;
   actualizacion_fecha_creacion: string;
   actualizacion_imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
-  area_servicio: string;
-  area_servicio_nombre: string;
+  area_servicio: AreaServicio;
 }
 
 export interface ImagenGaleria {
   id: number;
   ruta_imagen: string;
+}
+
+export interface AreaServicio {
+  id?: number;
+  area_servicio_nombre: string;
 }

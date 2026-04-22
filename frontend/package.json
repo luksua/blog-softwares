@@ -20,7 +20,8 @@
     "editorjs-html": "^4.0.5",
     "pinia": "^3.0.4",
     "vue": "^3.5.30",
-    "vue-router": "^5.0.4"
+    "vue-router": "^5.0.4",
+    "vue-sonner": "^2.0.9"
   },
   "devDependencies": {
     "@types/bootstrap": "^5.2.10",

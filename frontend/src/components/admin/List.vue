@@ -76,15 +76,13 @@
                 </button>
 
                 <div v-if="item.actualizacion_estado !== 'inactivo'">
-                  <button title="Archivar" class="btn-icon" data-bs-toggle="modal"
-                    data-bs-target="#modalEliminarRegistro" @click.stop="confirmarEliminar(item)">
+                  <button title="Archivar" class="btn-icon" @click.stop="confirmarEliminar(item)">
                     <i class="bi bi-x-lg"></i>
                   </button>
                 </div>
 
                 <div v-else>
-                  <button title="Desarchivar" class="btn-icon" data-bs-toggle="modal"
-                    data-bs-target="#modalDesarchivarRegistro" @click.stop="confirmarActivar(item)">
+                  <button title="Desarchivar" class="btn-icon" @click.stop="confirmarActivar(item)">
                     <i class="bi bi-check-lg"></i>
                   </button>
                 </div>
@@ -199,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router'
 import api from '../../api/api';
 import type { Version } from '../../types/version';
@@ -311,13 +309,38 @@ const editarActualizacion = (id: number) => {
   idEditando.value = id;
 };
 
-const confirmarEliminar = (item: Version) => {
+const confirmarEliminar = async (item: Version) => {
   itemAEliminar.value = item;
+  
+  await nextTick();
+  
+  // CORREGIDO: Aquí debe ser el modal de eliminar
+  const modalElement = document.getElementById('modalEliminarRegistro');
+  if (modalElement) {
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+  }
 };
 
-const confirmarActivar = (item: Version) => {
+const confirmarActivar = async (item: Version) => {
   itemAEliminar.value = item;
+  
+  await nextTick();
+  
+  const modalElement = document.getElementById('modalDesarchivarRegistro');
+  if (modalElement) {
+    const modalInstance = Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+  }
 };
+
+const limpiarFondoModal = () => {
+  const backdrops = document.querySelectorAll('.modal-backdrop');
+  backdrops.forEach(backdrop => backdrop.remove());
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
 
 const inactivarActualizacion = async () => {
   if (!itemAEliminar.value) return;
@@ -332,21 +355,13 @@ const inactivarActualizacion = async () => {
     itemAEliminar.value = null;
     await obtenerActualizaciones(paginaActual.value);
 
-    // 2. Ocultamos el modal usando la instancia de Bootstrap
-    if (modalInstance) {
-      modalInstance.hide();
-    }
-
-    // 3. SEGURO CONTRA FALLOS: Si el backdrop oscuro se queda, lo eliminamos a la fuerza
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
+    if (modalInstance) modalInstance.hide();
+    limpiarFondoModal();
 
   } catch (err) {
     console.error('Error al inactivar:', err);
-    error.value = 'No se pudo inactivar la actualización.';
+    if (modalInstance) modalInstance.hide();
+    limpiarFondoModal();
   }
 };
 

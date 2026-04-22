@@ -67,8 +67,8 @@ class UpdateBlogAdminController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'mensaje' => 'Registro e imágenes guardados con éxito',
+           return response()->json([
+                'message' => 'Registro guardado con éxito', // <-- AQUÍ
                 'data' => $actualizacion->load('imagenes')
             ], 201);
         } catch (\Exception $e) {
@@ -200,6 +200,7 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_fecha_publicacion' => 'nullable|date',
             'actualizacion_fecha_creacion' => 'nullable|date',
             'actualizacion_contenido' => 'required|array',
+            // 'actualizacion_contenido'         => 'sometimes|required|string', ???????
         ]);
 
         $actualizacion->update($data);
