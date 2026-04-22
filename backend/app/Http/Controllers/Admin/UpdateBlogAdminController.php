@@ -68,7 +68,7 @@ class UpdateBlogAdminController extends Controller
             DB::commit();
 
            return response()->json([
-                'message' => 'Registro guardado con éxito', // <-- AQUÍ
+                'message' => 'Registro guardado con éxito',
                 'data' => $actualizacion->load('imagenes')
             ], 201);
         } catch (\Exception $e) {

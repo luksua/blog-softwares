@@ -8,61 +8,60 @@
     </div>
 
     <div v-else-if="actualizacion" class="detalle-card">
-      <!-- Botón volver -->
-      <div class="detalle-header">
-        <button class="btn-volver" @click="volver">
-          <span class="arrow-icon">←</span>
-          Volver
-        </button>
-      </div>
-
-      <!-- Badges de información -->
-      <div class="info-badges">
-        <span class="version-badge">
-          v{{ actualizacion.actualizacion_version }}
-        </span>
-        <span :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]">
-          <span class="estado-dot"></span>
-          {{ actualizacion.actualizacion_estado || 'Publicado' }}
-        </span>
-      </div>
-
-      <!-- Título -->
-      <h1 class="detalle-titulo">
-        {{ actualizacion.actualizacion_titulo }}
-      </h1>
-
-      <!-- Fecha -->
-      <p class="detalle-fecha">
-        Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
-      </p>
-
-      <!-- Imagen destacada -->
-      <div v-if="actualizacion.actualizacion_imagen_destacada" class="imagen-destacada-container">
-        <img
-          :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)"
-          alt="Portada"
-          class="imagen-destacada"
-        />
-      </div>
-
-      <!-- Resumen -->
-      <div class="resumen-container">
-        <p class="resumen-texto">
-          {{ actualizacion.actualizacion_resumen }}
-        </p>
-      </div>
-
-      <!-- Contenido completo -->
-      <div class="contenido-container">
-        <div class="contenido-header">
-          <span class="contenido-icon">📄</span>
-          <h3>Contenido completo</h3>
+      <div class="col-lg-9">
+        <!-- Botón volver -->
+        <div class="detalle-header">
+          <button class="btn-volver" @click="volver">
+            <span class="arrow-icon">←</span>
+            Volver
+          </button>
         </div>
-        <div
-          class="editorjs-editor"
-          v-html="actualizacion.actualizacion_contenido_html"
-        ></div>
+
+        <!-- Badges de información -->
+        <div class="info-badges">
+          <span class="version-badge">
+            v{{ actualizacion.actualizacion_version }}
+          </span>
+          <span :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]">
+            <span class="estado-dot"></span>
+            {{ actualizacion.actualizacion_estado || 'Publicado' }}
+          </span>
+        </div>
+
+        <!-- Título -->
+        <h1 class="detalle-titulo">
+          {{ actualizacion.actualizacion_titulo }}
+        </h1>
+
+        <!-- Fecha -->
+        <p class="detalle-fecha">
+          Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
+        </p>
+
+        <!-- Imagen destacada -->
+        <div v-if="actualizacion.actualizacion_imagen_destacada" class="imagen-destacada-container">
+          <img :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada"
+            class="imagen-destacada" />
+        </div>
+
+        <!-- Resumen -->
+        <div class="resumen-container">
+          <p class="resumen-texto">
+            {{ actualizacion.actualizacion_resumen }}
+          </p>
+        </div>
+
+        <!-- Contenido completo -->
+        <div class="contenido-container">
+          <div class="contenido-header">
+            <!-- <span class="contenido-icon">📄</span> -->
+            <h3>Contenido completo</h3>
+          </div>
+          <div class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <h1>aaaaaaaaa</h1>
       </div>
     </div>
 
@@ -365,9 +364,9 @@ watch(() => props.id, () => {
 .contenido-container {
   margin: 0 32px 32px 32px;
   padding: 24px;
-  background: #fafbfc;
+  /* background: #fafbfc;
   border-radius: 16px;
-  border: 1px solid #e8ecf0;
+  border: 1px solid #e8ecf0; */
 }
 
 .contenido-header {

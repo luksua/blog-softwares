@@ -5,7 +5,6 @@
         <label for="titulo" class="form-label fw-bold">Título *</label>
         <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
-
       <div class="row">
         <div class="col-md-6 mb-3">
           <label for="version" class="form-label fw-bold">Número de Versión</label>
@@ -109,7 +108,7 @@ const idUsuarioLogueado = 1;
 const registro = reactive<NewVersion>({
   titulo: '',
   version: '',
-  contenido: '', 
+  contenido: '',
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: '' as any,
@@ -123,6 +122,7 @@ const registro = reactive<NewVersion>({
 const listaAreas = ref<Area[]>([]);
 const listaEstados = ref<{ id: string, nombre: string }[]>([]);
 const enviando = ref(false);
+const mensajeOk = ref('');
 const emit = defineEmits(['cerrar', 'recargar-lista']);
 
 // Referencia para guardar la instancia de Editor.js
@@ -160,10 +160,10 @@ onMounted(async () => {
               try {
                 const formData = new FormData();
                 formData.append('imagen', file);
-                
+
                 // Enviamos a tu backend en Laravel
                 const respuesta = await api.post('/admin/subir-imagen-blog', formData);
-                
+
                 // Editor.js exige retornar el éxito y la URL en este formato específico
                 return {
                   success: 1,
@@ -194,6 +194,7 @@ onBeforeUnmount(() => {
 const guardarRegistro = async () => {
   // 1. Extraer los datos del editor
   let outputData;
+  mensajeOk.value = '';
   if (editorInstance.value) {
     outputData = await editorInstance.value.save();
   }
@@ -211,10 +212,10 @@ const guardarRegistro = async () => {
 
     formData.append('actualizacion_titulo', registro.titulo);
     formData.append('actualizacion_version', registro.version);
-    
+
     // Convertimos los bloques JSON a un string para guardarlo en la base de datos
     formData.append('actualizacion_contenido', JSON.stringify(outputData));
-    
+
     formData.append('actualizacion_resumen', registro.resumen);
 
     if (archivoMiniatura.value) {
@@ -230,14 +231,13 @@ const guardarRegistro = async () => {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
 
-    alert('¡Registro guardado con éxito!');
+    mensajeOk.value = 'Registro guardado con éxito';
     limpiarFormulario();
     emit('recargar-lista');
     emit('cerrar');
 
   } catch (error) {
     console.error('Error al guardar:', error);
-    alert('Hubo un problema al guardar los datos.');
   } finally {
     enviando.value = false;
   }
@@ -255,10 +255,10 @@ const limpiarFormulario = () => {
     estado: 'borrador',
     fecha_publicacion: new Date().toISOString().split('T')[0]
   });
-  
+
   archivoMiniatura.value = null;
   previewMiniatura.value = null;
-  
+
   const inputMiniatura = document.getElementById('miniatura') as HTMLInputElement;
   if (inputMiniatura) inputMiniatura.value = '';
 

@@ -7,7 +7,6 @@
     :duration="4000"
     :toastOptions="{
       style: { background: 'white', border: '1px solid #e2e8f0' },
-      className: 'mi-alerta-personalizada'
     }"
   />
 </template>
