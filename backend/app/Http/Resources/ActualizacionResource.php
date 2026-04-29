@@ -26,6 +26,8 @@ class ActualizacionResource extends JsonResource
             'actualizacion_estado' => $this->actualizacion_estado,
             // HTML listo para Vue
             'actualizacion_contenido_html' => $renderer->render($this->actualizacion_contenido),
+            'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
+            'area_servicio' => $this->whenLoaded('areaServicio'),
         ];
     }
 }

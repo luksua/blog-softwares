@@ -9,22 +9,38 @@
 
     <div v-else>
       <form @submit.prevent="guardarCambios">
-        <div class="row">
-          <div class="col-md-8 mb-3">
-            <label class="form-label fw-bold">Título</label>
-            <input v-model="form.titulo" type="text" class="form-control" />
-            <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
-              {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
-            </div>
-          </div>
 
-          <div class="col-md-4 mb-3">
+        <div class="col-md-12 mb-3">
+          <label class="form-label fw-bold">Título</label>
+          <input v-model="form.titulo" type="text" class="form-control" />
+          <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
+            {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
             <label class="form-label fw-bold">Versión</label>
             <input v-model="form.version" type="text" class="form-control" />
             <div v-if="errores.version || errores.actualizacion_version" class="text-danger small mt-1">
               {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
             </div>
           </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Imagen destacada (Portada)</label>
+
+            <!-- Preview de la imagen actual -->
+            <div v-if="previewImagen || form.imagen_destacada" class="mb-2">
+              <img :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" alt="Portada actual"
+                class="img-thumbnail" style="max-height: 150px; border-radius: 8px;" />
+              <div class="form-text">
+                {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
+              </div>
+            </div>
+
+            <input type="file" class="form-control" accept="image/*" @change="manejarImagen" />
+          </div>
+
         </div>
 
         <div class="mb-3">
@@ -34,6 +50,7 @@
             {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
           </div>
         </div>
+
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label fw-bold">Estado</label>
@@ -47,7 +64,6 @@
               {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
             </div>
           </div>
-
           <!-- <div class="mb-3">
           <template v-if="form.estado !== 'publicado'">
             <label class="form-label fw-bold">Fecha de creación</label>
@@ -142,6 +158,27 @@ const errores = ref<Record<string, string[]>>({});
 
 const editorHolder = ref<HTMLElement | null>(null);
 const editor = shallowRef<EditorJS | null>(null);
+
+const archivoImagen = ref<File | null>(null)
+const previewImagen = ref<string | null>(null)
+
+const manejarImagen = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    archivoImagen.value = target.files[0]
+    previewImagen.value = URL.createObjectURL(target.files[0])
+  } else {
+    archivoImagen.value = null
+    previewImagen.value = null
+  }
+}
+
+const obtenerUrlImagen = (ruta: string) => {
+  if (!ruta) return ''
+  if (ruta.startsWith('http')) return ruta
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  return `${baseUrl}/storage/${ruta}`
+}
 
 // 1. Objeto reactivo usando tu Interfaz
 const form = reactive<NewVersion>({
@@ -240,6 +277,7 @@ const cargarRegistro = async () => {
     // 3. Mapeo limpio: De los datos de la API a tu interfaz NewVersion
     form.titulo = data.actualizacion_titulo ?? '';
     form.version = data.actualizacion_version ?? '';
+    form.imagen_destacada = data.actualizacion_imagen_destacada ?? '';
     form.resumen = data.actualizacion_resumen ?? '';
     form.estado = data.actualizacion_estado ?? 'borrador';
 
@@ -274,30 +312,40 @@ const guardarCambios = async () => {
   errores.value = {};
   mensajeOk.value = '';
 
-  try {
-    // 1. Extraemos la información del Editor.js
-    let contenidoFinal = null;
-    if (editor.value) {
-      // .save() ya devuelve un objeto con la estructura { time, blocks, version }
-      const editorData = await editor.value.save();
+  let rutaImagen = form.imagen_destacada;
 
-      // IMPORTANTE: No uses JSON.stringify(). Envía el objeto directo.
+  try {
+    let contenidoFinal = null;
+
+    if (editor.value) {
+      const editorData = await editor.value.save();
       contenidoFinal = editorData;
-      form.contenido = editorData; // Si tu interfaz permite objeto, guárdalo aquí también
+      form.contenido = editorData;
     }
 
-    // 2. CREAMOS EL PAYLOAD
+    if (archivoImagen.value) {
+      const imgData = new FormData();
+      imgData.append('imagen', archivoImagen.value);
+
+      const res = await api.post('/admin/subir-imagen-portada', imgData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      rutaImagen = res.data.path;
+    }
+
     const payload = {
       actualizacion_titulo: form.titulo,
       actualizacion_version: form.version,
       actualizacion_resumen: form.resumen,
+      actualizacion_imagen_destacada: rutaImagen,
       actualizacion_estado: form.estado,
       actualizacion_fecha_publicacion: form.fecha_publicacion,
-      // Enviamos el objeto/array directamente para que Laravel lo valide correctamente
-      actualizacion_contenido: contenidoFinal
+      actualizacion_contenido: contenidoFinal,
     };
 
-    // 3. Enviamos a la API
     await api.post(`/admin/actualizaciones/${props.id}`, payload);
 
     mensajeOk.value = 'Guardado exitosamente.';
@@ -305,13 +353,7 @@ const guardarCambios = async () => {
   } catch (error: any) {
     console.error('Error al guardar:', error);
 
-    if (btnCerrarEdit.value) {
-      btnCerrarEdit.value.click();
-    }
-
     if (error.response?.status === 422) {
-      // Esto mapeará los errores de Laravel ("actualizacion_contenido") 
-      // a tu objeto de errores local
       errores.value = error.response.data.errors || {};
     }
   } finally {
@@ -338,7 +380,12 @@ watch(
 </script>
 
 <style scoped>
+:deep(.codex-editor__redactor) {
+  padding-bottom: 20px !important;
+  /* el valor que prefieras */
+}
+
 .editor-container {
-  min-height: 250px;
+  min-height: 150px;
 }
 </style>

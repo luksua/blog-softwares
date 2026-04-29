@@ -1,7 +1,8 @@
 <template>
   <div class="contenedor-lista">
-    <div class="cabecera mb-4"> <h2>Actualizaciones</h2>
-        </div>
+    <div class="cabecera mb-4">
+      <h2>Actualizaciones</h2>
+    </div>
     <div v-if="cargando && actualizaciones.length === 0" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -29,43 +30,28 @@
         <div class="filtro-seccion-completa">
           <label class="filtro-label">Ordenar por</label>
           <div class="chips-grupo">
-            <span
-              v-for="op in opcionesOrden"
-              :key="op.valor"
-              class="chip"
-              :class="{ activo: filtros.orden === op.valor }"
-              @click="aplicarOrden(op.valor)"
-            >{{ op.label }}</span>
+            <span v-for="op in opcionesOrden" :key="op.valor" class="chip"
+              :class="{ activo: filtros.orden === op.valor }" @click="aplicarOrden(op.valor)">{{ op.label }}</span>
           </div>
         </div>
 
         <!-- Búsqueda -->
         <div class="filtro-grupo filtro-busqueda">
           <label for="busqueda" class="filtro-label">Buscar</label>
-          <input
-            id="busqueda"
-            v-model="filtros.busqueda"
-            type="text"
-            class="filtro-input"
-            placeholder="Título o resumen..."
-          />
+          <div class="input-busqueda-wrapper">
+            <i class="bi bi-search icono-busqueda"></i>
+            <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
+              placeholder="Título o resumen..." />
+          </div>
         </div>
 
         <!-- Área -->
         <div class="filtro-grupo">
           <label for="area" class="filtro-label">Área / Servicio</label>
-          <select
-            id="area"
-            v-model="filtros.areaServicioId"
-            class="filtro-input"
-            :disabled="cargandoFiltros"
-          >
+          <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
             <option value="">Todas las áreas</option>
-            <option
-              v-for="area in areasDisponibles"
-              :key="area.area_servicio_id"
-              :value="Number(area.area_servicio_id)"
-            >{{ area.area_servicio_nombre }}</option>
+            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+              :value="Number(area.area_servicio_id)">{{ area.area_servicio_nombre }}</option>
           </select>
         </div>
 
@@ -102,11 +88,8 @@
 
               <div class="tarjeta-header">
                 <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                  <img
-                    :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
-                    alt="Imagen destacada"
-                    class="imagen-destacada"
-                  />
+                  <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                    class="imagen-destacada" />
                 </div>
                 <div v-else class="sin-imagen">
                   <span>🖼️</span>
@@ -149,11 +132,7 @@
               <li :class="{ disabled: paginaActual === 1 }">
                 <a href="#" @click.prevent="cambiarPagina(paginaActual - 1)">‹</a>
               </li>
-              <li
-                v-for="pag in paginasMostradas"
-                :key="pag"
-                :class="{ active: paginaActual === pag }"
-              >
+              <li v-for="pag in paginasMostradas" :key="pag" :class="{ active: paginaActual === pag }">
                 <a href="#" @click.prevent="cambiarPagina(pag)">{{ pag }}</a>
               </li>
               <li :class="{ disabled: paginaActual === totalPaginas }">
@@ -203,9 +182,9 @@ const cargandoFiltros = ref(false)
 
 const opcionesOrden = [
   { valor: 'recientes', label: 'Más recientes' },
-  { valor: 'antiguos',  label: 'Más antiguos'  },
-  { valor: 'az',        label: 'A → Z'         },
-  { valor: 'za',        label: 'Z → A'         },
+  { valor: 'antiguos', label: 'Más antiguos' },
+  { valor: 'az', label: 'A → Z' },
+  { valor: 'za', label: 'Z → A' },
 ]
 
 const hayFiltrosActivos = computed(() =>
@@ -347,15 +326,15 @@ onMounted(async () => {
   --primary: #077E9D;
   --secondary: #025B7D;
   --warning: #FCBB1C;
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
-  --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .contenedor-lista {
   max-width: 1200px;
   margin: 0 auto;
-  
+
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -368,9 +347,20 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
   color: #6b7280;
 }
-.estado-mensaje.error  { border-top: 3px solid #ef4444; }
-.estado-mensaje.vacio  { border-top: 3px solid var(--warning); }
-.error-icon, .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+.estado-mensaje.error {
+  border-top: 3px solid #ef4444;
+}
+
+.estado-mensaje.vacio {
+  border-top: 3px solid var(--warning);
+}
+
+.error-icon,
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
 
 .btn-retry {
   margin-top: 20px;
@@ -383,10 +373,18 @@ onMounted(async () => {
   font-weight: 500;
   transition: var(--transition);
 }
-.btn-retry:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.btn-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
 
 /* ── Layout general ───────────────────────────────────── */
-.vista-con-filtros { display: flex; flex-direction: column; gap: 20px; }
+.vista-con-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 
 /* ── Barra de filtros ─────────────────────────────────── */
 .filtros-barra {
@@ -401,7 +399,9 @@ onMounted(async () => {
   box-shadow: var(--shadow-sm);
 }
 
-.filtro-seccion-completa { grid-column: 1 / -1; }
+.filtro-seccion-completa {
+  grid-column: 1 / -1;
+}
 
 .filtro-label {
   display: block;
@@ -413,7 +413,10 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
-.filtro-grupo { display: flex; flex-direction: column; }
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+}
 
 .filtro-input {
   height: 42px;
@@ -426,15 +429,25 @@ onMounted(async () => {
   transition: var(--transition);
   width: 100%;
 }
+
 .filtro-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(7,126,157,0.12);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
 }
-.filtro-input:disabled { background: #f9fafb; opacity: 0.7; cursor: not-allowed; }
+
+.filtro-input:disabled {
+  background: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 
 /* Chips de orden */
-.chips-grupo { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips-grupo {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 .chip {
   padding: 7px 16px;
@@ -447,7 +460,12 @@ onMounted(async () => {
   color: #4b5563;
   transition: var(--transition);
 }
-.chip:hover { border-color: var(--primary); color: var(--primary); }
+
+.chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .chip.activo {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
@@ -455,7 +473,10 @@ onMounted(async () => {
 }
 
 /* Botón limpiar */
-.filtro-acciones { display: flex; align-items: flex-end; }
+.filtro-acciones {
+  display: flex;
+  align-items: flex-end;
+}
 
 .btn-limpiar {
   height: 42px;
@@ -470,10 +491,16 @@ onMounted(async () => {
   white-space: nowrap;
   transition: var(--transition);
 }
-.btn-limpiar:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+.btn-limpiar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
 
 /* ── Tarjetas ─────────────────────────────────────────── */
-.lista-feed { margin-top: 4px; }
+.lista-feed {
+  margin-top: 4px;
+}
 
 .tarjeta-changelog {
   border: 1px solid #eaeaea;
@@ -484,14 +511,22 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
 }
+
 .tarjeta-changelog:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.tarjeta-header { padding: 0; display: block; }
+.tarjeta-header {
+  padding: 0;
+  display: block;
+}
 
-.imagen-container { overflow: hidden; width: 100%; }
+.imagen-container {
+  overflow: hidden;
+  width: 100%;
+}
+
 .imagen-destacada {
   width: 100%;
   aspect-ratio: 22/8;
@@ -500,7 +535,10 @@ onMounted(async () => {
   object-position: center;
   transition: var(--transition);
 }
-.imagen-container:hover .imagen-destacada { transform: scale(1.02); }
+
+.imagen-container:hover .imagen-destacada {
+  transform: scale(1.02);
+}
 
 .sin-imagen {
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -514,8 +552,16 @@ onMounted(async () => {
   align-items: center;
   text-align: center;
 }
-.sin-imagen span { font-size: 32px; margin-bottom: 8px; }
-.sin-imagen p { margin: 0; font-size: 0.85rem; }
+
+.sin-imagen span {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.sin-imagen p {
+  margin: 0;
+  font-size: 0.85rem;
+}
 
 .tarjeta-cuerpo {
   padding: 14px 16px;
@@ -533,9 +579,16 @@ onMounted(async () => {
   flex-wrap: wrap;
 }
 
-.separador { color: #a0aec0; font-weight: 300; }
+.separador {
+  color: #a0aec0;
+  font-weight: 300;
+}
 
-.fecha { font-size: 0.85rem; color: #888; font-weight: 500; }
+.fecha {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
 
 .version-number {
   display: inline-block;
@@ -580,7 +633,10 @@ onMounted(async () => {
   margin-top: auto;
 }
 
-.tags-container { display: flex; gap: 8px; }
+.tags-container {
+  display: flex;
+  gap: 8px;
+}
 
 .tag-gris {
   background-color: #f4f5f7;
@@ -591,7 +647,11 @@ onMounted(async () => {
   border-radius: 20px;
   transition: var(--transition);
 }
-.tag-gris:hover { background-color: var(--primary); color: white; }
+
+.tag-gris:hover {
+  background-color: var(--primary);
+  color: white;
+}
 
 .btn-enlace {
   background: none;
@@ -607,7 +667,11 @@ onMounted(async () => {
   border-radius: 8px;
   transition: var(--transition);
 }
-.btn-enlace:hover { color: var(--primary); background: rgba(7,126,157,0.08); }
+
+.btn-enlace:hover {
+  color: var(--primary);
+  background: rgba(7, 126, 157, 0.08);
+}
 
 /* ── Paginación ───────────────────────────────────────── */
 .paginacion-container {
@@ -618,7 +682,10 @@ onMounted(async () => {
   border-top: 1px solid #eee;
 }
 
-.info-paginacion { color: #6b7280; font-size: 0.88rem; }
+.info-paginacion {
+  color: #6b7280;
+  font-size: 0.88rem;
+}
 
 .pagination-moderno {
   display: flex;
@@ -627,6 +694,7 @@ onMounted(async () => {
   margin: 0;
   padding: 0;
 }
+
 .pagination-moderno li a {
   display: flex;
   align-items: center;
@@ -642,32 +710,78 @@ onMounted(async () => {
   transition: var(--transition);
   border: 1px solid #e1e7f0;
 }
+
 .pagination-moderno li.active a {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
+
 .pagination-moderno li:not(.disabled):not(.active) a:hover {
   background: #f0f2f5;
   border-color: var(--primary);
   transform: translateY(-2px);
 }
-.pagination-moderno li.disabled a { opacity: 0.5; cursor: not-allowed; }
+
+.pagination-moderno li.disabled a {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 1024px) {
   .filtros-barra {
     grid-template-columns: repeat(2, 1fr);
   }
-  .filtro-seccion-completa { grid-column: 1 / -1; }
-  .filtro-acciones { grid-column: 1 / -1; }
+
+  .filtro-seccion-completa {
+    grid-column: 1 / -1;
+  }
+
+  .filtro-acciones {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 640px) {
-  .filtros-barra { grid-template-columns: 1fr; }
-  .paginacion-container { flex-direction: column; gap: 16px; text-align: center; }
-  .tarjeta-pie { flex-direction: column; gap: 12px; align-items: stretch; }
-  .btn-enlace { justify-content: center; }
+  .filtros-barra {
+    grid-template-columns: 1fr;
+  }
+
+  .paginacion-container {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .tarjeta-pie {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .btn-enlace {
+    justify-content: center;
+  }
+}
+
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icono-busqueda {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  pointer-events: none; /* para que el click pase al input */
+}
+
+.filtro-input {
+  padding-left: 36px; /* espacio para el icono */
+  /* tus estilos actuales del input... */
 }
 </style>

@@ -8,6 +8,7 @@ use App\Models\UpdateBlog;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Models\Area;
+use App\Http\Resources\ActualizacionResource;
 
 class UpdateBlogController extends Controller
 {
@@ -64,6 +65,6 @@ class UpdateBlogController extends Controller
             ->where('actualizacion_estado', 'publicado')
             ->findOrFail($id);
 
-        return response()->json(['data' => $actualizacion]);
+        return new ActualizacionResource($actualizacion);
     }
 }

@@ -52,9 +52,6 @@
           <button class="mobile-toggle" @click="toggleSidebar">
             ☰
           </button>
-        </div>
-
-        <div class="navbar-center">
           <a href="/" class="logo-link">
             <img src="../assets/Asotrauma3.png" alt="logo" class="logo" />
           </a>

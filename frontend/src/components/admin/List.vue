@@ -25,9 +25,12 @@
       <!-- Filtros -->
       <div class="filtros-barra">
         <div class="filtro-grupo filtro-busqueda">
-          <label for="busqueda">Buscar por nombre</label>
-          <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
-            placeholder="Escribe el título de la actualización..." />
+          <label for="busqueda" class="filtro-label">Buscar</label>
+          <div class="input-busqueda-wrapper">
+            <i class="bi bi-search icono-busqueda"></i>
+            <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
+              placeholder="Título o resumen..." />
+          </div>
         </div>
 
         <div class="filtro-grupo">
@@ -266,7 +269,7 @@
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api/api'
-import type { Version, AreaServicio } from '../../types/version';
+import type { Version } from '../../types/version';
 import Edit from '../../components/admin/EditVersion.vue'
 import { Modal } from 'bootstrap'
 
@@ -638,7 +641,7 @@ defineExpose({
 
 .filtros-barra {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr)) auto;
+  grid-template-columns: repeat(6, minmax(180px, 1fr)) auto;
   gap: 16px;
   align-items: end;
   background: white;
@@ -1101,5 +1104,26 @@ defineExpose({
     flex-direction: column;
     align-items: stretch;
   }
+}
+
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icono-busqueda {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  pointer-events: none;
+  /* para que el click pase al input */
+}
+
+.filtro-input {
+  padding-left: 36px;
+  /* espacio para el icono */
+  /* tus estilos actuales del input... */
 }
 </style>

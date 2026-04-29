@@ -20,3 +20,4 @@ Route::post('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'u
 Route::post('/admin/actualizaciones/{id}/inactivar', [UpdateBlogAdminController::class, 'inactivar']);
 Route::post('/admin/actualizaciones/{id}/activar', [UpdateBlogAdminController::class, 'activar']);
 Route::post('/admin/subir-imagen-blog', [UpdateBlogAdminController::class, 'subirImagenEditor']);
+Route::post('/admin/subir-imagen-portada', [UpdateBlogAdminController::class, 'subirImagen']);

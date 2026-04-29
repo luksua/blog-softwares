@@ -18,12 +18,12 @@
         </div>
 
         <button v-if="hayBorradorGuardado" type="button" class="btn-descartar"
-          @click="descartarBorrador(); limpiarFormulario()">
+          @click="descartarBorrador(true); limpiarFormulario()">
           Descartar borrador
         </button>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-3 pt-2">
         <label for="titulo" class="form-label fw-bold">Título *</label>
         <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
@@ -103,6 +103,7 @@ import api from '../../api/api'
 import type { NewVersion } from '../../types/newVersion'
 import type { Area } from '../../types/areas'
 import { toast } from 'vue-sonner'
+import { Modal } from 'bootstrap'
 
 import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'
@@ -176,6 +177,8 @@ const cargarBorrador = () => {
     if (draft.editorBlocks?.length && editorInstance.value) {
       editorInstance.value.render({ blocks: draft.editorBlocks })
     }
+
+    // toast.info('Borrador restaurado.')
   } catch (e) {
     console.warn('No se pudo restaurar el borrador:', e)
   }
@@ -215,11 +218,11 @@ const guardarBorrador = async () => {
   }
 }
 
-const descartarBorrador = () => {
+const descartarBorrador = (mostrarToast = false) => {
   localStorage.removeItem(DRAFT_KEY)
   hayBorradorGuardado.value = false
   ultimoGuardado.value = null
-  toast.info('Borrador descartado.')
+  if (mostrarToast) toast.info('Borrador descartado.')
 }
 
 const programarAutosave = () => {
@@ -351,6 +354,13 @@ const guardarRegistro = async () => {
     emit('recargar-lista')
     emit('cerrar')
 
+    // ← Cerrar el modal correctamente via Bootstrap:
+    const modalEl = document.getElementById('modalNuevaActualizacion') // el id de tu modal
+    if (modalEl) {
+      const modal = Modal.getInstance(modalEl)
+      modal?.hide()
+    }
+
   } catch {
     // El interceptor de api.ts ya gestiona y muestra los errores
   } finally {
@@ -373,6 +383,11 @@ const limpiarFormulario = () => {
 </script>
 
 <style scoped>
+
+:deep(.codex-editor__redactor) {
+  padding-bottom: 40px !important; /* el valor que prefieras */
+}
+
 .editor-container {
   background-color: white;
   border-radius: 4px;

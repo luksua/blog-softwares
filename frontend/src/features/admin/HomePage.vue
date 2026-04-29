@@ -47,7 +47,7 @@
 import List from '../../components/admin/List.vue';
 import Store from '../../components/admin/NewVersion.vue';
 // Borramos la importación de MainLayout de aquí
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { Modal } from 'bootstrap';
 
 // referencia conectada al componente <List />
@@ -62,13 +62,24 @@ const avisarALaLista = () => {
     }
 };
 
-const cerrarModalBootstrap = () => {
-    const el = modalNuevoRegistroRef.value;
-    if (!el) return;
+const cerrarModalBootstrap = async () => {
+  await nextTick()
+  const el = modalNuevoRegistroRef.value
+  if (!el) return
 
-    const modal = Modal.getInstance(el) || new Modal(el);
-    modal.hide();
-};
+  let modal = Modal.getInstance(el)
+  if (!modal) modal = new Modal(el)
+  
+  modal.hide()
+
+  // Esperar a que Bootstrap termine la animación fade (300ms) y limpiar
+  setTimeout(() => {
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+    document.body.classList.remove('modal-open')
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+  }, 300)
+}
 
 
 // const limpiarBackdropResidual = () => {

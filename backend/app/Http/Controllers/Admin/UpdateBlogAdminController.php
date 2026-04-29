@@ -175,6 +175,30 @@ class UpdateBlogAdminController extends Controller
         return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
     }
 
+        public function subirImagen(Request $request)
+    {
+        $request->validate([
+            // ✅ IMPORTANTE: Vuelve a poner 'mimes' y 'image'. 
+            // Dejar solo 'file' sin mimes es peligroso porque un usuario malintencionado 
+            // podría subir un archivo .php o .exe camuflado.
+            'imagen' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ]);
+
+        if ($request->hasFile('imagen')) {
+            // Guarda la imagen en storage/app/public/blog_images
+            $path = $request->file('imagen')->store('blog/portadas', 'public');
+
+            // Devuelve la URL completa para que Editor.js la dibuje en el texto
+            return response()->json([
+                'url' => asset('storage/' . $path),
+                'path' => $path // Opcional, pero útil si luego quieres borrarla
+            ]);
+        }
+
+        // Es buena práctica retornar un error si no llegó la imagen
+        return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
+    }
+
     public function show($id)
     {
         // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
@@ -216,30 +240,21 @@ class UpdateBlogAdminController extends Controller
         $data = $request->validate([
             'actualizacion_titulo' => 'sometimes|required|string|max:255',
             'actualizacion_version' => 'sometimes|required|string|max:50',
+            'actualizacion_imagen_destacada' => 'sometimes|nullable|string|max:255',
+            'actualizacion_resumen' => 'sometimes|required|string|max:255',
             'actualizacion_estado' => 'sometimes|required|in:publicado,borrador,revision,inactivo',
             'actualizacion_fecha_publicacion' => 'nullable|date',
             'actualizacion_fecha_creacion' => 'nullable|date',
-            'actualizacion_contenido' => 'required|array',
-            // 'actualizacion_contenido'         => 'sometimes|required|string', ???????
+            'actualizacion_contenido' => 'sometimes|required|array',
         ]);
 
         $actualizacion->update($data);
 
-        $actualizacion->update([
-            'actualizacion_titulo' => $request->actualizacion_titulo,
-            'actualizacion_version' => $request->actualizacion_version,
-            'actualizacion_estado' => $request->actualizacion_estado,
-            'actualizacion_fecha_publicacion' => $request->actualizacion_fecha_publicacion,
-            'actualizacion_fecha_creacion' => $request->actualizacion_fehca_creacion,
-            'actualizacion_contenido' => $request->actualizacion_contenido,
-        ]);
-
         return response()->json([
             'message' => 'Actualización editada correctamente',
-            'data' => $actualizacion
+            'data' => $actualizacion->fresh()
         ]);
     }
-
 
     // public function subirImagenQuill(Request $request)
     // {
