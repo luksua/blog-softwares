@@ -5,8 +5,7 @@ namespace App\Http\Controllers\Employee;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\UpdateBlog;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
+use App\Models\Category;
 use App\Models\Area;
 use App\Http\Resources\ActualizacionResource;
 
@@ -56,6 +55,17 @@ class UpdateBlogController extends Controller
 
         return response()->json([
             'data' => $areas
+        ]);
+    }
+
+        public function getCategorias()
+    {
+        $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
+            ->orderBy('categoria_actualizacion_nombre', 'asc')
+            ->get();
+
+        return response()->json([
+            'data' => $categorias
         ]);
     }
 

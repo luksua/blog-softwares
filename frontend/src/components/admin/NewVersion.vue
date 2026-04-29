@@ -25,7 +25,7 @@
 
       <div class="mb-3 pt-2">
         <label for="titulo" class="form-label fw-bold">Título *</label>
-        <input type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
+        <input ref="tituloInput" type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
       </div>
 
       <div class="row">
@@ -66,8 +66,8 @@
 
         <div class="col-md-6 mb-3">
           <label for="usuario_id_autor" class="form-label fw-bold">ID Autor:</label>
-          <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor"
-            disabled required />
+          <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor" disabled
+            required />
         </div>
       </div>
 
@@ -82,11 +82,20 @@
         </div>
         <div class="col-md-6 mb-3">
           <label for="fecha_publicacion" class="form-label fw-bold">Fecha:</label>
-          <input type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion"
-            required disabled />
+          <input type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion" required
+            disabled />
         </div>
       </div>
-
+      <div class="col-md-6 mb-3">
+        <label for="categoria" class="form-label fw-bold">Categoría *</label>
+        <select id="categoria" class="form-select" v-model="registro.actualizacion_categoria_id" required>
+          <option value="" disabled>Selecciona una categoría...</option>
+          <option v-for="categoria in listaCategorias" :key="categoria.categoria_actualizacion_id"
+            :value="categoria.categoria_actualizacion_id">
+            {{ categoria.categoria_actualizacion_nombre }}
+          </option>
+        </select>
+      </div>
       <div class="d-flex justify-content-end gap-2 mt-4">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="submit" class="btn-primary" :disabled="enviando">
@@ -98,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { reactive, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import api from '../../api/api'
 import type { NewVersion } from '../../types/newVersion'
 import type { Area } from '../../types/areas'
@@ -109,6 +118,9 @@ import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'
 import ImageTool from '@editorjs/image'
 import List from '@editorjs/list'
+import type { Category } from '../../types/categorias'
+
+const tituloInput = ref<HTMLInputElement | null>(null)
 
 // ── Clave del borrador ────────────────────────────────────────────
 const DRAFT_KEY = 'draft_nueva_actualizacion'
@@ -139,6 +151,7 @@ const registroVacio = () => ({
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: '' as any,
+  actualizacion_categoria_id: '' as any,
   usuario_id_autor: idUsuarioLogueado,
   estado: 'borrador',
   fecha_creacion: new Date().toISOString().split('T')[0],
@@ -163,11 +176,12 @@ const cargarBorrador = () => {
     const draft = JSON.parse(raw)
 
     Object.assign(registro, {
-      titulo:            draft.titulo            || '',
-      version:           draft.version           || '',
-      resumen:           draft.resumen           || '',
-      area_servicio_id:  draft.area_servicio_id  || '',
-      estado:            draft.estado            || 'borrador',
+      titulo: draft.titulo || '',
+      version: draft.version || '',
+      resumen: draft.resumen || '',
+      area_servicio_id: draft.area_servicio_id || '',
+      actualizacion_categoria_id: draft.actualizacion_categoria_id || '',
+      estado: draft.estado || 'borrador',
       fecha_publicacion: draft.fecha_publicacion || new Date().toISOString().split('T')[0],
     })
 
@@ -196,11 +210,12 @@ const guardarBorrador = async () => {
     }
 
     const draft = {
-      titulo:            registro.titulo,
-      version:           registro.version,
-      resumen:           registro.resumen,
-      area_servicio_id:  registro.area_servicio_id,
-      estado:            registro.estado,
+      titulo: registro.titulo,
+      version: registro.version,
+      resumen: registro.resumen,
+      area_servicio_id: registro.area_servicio_id,
+      actualizacion_categoria_id: registro.actualizacion_categoria_id,
+      estado: registro.estado,
       fecha_publicacion: registro.fecha_publicacion,
       editorBlocks,
       guardadoEn: new Date().toLocaleTimeString('es-ES', {
@@ -234,11 +249,12 @@ const programarAutosave = () => {
 
 watch(
   () => ({
-    titulo:            registro.titulo,
-    version:           registro.version,
-    resumen:           registro.resumen,
-    area_servicio_id:  registro.area_servicio_id,
-    estado:            registro.estado,
+    titulo: registro.titulo,
+    version: registro.version,
+    resumen: registro.resumen,
+    area_servicio_id: registro.area_servicio_id,
+    actualizacion_categoria_id: registro.actualizacion_categoria_id,
+    estado: registro.estado,
     fecha_publicacion: registro.fecha_publicacion,
   }),
   () => { programarAutosave() },
@@ -247,6 +263,7 @@ watch(
 
 // ── Listas ────────────────────────────────────────────────────────
 const listaAreas = ref<Area[]>([])
+const listaCategorias = ref<Category[]>([])
 const listaEstados = ref<{ id: string; nombre: string }[]>([])
 const enviando = ref(false)
 const emit = defineEmits(['cerrar', 'recargar-lista'])
@@ -254,12 +271,22 @@ const emit = defineEmits(['cerrar', 'recargar-lista'])
 // ── Editor.js ─────────────────────────────────────────────────────
 const editorInstance = ref<EditorJS | null>(null)
 
+const enfocarTitulo = async () => {
+  await nextTick()
+  tituloInput.value?.focus()
+}
 onMounted(async () => {
   try {
     const resAreas = await api.get('/admin/area-servicio')
     listaAreas.value = resAreas.data.data
   } catch (error) {
-    console.error('Error al cargar las áreas:', error)
+  }
+
+  try {
+    const resCategorias = await api.get('/admin/categorias')
+    listaCategorias.value = resCategorias.data.data
+  } catch (error) {
+    console.error('Error al cargar las categorías:', error)
   }
 
   try {
@@ -301,9 +328,15 @@ onMounted(async () => {
       }
     }
   })
+  const modalEl = document.getElementById('modalNuevoRegistro')
+
+  modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
 })
 
 onBeforeUnmount(() => {
+  const modalEl = document.getElementById('modalNuevoRegistro')
+  modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
+
   guardarBorrador()
   if (autoguardadoTimeout) clearTimeout(autoguardadoTimeout)
   if (editorInstance.value) editorInstance.value.destroy()
@@ -326,13 +359,17 @@ const guardarRegistro = async () => {
 
   try {
     const formData = new FormData()
-    formData.append('actualizacion_titulo',            registro.titulo)
-    formData.append('actualizacion_version',           registro.version)
-    formData.append('actualizacion_contenido',         JSON.stringify(outputData))
-    formData.append('actualizacion_resumen',           registro.resumen)
-    formData.append('actualizacion_area_servicio_id',  String(registro.area_servicio_id))
-    formData.append('actualizacion_usuario_id_autor',  String(registro.usuario_id_autor))
-    formData.append('actualizacion_estado',            registro.estado)
+    formData.append('actualizacion_titulo', registro.titulo)
+    formData.append('actualizacion_version', registro.version)
+    formData.append('actualizacion_contenido', JSON.stringify(outputData))
+    formData.append('actualizacion_resumen', registro.resumen)
+    formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id))
+    formData.append(
+      'actualizacion_categoria_id',
+      String(registro.actualizacion_categoria_id)
+    )
+    formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor))
+    formData.append('actualizacion_estado', registro.estado)
     formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
 
     if (archivoMiniatura.value) {
@@ -355,7 +392,7 @@ const guardarRegistro = async () => {
     emit('cerrar')
 
     // ← Cerrar el modal correctamente via Bootstrap:
-    const modalEl = document.getElementById('modalNuevaActualizacion') // el id de tu modal
+    const modalEl = document.getElementById('modalNuevoRegistro') // el id de tu modal
     if (modalEl) {
       const modal = Modal.getInstance(modalEl)
       modal?.hide()
@@ -383,9 +420,9 @@ const limpiarFormulario = () => {
 </script>
 
 <style scoped>
-
 :deep(.codex-editor__redactor) {
-  padding-bottom: 40px !important; /* el valor que prefieras */
+  padding-bottom: 40px !important;
+  /* el valor que prefieras */
 }
 
 .editor-container {
@@ -414,9 +451,23 @@ const limpiarFormulario = () => {
   gap: 8px;
 }
 
-.autosave-guardando { color: #f59e0b; display: flex; align-items: center; gap: 6px; }
-.autosave-ok        { color: #16a34a; display: flex; align-items: center; gap: 6px; }
-.autosave-vacio     { color: #94a3b8; }
+.autosave-guardando {
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autosave-ok {
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autosave-vacio {
+  color: #94a3b8;
+}
 
 .autosave-dot {
   width: 8px;
@@ -436,8 +487,17 @@ const limpiarFormulario = () => {
 }
 
 @keyframes pulso {
-  0%, 100% { opacity: 1;   transform: scale(1);   }
-  50%       { opacity: 0.4; transform: scale(0.8); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
 .btn-descartar {

@@ -7,6 +7,7 @@ export interface NewVersion {
   resumen: string;
   imagen_destacada: string;
   area_servicio_id: number | null;
+  actualizacion_categoria_id: number | null;
   usuario_id_autor: number | null;
   estado: string;
   fecha_creacion: string;

@@ -64,6 +64,17 @@
           </select>
         </div>
 
+        <div class="filtro-grupo">
+          <label for="area">Categoria</label>
+          <select id="area" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
+            <option value="">Todas</option>
+            <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
+              :value="Number(categoria.categoria_actualizacion_id)">
+              {{ categoria.categoria_actualizacion_nombre }}
+            </option>
+          </select>
+        </div>
+
         <div class="filtro-acciones">
           <button class="btn-limpiar" @click="limpiarFiltros">
             Limpiar
@@ -278,6 +289,11 @@ type AreaFiltro = {
   area_servicio_nombre: string
 }
 
+type CategoriaFiltro = {
+  categoria_actualizacion_id: number | string
+  categoria_actualizacion_nombre: string
+}
+
 type EstadoFiltro = {
   id: string
   nombre: string
@@ -305,15 +321,18 @@ const filtros = ref<{
   fechaHasta: string
   estado: string
   areaServicioId: number | ''
+  categoriaId: number | ''
 }>({
   busqueda: '',
   fechaDesde: '',
   fechaHasta: '',
   estado: '',
-  areaServicioId: ''
+  areaServicioId: '',
+  categoriaId: '',
 })
 
 const areasDisponibles = ref<AreaFiltro[]>([])
+const categoriasDisponibles = ref<CategoriaFiltro[]>([])
 const estadosDisponibles = ref<EstadoFiltro[]>([])
 const cargandoFiltros = ref(false)
 
@@ -427,7 +446,8 @@ const limpiarFiltros = () => {
     fechaDesde: '',
     fechaHasta: '',
     estado: '',
-    areaServicioId: ''
+    areaServicioId: '',
+    categoriaId: ''
   }
 }
 

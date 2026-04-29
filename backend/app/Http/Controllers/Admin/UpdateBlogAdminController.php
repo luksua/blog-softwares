@@ -9,6 +9,7 @@ use App\Models\UpdateBlog;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\ActualizacionResource;
+use App\Models\Category;
 
 class UpdateBlogAdminController extends Controller
 {
@@ -24,6 +25,7 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
 
             'actualizacion_area_servicio_id'  => 'required|integer',
+            'actualizacion_categoria_id'  => 'required|integer',
             'actualizacion_usuario_id_autor'  => 'required|integer',
             'actualizacion_estado'            => 'required|in:borrador,revision,publicado,inactivo',
             'imagenes_quill'                  => 'nullable|string', // Mantenido si aún guardas trackers manuales
@@ -83,7 +85,7 @@ class UpdateBlogAdminController extends Controller
 
     public function index(Request $request)
     {
-        $query = UpdateBlog::with(['areaServicio', 'imagenes'])
+        $query = UpdateBlog::with(['areaServicio', 'imagenes', 'categoria'])
             ->orderByDesc('id');
 
         if ($request->filled('busqueda')) {
@@ -119,6 +121,17 @@ class UpdateBlogAdminController extends Controller
 
         return response()->json([
             'data' => $areas
+        ]);
+    }
+
+    public function getCategorias()
+    {
+        $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
+            ->orderBy('categoria_actualizacion_nombre', 'asc')
+            ->get();
+
+        return response()->json([
+            'data' => $categorias
         ]);
     }
 
@@ -175,7 +188,7 @@ class UpdateBlogAdminController extends Controller
         return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
     }
 
-        public function subirImagen(Request $request)
+    public function subirImagen(Request $request)
     {
         $request->validate([
             // ✅ IMPORTANTE: Vuelve a poner 'mimes' y 'image'. 

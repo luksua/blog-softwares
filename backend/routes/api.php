@@ -10,6 +10,8 @@ Route::get('/admin/actualizaciones', [UpdateBlogAdminController::class, 'index']
 Route::get('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
 Route::get('/admin/area-servicio', [UpdateBlogAdminController::class, 'getAreas']);
 Route::get('/employee/area-servicio', [UpdateBlogController::class, 'getAreas']);
+Route::get('/admin/categorias', [UpdateBlogAdminController::class, 'getCategorias']);
+Route::get('/employee/categorias', [UpdateBlogController::class, 'getCategorias']);
 Route::get('/admin/estados-actualizacion', [UpdateBlogAdminController::class, 'getStatus']);
 Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
 Route::get('/employee/actualizaciones/{id}', [UpdateBlogController::class, 'show']);

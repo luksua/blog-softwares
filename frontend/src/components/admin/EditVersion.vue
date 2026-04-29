@@ -9,14 +9,14 @@
 
     <div v-else>
       <form @submit.prevent="guardarCambios">
-
         <div class="col-md-12 mb-3">
           <label class="form-label fw-bold">Título</label>
-          <input v-model="form.titulo" type="text" class="form-control" />
+          <input v-model="form.titulo" type="text" class="form-control" ref="inputTitulo" />
           <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
             {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
           </div>
         </div>
+
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label fw-bold">Versión</label>
@@ -29,10 +29,13 @@
           <div class="col-md-6 mb-3">
             <label class="form-label fw-bold">Imagen destacada (Portada)</label>
 
-            <!-- Preview de la imagen actual -->
             <div v-if="previewImagen || form.imagen_destacada" class="mb-2">
-              <img :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" alt="Portada actual"
-                class="img-thumbnail" style="max-height: 150px; border-radius: 8px;" />
+              <img
+                :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)"
+                alt="Portada actual"
+                class="img-thumbnail"
+                style="max-height: 150px; border-radius: 8px;"
+              />
               <div class="form-text">
                 {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
               </div>
@@ -40,7 +43,42 @@
 
             <input type="file" class="form-control" accept="image/*" @change="manejarImagen" />
           </div>
+        </div>
 
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="area" class="form-label fw-bold">Área *</label>
+            <select id="area" class="form-select" v-model="form.area_servicio_id" required>
+              <option value="" disabled>Selecciona un área...</option>
+              <option
+                v-for="area in listaAreas"
+                :key="area.area_servicio_id"
+                :value="area.area_servicio_id"
+              >
+                {{ area.area_servicio_nombre }}
+              </option>
+            </select>
+            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id" class="text-danger small mt-1">
+              {{ errores.area_servicio_id?.[0] || errores.actualizacion_area_servicio_id?.[0] }}
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <label for="categoria" class="form-label fw-bold">Categoría *</label>
+            <select id="categoria" class="form-select" v-model="form.actualizacion_categoria_id" required>
+              <option value="" disabled>Selecciona una categoría...</option>
+              <option
+                v-for="categoria in listaCategorias"
+                :key="categoria.categoria_actualizacion_id"
+                :value="categoria.categoria_actualizacion_id"
+              >
+                {{ categoria.categoria_actualizacion_nombre }}
+              </option>
+            </select>
+            <div v-if="errores.actualizacion_categoria_id" class="text-danger small mt-1">
+              {{ errores.actualizacion_categoria_id?.[0] }}
+            </div>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -64,27 +102,6 @@
               {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
             </div>
           </div>
-          <!-- <div class="mb-3">
-          <template v-if="form.estado !== 'publicado'">
-            <label class="form-label fw-bold">Fecha de creación</label>
-            <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
-            <div class="form-text mt-1">
-              Este registro aún no se ha publicado. Mostrando fecha de creación.
-            </div>
-          </template>
-
-<template v-else>
-            <label class="form-label fw-bold text-success">Fecha de publicación</label>
-            <input v-model="form.fecha_publicacion" type="date" class="form-control border-success" />
-            <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-              class="text-danger small mt-1">
-              {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
-            </div>
-            <div class="form-text mt-1 text-success">
-              El registro es visible públicamente desde esta fecha.
-            </div>
-          </template>
-</div> -->
 
           <div class="col-md-6 mb-3">
             <template v-if="form.estado !== 'publicado'">
@@ -97,10 +114,11 @@
 
             <template v-else>
               <label class="form-label fw-bold text-success">Fecha de publicación</label>
-              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success"
-                readonly />
-              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-                class="text-danger small mt-1">
+              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success" readonly />
+              <div
+                v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                class="text-danger small mt-1"
+              >
                 {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
               </div>
               <div class="form-text mt-1 text-success fw-bold">
@@ -117,7 +135,10 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ref="btnCerrarEdit">Cancelar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ref="btnCerrarEdit">
+            Cancelar
+          </button>
+
           <button type="submit" class="btn-primary" :disabled="guardando">
             {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
           </button>
@@ -129,41 +150,57 @@
       </form>
     </div>
   </div>
-
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount } from 'vue';
-import api from '../../api/api';
-import type { NewVersion } from '../../types/newVersion';
+import { reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import api from '../../api/api'
+import type { NewVersion } from '../../types/newVersion'
 
-// Importaciones de Editor.js
-import EditorJS from '@editorjs/editorjs';
-import Header from '@editorjs/header';
-import ImageTool from '@editorjs/image';
-import List from '@editorjs/list';
+import EditorJS from '@editorjs/editorjs'
+import Header from '@editorjs/header'
+import ImageTool from '@editorjs/image'
+import List from '@editorjs/list'
+
+const inputTitulo = ref<HTMLInputElement | null>(null)
 
 const props = defineProps<{
   id: string | number
-}>();
+}>()
 
-const emit = defineEmits(['guardado', 'cerrar']);
+const emit = defineEmits(['guardado', 'cerrar'])
 
-const btnCerrarEdit = ref<HTMLButtonElement | null>(null);
+const cargando = ref(true)
+const guardando = ref(false)
+const mensajeOk = ref('')
+const errores = ref<Record<string, string[]>>({})
 
-const cargando = ref(true);
-const guardando = ref(false);
-const mensajeOk = ref('');
-const errores = ref<Record<string, string[]>>({});
-
-const editorHolder = ref<HTMLElement | null>(null);
-const editor = shallowRef<EditorJS | null>(null);
+const editorHolder = ref<HTMLElement | null>(null)
+const editor = shallowRef<EditorJS | null>(null)
 
 const archivoImagen = ref<File | null>(null)
 const previewImagen = ref<string | null>(null)
 
+const listaAreas = ref<any[]>([])
+const listaCategorias = ref<any[]>([])
+
+const form = reactive<NewVersion>({
+  titulo: '',
+  version: '',
+  contenido: '',
+  resumen: '',
+  imagen_destacada: '',
+  area_servicio_id: null,
+  actualizacion_categoria_id: null,
+  usuario_id_autor: null,
+  estado: 'borrador',
+  fecha_creacion: '',
+  fecha_publicacion: ''
+})
+
 const manejarImagen = (event: Event) => {
   const target = event.target as HTMLInputElement
+
   if (target.files && target.files.length > 0) {
     archivoImagen.value = target.files[0]
     previewImagen.value = URL.createObjectURL(target.files[0])
@@ -176,40 +213,42 @@ const manejarImagen = (event: Event) => {
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
   if (ruta.startsWith('http')) return ruta
+
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
   return `${baseUrl}/storage/${ruta}`
 }
 
-// 1. Objeto reactivo usando tu Interfaz
-const form = reactive<NewVersion>({
-  titulo: '',
-  version: '',
-  contenido: '',
-  resumen: '',
-  imagen_destacada: '',
-  area_servicio_id: null,
-  usuario_id_autor: null,
-  estado: 'borrador',
-  fecha_creacion: '',
-  fecha_publicacion: ''
-});
-
-// 2. Función universal para manejar Timestamps o Strings ISO
 const formatearFechaParaInput = (fecha: any) => {
-  if (!fecha) return '';
+  if (!fecha) return ''
 
   const fechaObj = typeof fecha === 'number' && fecha < 10000000000
     ? new Date(fecha * 1000)
-    : new Date(fecha);
+    : new Date(fecha)
 
-  // Verificamos que sea una fecha válida antes de extraer el YYYY-MM-DD
-  if (isNaN(fechaObj.getTime())) return '';
-  return fechaObj.toISOString().split('T')[0];
-};
+  if (isNaN(fechaObj.getTime())) return ''
+
+  return fechaObj.toISOString().split('T')[0]
+}
+
+const cargarListas = async () => {
+  try {
+    const resAreas = await api.get('/admin/area-servicio')
+    listaAreas.value = resAreas.data.data
+  } catch (error) {
+    console.error('Error al cargar áreas:', error)
+  }
+
+  try {
+    const resCategorias = await api.get('/admin/categorias')
+    listaCategorias.value = resCategorias.data.data
+  } catch (error) {
+    console.error('Error al cargar categorías:', error)
+  }
+}
 
 const initEditor = (initialData: any = {}) => {
   if (editor.value) {
-    editor.value.destroy();
+    editor.value.destroy()
   }
 
   editor.value = new EditorJS({
@@ -224,116 +263,133 @@ const initEditor = (initialData: any = {}) => {
           uploader: {
             async uploadByFile(file: File) {
               try {
-                const formData = new FormData();
-                formData.append('imagen', file);
-                const respuesta = await api.post('/admin/subir-imagen-blog', formData);
+                const formData = new FormData()
+                formData.append('imagen', file)
+
+                const respuesta = await api.post('/admin/subir-imagen-blog', formData)
+
                 return {
                   success: 1,
                   file: { url: respuesta.data.url }
-                };
+                }
               } catch (error) {
-                console.error('Error subiendo imagen:', error);
-                alert('Hubo un error al subir la imagen.');
-                return { success: 0 };
+                console.error('Error subiendo imagen:', error)
+                alert('Hubo un error al subir la imagen.')
+                return { success: 0 }
               }
             }
           }
         }
       }
     }
-  });
-};
+  })
+}
 
-// Observamos los cambios en el select de "estado"
 watch(() => form.estado, (nuevoEstado, viejoEstado) => {
-  if (cargando.value) return;
-  // Si el usuario acaba de seleccionar "Publicado"
+  if (cargando.value) return
+
   if (nuevoEstado === 'publicado') {
-
-    // Asignamos la fecha de hoy SI:
-    // 1. La fecha de publicación estaba vacía (era un borrador nuevo)
-    // 2. O si el estado anterior era 'inactivo', 'borrador' o 'revision' (lo está republicando)
-    if (!form.fecha_publicacion || viejoEstado === 'inactivo' || viejoEstado === 'borrador' || viejoEstado === 'revision') {
-      form.fecha_publicacion = new Date().toISOString().split('T')[0];
+    if (
+      !form.fecha_publicacion ||
+      viejoEstado === 'inactivo' ||
+      viejoEstado === 'borrador' ||
+      viejoEstado === 'revision'
+    ) {
+      form.fecha_publicacion = new Date().toISOString().split('T')[0]
     }
+  } else if (nuevoEstado === 'inactivo' || nuevoEstado === 'borrador') {
+    form.fecha_publicacion = ''
   }
+})
 
-  // OPCIONAL: Si pasa a inactivo o borrador, limpiamos la fecha de publicación
-  // para que si en el futuro se vuelve a publicar, sí o sí tome la nueva fecha.
-  else if (nuevoEstado === 'inactivo' || nuevoEstado === 'borrador') {
-    form.fecha_publicacion = '';
-  }
-});
+const enfocarTitulo = async () => {
+  await nextTick()
+
+  setTimeout(() => {
+    inputTitulo.value?.focus()
+    inputTitulo.value?.select()
+  }, 300)
+}
 
 const cargarRegistro = async () => {
-  cargando.value = true;
-  errores.value = {};
-  mensajeOk.value = '';
+  cargando.value = true
+  errores.value = {}
+  mensajeOk.value = ''
+  archivoImagen.value = null
+  previewImagen.value = null
 
   try {
-    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`);
-    const data = respuesta.data.data;
+    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`)
+    const data = respuesta.data.data
 
-    // 3. Mapeo limpio: De los datos de la API a tu interfaz NewVersion
-    form.titulo = data.actualizacion_titulo ?? '';
-    form.version = data.actualizacion_version ?? '';
-    form.imagen_destacada = data.actualizacion_imagen_destacada ?? '';
-    form.resumen = data.actualizacion_resumen ?? '';
-    form.estado = data.actualizacion_estado ?? 'borrador';
+    form.titulo = data.actualizacion_titulo ?? ''
+    form.version = data.actualizacion_version ?? ''
+    form.imagen_destacada = data.actualizacion_imagen_destacada ?? ''
+    form.resumen = data.actualizacion_resumen ?? ''
+    form.estado = data.actualizacion_estado ?? 'borrador'
 
-    // Procesamos el timestamp
-    form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion);
-    form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion);
+    form.area_servicio_id = data.actualizacion_area_servicio_id ?? ''
+    form.actualizacion_categoria_id = data.actualizacion_categoria_id ?? ''
 
-    const contenidoBD = data.actualizacion_contenido;
+    form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
+    form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion)
 
-    await nextTick();
+    const contenidoBD = data.actualizacion_contenido
 
-    let editorData = {};
+    await nextTick()
+
+    let editorData = {}
+
     if (contenidoBD) {
       try {
-        editorData = typeof contenidoBD === 'string' ? JSON.parse(contenidoBD) : contenidoBD;
+        editorData = typeof contenidoBD === 'string'
+          ? JSON.parse(contenidoBD)
+          : contenidoBD
       } catch (e) {
-        console.error("Error al parsear el JSON:", e);
+        console.error('Error al parsear el JSON:', e)
       }
     }
 
-    initEditor(editorData);
-
+    initEditor(editorData)
   } catch (error) {
-    console.error('Error al cargar registro:', error);
+    console.error('Error al cargar registro:', error)
   } finally {
-    cargando.value = false;
+    cargando.value = false
+
+    await nextTick()
+
+    setTimeout(() => {
+      inputTitulo.value?.focus()
+    }, 100)
   }
-};
+}
 
 const guardarCambios = async () => {
-  guardando.value = true;
-  errores.value = {};
-  mensajeOk.value = '';
+  guardando.value = true
+  errores.value = {}
+  mensajeOk.value = ''
 
-  let rutaImagen = form.imagen_destacada;
+  let rutaImagen = form.imagen_destacada
 
   try {
-    let contenidoFinal = null;
+    let contenidoFinal = null
 
     if (editor.value) {
-      const editorData = await editor.value.save();
-      contenidoFinal = editorData;
-      form.contenido = editorData;
+      contenidoFinal = await editor.value.save()
+      form.contenido = contenidoFinal
     }
 
     if (archivoImagen.value) {
-      const imgData = new FormData();
-      imgData.append('imagen', archivoImagen.value);
+      const imgData = new FormData()
+      imgData.append('imagen', archivoImagen.value)
 
       const res = await api.post('/admin/subir-imagen-portada', imgData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+          'Content-Type': 'multipart/form-data'
+        }
+      })
 
-      rutaImagen = res.data.path;
+      rutaImagen = res.data.path
     }
 
     const payload = {
@@ -344,45 +400,56 @@ const guardarCambios = async () => {
       actualizacion_estado: form.estado,
       actualizacion_fecha_publicacion: form.fecha_publicacion,
       actualizacion_contenido: contenidoFinal,
-    };
 
-    await api.post(`/admin/actualizaciones/${props.id}`, payload);
+      actualizacion_area_servicio_id: form.area_servicio_id,
+      actualizacion_categoria_id: form.actualizacion_categoria_id
+    }
 
-    mensajeOk.value = 'Guardado exitosamente.';
-    emit('guardado');
+    await api.post(`/admin/actualizaciones/${props.id}`, payload)
+
+    mensajeOk.value = 'Guardado exitosamente.'
+    emit('guardado')
   } catch (error: any) {
-    console.error('Error al guardar:', error);
+    console.error('Error al guardar:', error)
 
     if (error.response?.status === 422) {
-      errores.value = error.response.data.errors || {};
+      errores.value = error.response.data.errors || {}
     }
   } finally {
-    guardando.value = false;
+    guardando.value = false
   }
-};
+}
 
-// 6. Prevenir fugas de memoria limpiando el editor al cerrar el componente
+onMounted(async () => {
+  await cargarListas()
+
+  const modalEl = document.getElementById('modalEditarRegistro')
+  modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
+})
+
 onBeforeUnmount(() => {
+  const modalEl = document.getElementById('modalEditarRegistro')
+  modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
+
   if (editor.value && typeof editor.value.destroy === 'function') {
-    editor.value.destroy();
+    editor.value.destroy()
   }
-});
+})
 
 watch(
   () => props.id,
   () => {
     if (props.id) {
-      cargarRegistro();
+      cargarRegistro()
     }
   },
   { immediate: true }
-);
+)
 </script>
 
 <style scoped>
 :deep(.codex-editor__redactor) {
   padding-bottom: 20px !important;
-  /* el valor que prefieras */
 }
 
 .editor-container {

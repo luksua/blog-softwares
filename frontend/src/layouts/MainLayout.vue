@@ -7,7 +7,7 @@
       @click="toggleSidebar"
     ></div>
 
-    <aside :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
+    <!-- <aside :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
       <div class="sidebar-header">
         <div class="logo-full" v-if="isExpanded">Asotrauma</div>
         <button class="toggle-btn" @click="toggleSidebar">
@@ -21,7 +21,7 @@
             @click="navigate" 
             :class="['nav-item', { active: isActive }]"
           >
-            <i class="nav-icon">🏠</i>
+            <i class="nav-icon"></i>
             <span class="nav-text" v-show="isExpanded">Inicio</span>
             <div class="tooltip" v-if="!isExpanded">Inicio</div>
           </li>
@@ -32,26 +32,20 @@
             @click="navigate" 
             :class="['nav-item', { active: isActive }]"
           >
-            <i class="nav-icon">➕</i>
+            <i class="nav-icon"></i>
             <span class="nav-text" v-show="isExpanded">Guardados</span>
             <div class="tooltip" v-if="!isExpanded">Guardados</div>
           </li>
         </router-link>
       </ul>
-
-      <!-- <div class="sidebar-footer" v-if="isExpanded">
-        <div class="version-info">
-          <small>v2.0.0</small>
-        </div>
-      </div> -->
-    </aside>
+    </aside> -->
 
     <div class="main">
       <header class="navbar">
         <div class="navbar-left">
-          <button class="mobile-toggle" @click="toggleSidebar">
+          <!-- <button class="mobile-toggle" @click="toggleSidebar">
             ☰
-          </button>
+          </button> -->
           <a href="/" class="logo-link">
             <img src="../assets/Asotrauma3.png" alt="logo" class="logo" />
           </a>
@@ -74,11 +68,11 @@
       <footer class="footer">
         <div class="footer-content">
           <span>© 2026 - Sistema de Versiones</span>
-          <div class="footer-links">
+          <!-- <div class="footer-links">
             <a href="#">Términos</a>
             <a href="#">Privacidad</a>
             <a href="#">Soporte</a>
-          </div>
+          </div> -->
         </div>
       </footer>
     </div>
