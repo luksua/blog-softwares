@@ -19,7 +19,7 @@ const router = createRouter({
         {
           path: '',
           name: 'inicio',
-          component: HomePage,
+          component: HomePageAdmin,
         },
         {
           path: '/admin',

@@ -48,7 +48,6 @@
             </div>
           </div>
 
-
           <!-- <div class="mb-3">
           <template v-if="form.estado !== 'publicado'">
             <label class="form-label fw-bold">Fecha de creación</label>

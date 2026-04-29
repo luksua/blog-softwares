@@ -1,17 +1,14 @@
 <template>
     <div class="container-fluid">
-        <div class="cabecera mb-4"> <h2>Actualizaciones</h2>
-        </div>
-        
         <div class="row">
-            <div class="col-12 col-lg-9">
+            <div class="col-12 col-lg-12">
                 <List /> 
             </div>
             
-            <div class="col-12 col-lg-3">
+            <!-- <div class="col-12 col-lg-3">
                 <div class="p-3 bg-light rounded">
                 </div>
-            </div>
+            </div> -->
         </div>
     </div>
 </template>

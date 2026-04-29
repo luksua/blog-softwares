@@ -1,5 +1,6 @@
 <template>
   <div class="vista-detalle-container">
+    <!-- Estado de carga -->
     <div v-if="cargando" class="estado-carga">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -7,18 +8,26 @@
       <p>Cargando actualización...</p>
     </div>
 
-    <div v-else-if="actualizacion" class="detalle-card">
-      <div class="hero-banner" :class="{ 'sin-imagen': !actualizacion.actualizacion_imagen_destacada }">
-
-        <button class="btn-volver hero-btn-pos" @click="volver">
-          <span class="arrow-icon">←</span>
+    <!-- Contenido principal -->
+    <article v-else-if="actualizacion" class="detalle-card">
+      <!-- Hero Banner -->
+      <header 
+        class="hero-banner" 
+        :class="{ 'sin-imagen': !actualizacion.actualizacion_imagen_destacada }"
+      >
+        <button class="btn-volver hero-btn-pos" @click="volver" aria-label="Volver atrás">
+          <span class="arrow-icon" aria-hidden="true">←</span>
           Volver
         </button>
 
-        <img v-if="actualizacion.actualizacion_imagen_destacada"
-          :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada" class="hero-image" />
+        <img 
+          v-if="actualizacion.actualizacion_imagen_destacada"
+          :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" 
+          :alt="actualizacion.actualizacion_titulo" 
+          class="hero-image" 
+        />
 
-        <div class="hero-overlay"></div>
+        <div class="hero-overlay" aria-hidden="true"></div>
 
         <div class="hero-content">
           <div class="hero-top-info">
@@ -29,47 +38,117 @@
 
           <div class="hero-bottom-info">
             <div class="hero-meta-left">
-              <span class="version-badge">
+              <span class="version-badge" aria-label="Versión">
                 v{{ actualizacion.actualizacion_version }}
               </span>
-              <span class="fecha-texto">
+              <time class="fecha-texto" :datetime="actualizacion.actualizacion_fecha_publicacion">
                 Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
-              </span>
+              </time>
             </div>
 
             <div class="hero-meta-right">
-              <span :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]">
-                <span class="estado-dot"></span>
+              <span 
+                :class="['estado-badge', mapearClaseEstado(actualizacion.actualizacion_estado)]"
+                :aria-label="`Estado: ${actualizacion.actualizacion_estado || 'Publicado'}`"
+              >
+                <span class="estado-dot" aria-hidden="true"></span>
                 {{ actualizacion.actualizacion_estado || 'Publicado' }}
               </span>
             </div>
           </div>
         </div>
-      </div>
-      <div class="row">
-        <div class="col-lg-8">
-          <div class="resumen-container">
-            <p class="resumen-texto">
-              {{ actualizacion.actualizacion_resumen }}
-            </p>
+      </header>
+
+      <!-- Contenido del artículo -->
+      <div class="contenido-principal">
+        <div class="contenido-wrapper">
+          <!-- Columna principal del artículo -->
+          <div class="contenido-columna">
+            <!-- Resumen -->
+            <section class="resumen-container" aria-label="Resumen del artículo">
+              <p class="resumen-texto">
+                {{ actualizacion.actualizacion_resumen }}
+              </p>
+            </section>
+
+            <!-- Contenido completo -->
+            <section class="contenido-container" aria-label="Contenido completo">
+              <div class="contenido-header">
+                <h2>Contenido completo</h2>
+              </div>
+              <div class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
+            </section>
           </div>
 
-          <div class="contenido-container">
-            <div class="contenido-header">
-              <h3>Contenido completo</h3>
+          <!-- Sidebar -->
+          <aside class="sidebar-relacionados" aria-label="Artículos relacionados">
+            <div class="sidebar-header">
+              <span class="sidebar-icon" aria-hidden="true">✦</span>
+              <h2 class="sidebar-titulo">También te puede interesar</h2>
             </div>
-            <div class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <h2>También te puede interesar</h2>
-          <h2>También te puede interesar</h2>
+
+            <!-- Skeleton loader -->
+            <div v-if="cargandoRelacionados" class="relacionados-skeleton" aria-label="Cargando artículos relacionados">
+              <div v-for="n in 3" :key="n" class="skeleton-card" aria-hidden="true">
+                <div class="skeleton-img"></div>
+                <div class="skeleton-body">
+                  <div class="skeleton-line largo"></div>
+                  <div class="skeleton-line corto"></div>
+                  <div class="skeleton-line medio"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sin resultados -->
+            <div v-else-if="relacionados.length === 0" class="relacionados-vacio">
+              <p>No hay otras publicaciones disponibles.</p>
+            </div>
+
+            <!-- Lista de relacionados -->
+            <div v-else class="relacionados-lista">
+              <article
+                v-for="item in relacionados"
+                :key="item.id"
+                class="relacionado-card"
+                @click="irA(item.id)"
+                role="button"
+                tabindex="0"
+                @keydown.enter="irA(item.id)"
+                @keydown.space.prevent="irA(item.id)"
+
+              >
+                <div class="relacionado-img-wrap">
+                  <img
+                    v-if="item.actualizacion_imagen_destacada"
+                    :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
+                    :alt="item.actualizacion_titulo"
+                    class="relacionado-img"
+                    loading="lazy"
+                  />
+                  <div v-else class="relacionado-sin-img" aria-hidden="true">
+                    <span>🖼️</span>
+                  </div>
+                </div>
+
+                <div class="relacionado-body">
+                  <span class="relacionado-area">
+                    {{ item.area_servicio?.area_servicio_nombre || 'General' }}
+                  </span>
+                  <h3 class="relacionado-titulo">{{ item.actualizacion_titulo }}</h3>
+                  <time class="relacionado-fecha" :datetime="item.actualizacion_fecha_publicacion">
+                    {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
+                  </time>
+                </div>
+              </article>
+            </div>
+          </aside>
         </div>
       </div>
-    </div>
+    </article>
 
+    <!-- Estado de error -->
     <div v-else class="error-container">
-      <div class="error-icon">⚠️</div>
+      <div class="error-icon" aria-hidden="true">⚠️</div>
       <p>No se pudo cargar la información de esta actualización.</p>
       <button class="btn-retry" @click="volver">Volver al inicio</button>
     </div>
@@ -89,14 +168,47 @@ const router = useRouter()
 
 const actualizacion = ref<any>(null)
 const cargando = ref(true)
+const relacionados = ref<any[]>([])
+const cargandoRelacionados = ref(false)
+
+const obtenerRelacionados = async () => {
+  if (!actualizacion.value) return
+  cargandoRelacionados.value = true
+
+  try {
+    const areaId = actualizacion.value.actualizacion_area_servicio_id
+    const respuesta = await api.get('/employee/actualizaciones', {
+      params: {
+        area_servicio_id: areaId,
+        orden: 'recientes',
+        per_page: 4
+      }
+    })
+
+    relacionados.value = (respuesta.data.data as any[])
+      .filter(item => item.id !== Number(props.id))
+      .slice(0, 3)
+  } catch (err) {
+    console.error('Error al cargar relacionados:', err)
+    relacionados.value = []
+  } finally {
+    cargandoRelacionados.value = false
+  }
+}
+
+const irA = (id: number) => {
+  router.push({ name: 'employee-actualizaciones-show', params: { id } })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
 
 const obtenerDetalle = async () => {
   cargando.value = true
 
   try {
-    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`)
+    const respuesta = await api.get(`/employee/actualizaciones/${props.id}`)
     actualizacion.value = respuesta.data.data
     window.scrollTo({ top: 0, behavior: 'smooth' })
+    await obtenerRelacionados()
   } catch (error) {
     console.error('Error al cargar la actualización:', error)
     actualizacion.value = null
@@ -146,7 +258,7 @@ watch(() => props.id, () => {
 </script>
 
 <style scoped>
-/* Variables del sistema */
+/* Variables del sistema - NO MODIFICADO */
 :root {
   --primary: #077E9D;
   --secondary: #025B7D;
@@ -158,13 +270,12 @@ watch(() => props.id, () => {
 }
 
 .vista-detalle-container {
-  /* CAMBIO CLAVE: Todo el contenedor padre ahora ocupa el 100% del espacio que le den */
   width: 100%;
   max-width: 100%;
   margin: 0;
 }
 
-/* Estado de carga */
+/* Estado de carga - SIN CAMBIOS */
 .estado-carga {
   text-align: center;
   padding: 60px 40px;
@@ -176,27 +287,24 @@ watch(() => props.id, () => {
   margin: 40px auto;
 }
 
-/* Tarjeta principal */
+/* Tarjeta principal - SIN CAMBIOS */
 .detalle-card {
   background: white;
   border-radius: 0 0 24px 24px;
-  /* Quitamos bordes redondeados arriba porque toca los bordes de la pantalla/sidebar */
   box-shadow: var(--shadow-md);
   overflow: hidden;
   transition: var(--transition);
 }
 
-/* --- HERO BANNER (OCUPA EL 100%) --- */
+/* Hero Banner - SIN CAMBIOS */
 .hero-banner {
   position: relative;
   width: 100%;
-  /* La imagen ahora abarca todo lo ancho */
   min-height: 300px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   border-radius: 0;
-  /* Sin bordes para que parezca un banner real de lado a lado */
   overflow: hidden;
   background-color: var(--secondary);
 }
@@ -237,9 +345,7 @@ watch(() => props.id, () => {
   flex-grow: 1;
 }
 
-/* --- ESTILOS ORIGINALES RESTAURADOS --- */
-
-/* Botón Volver Original */
+/* Botón Volver - SIN CAMBIOS */
 .btn-volver {
   display: inline-flex;
   align-items: center;
@@ -273,7 +379,7 @@ watch(() => props.id, () => {
   z-index: 4;
 }
 
-/* Badge Versión Original */
+/* Badge Versión - SIN CAMBIOS */
 .version-badge {
   display: inline-block;
   padding: 6px 14px;
@@ -286,7 +392,7 @@ watch(() => props.id, () => {
   box-shadow: var(--shadow-sm);
 }
 
-/* Badges de Estado Originales */
+/* Badges de Estado - SIN CAMBIOS */
 .estado-badge {
   display: inline-flex;
   align-items: center;
@@ -354,7 +460,7 @@ watch(() => props.id, () => {
   background: #2196f3;
 }
 
-/* Textos sobre el Banner */
+/* Textos sobre el Banner - SIN CAMBIOS */
 .hero-titulo {
   color: white;
   font-size: 2.2rem;
@@ -391,12 +497,50 @@ watch(() => props.id, () => {
   align-items: center;
 }
 
-/* --- RESUMEN Y CONTENIDO (AHORA SON MÁS ESTRECHOS Y CENTRADOS) --- */
+/* NUEVA ESTRUCTURA PARA EL CONTENIDO PRINCIPAL */
+.contenido-principal {
+  padding: 0 20px;
+}
+
+.contenido-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 40px;
+  padding: 40px 0;
+}
+
+.contenido-columna {
+  min-width: 0; /* Previene overflow */
+}
+
+/* Responsive para el grid */
+@media (max-width: 991px) {
+  .contenido-wrapper {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  
+  .sidebar-relacionados {
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .contenido-principal {
+    padding: 0 16px;
+  }
+  
+  .contenido-wrapper {
+    padding: 24px 0;
+  }
+}
+
+/* Resumen y Contenido - MODIFICADO para adaptarse a la nueva estructura */
 .resumen-container {
-  max-width: 800px;
-  /* Ancho máximo para no cansar la vista */
-  margin: 40px auto 32px auto;
-  /* Margin "auto" a los lados lo centra perfectamente */
+  max-width: 100%; /* Cambiado de 800px a 100% para que ocupe el ancho de la columna */
+  margin: 0 0 32px 0;
   padding: 24px;
   background: #f8fafc;
   border-radius: 12px;
@@ -411,12 +555,9 @@ watch(() => props.id, () => {
 }
 
 .contenido-container {
-  max-width: 800px;
-  /* Ancho máximo para el contenido completo */
-  margin: 0 auto 60px auto;
-  /* Centrado igual que el resumen */
-  padding: 0 20px;
-  /* Un poco de padding lateral por si las pantallas se hacen pequeñas */
+  max-width: 100%; /* Cambiado de 800px a 100% */
+  margin: 0;
+  padding: 0;
 }
 
 .contenido-header {
@@ -425,14 +566,14 @@ watch(() => props.id, () => {
   border-bottom: 2px solid #e2e8f0;
 }
 
-.contenido-header h3 {
+.contenido-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #0f172a;
 }
 
-/* EditorJS contenido */
+/* EditorJS contenido - SIN CAMBIOS */
 .editorjs-editor {
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 1.05rem;
@@ -467,7 +608,7 @@ watch(() => props.id, () => {
   display: block;
 }
 
-/* Error container */
+/* Error container - SIN CAMBIOS */
 .error-container {
   text-align: center;
   padding: 60px 40px;
@@ -504,7 +645,191 @@ watch(() => props.id, () => {
   box-shadow: var(--shadow-md);
 }
 
-/* Responsive */
+/* Sidebar - MODIFICADO ligeramente para adaptarse */
+.sidebar-relacionados {
+  position: sticky;
+  top: 24px;
+  align-self: start;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.sidebar-icon {
+  color: var(--primary);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.sidebar-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.relacionados-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.relacionado-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #e1e7f0;
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.relacionado-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(4px);
+}
+
+.relacionado-img-wrap {
+  width: 80px;
+  min-width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.relacionado-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: var(--transition);
+}
+
+.relacionado-card:hover .relacionado-img {
+  transform: scale(1.05);
+}
+
+.relacionado-sin-img {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #cbd5e1;
+}
+
+.relacionado-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.relacionado-area {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+}
+
+.relacionado-titulo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a202c;
+  margin: 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s;
+}
+
+.relacionado-card:hover .relacionado-titulo {
+  color: var(--primary);
+}
+
+.relacionado-fecha {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* Skeleton loader - SIN CAMBIOS */
+.relacionados-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #e1e7f0;
+}
+
+.skeleton-img {
+  width: 80px;
+  min-width: 80px;
+  height: 60px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.skeleton-line.largo  { width: 90%; }
+.skeleton-line.medio  { width: 70%; }
+.skeleton-line.corto  { width: 45%; }
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.relacionados-vacio {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  border: 1px dashed #e1e7f0;
+  border-radius: 12px;
+}
+
+/* Responsive para móvil - MEJORADO */
 @media (max-width: 768px) {
   .hero-banner {
     min-height: 250px;
@@ -518,18 +843,18 @@ watch(() => props.id, () => {
     font-size: 1.8rem;
   }
 
-  .resumen-container {
-    margin: 24px 20px;
-    padding: 16px;
-  }
-
-  .contenido-container {
-    margin: 0 20px 32px 20px;
-  }
-
   .hero-btn-pos {
     left: 20px;
     top: 16px;
+  }
+  
+  .resumen-container {
+    margin: 0 0 24px 0;
+    padding: 16px;
+  }
+  
+  .contenido-header h2 {
+    font-size: 1.25rem;
   }
 }
 
