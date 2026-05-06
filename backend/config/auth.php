@@ -42,7 +42,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'usuarios_sistema',
         ],
     ],
 
@@ -62,7 +62,7 @@ return [
     | Supported: "database", "eloquent"
     |
     */
-
+    // cambio en model, se usaba users
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
