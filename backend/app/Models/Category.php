@@ -10,7 +10,7 @@ class Category extends Model
     protected $table = 'act_categorias';
 
     // llave primaria
-    protected $primaryKey = 'categoria_id';
+    protected $primaryKey = 'categoria_actualizacion_id';
 
     // campos bd
     protected $fillable = [

@@ -6,7 +6,25 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// Interceptor de Respuestas
+// Interceptor de Peticiones (Request) ──
+api.interceptors.request.use(
+  (config) => {
+    // 1. Buscamos el token en el almacenamiento local
+    const token = localStorage.getItem('auth_token');
+    
+    // 2. Si existe, lo adjuntamos a las cabeceras de la petición
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// ── Interceptor de Respuestas (Response) ──
 api.interceptors.response.use(
   (response) => {
     // Si Laravel envía un 'message' en un 200/201, lo mostramos como éxito
@@ -28,8 +46,16 @@ api.interceptors.response.use(
     // Manejo de errores comunes de Laravel
     switch (status) {
       case 401:
-        toast.error('Tu sesión ha expirado. Por favor, inicia sesión de nuevo.');
-        // Aquí podrías redirigir al login: router.push('/login')
+        toast.error('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
+        
+        // 👇 FIX: Limpiamos los rastros del usuario simulado
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        
+        // 👇 FIX: Redirigimos al login (Usamos window.location para evitar errores de importación circular con vue-router)
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
         break;
       case 403:
         toast.warning('No tienes permisos para realizar esta acción.');
@@ -49,7 +75,7 @@ api.interceptors.response.use(
           // Fallback por si es un 422 genérico
           toast.error(data.message || 'Por favor, revisa los datos del formulario.');
         }
-  break;
+        break;
       case 500:
         toast.error('Error interno del servidor. Intenta más tarde.');
         break;
@@ -61,4 +87,4 @@ api.interceptors.response.use(
   }
 );
 
-export default api
+export default api;

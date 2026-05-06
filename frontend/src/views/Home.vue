@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 // 1. Importas el componente asegurándote de usar la ruta correcta
-import Lista from '../../components/employees/List.vue';
+import Lista from '../components/employees/List.vue';
 
 // (Si tienes otros imports, van aquí)
 </script>

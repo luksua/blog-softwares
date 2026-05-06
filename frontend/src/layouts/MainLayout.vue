@@ -1,13 +1,11 @@
 <template>
   <div class="layout">
-    
-    <div 
-      class="sidebar-overlay" 
-      v-if="isMobile && isExpanded" 
-      @click="toggleSidebar"
-    ></div>
 
-    <!-- <aside :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
+    <!-- Overlay móvil (solo se muestra si el sidebar está abierto en móvil y es admin) -->
+    <div class="sidebar-overlay" v-if="isMobile && isExpanded && isAdmin" @click="toggleSidebar"></div>
+
+    <!-- SIDEBAR: Solo visible para Administradores -->
+    <aside v-if="isAdmin" :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
       <div class="sidebar-header">
         <div class="logo-full" v-if="isExpanded">Asotrauma</div>
         <button class="toggle-btn" @click="toggleSidebar">
@@ -16,43 +14,54 @@
       </div>
 
       <ul class="nav-menu">
-        <router-link to="/" custom v-slot="{ navigate, isActive }">
-          <li 
-            @click="navigate" 
-            :class="['nav-item', { active: isActive }]"
-          >
-            <i class="nav-icon"></i>
-            <span class="nav-text" v-show="isExpanded">Inicio</span>
-            <div class="tooltip" v-if="!isExpanded">Inicio</div>
+        <!-- Link a Inicio Admin -->
+        <router-link to="/admin" custom v-slot="{ navigate, isActive }">
+          <li @click="navigate" :class="['nav-item', { active: isActive }]">
+            <i class="nav-icon">a</i>
+            <span class="nav-text" v-show="isExpanded">Dashboard</span>
+            <div class="tooltip" v-if="!isExpanded">Dashboard</div>
           </li>
         </router-link>
 
-        <router-link to="" custom v-slot="{ navigate, isActive }">
-          <li 
-            @click="navigate" 
-            :class="['nav-item', { active: isActive }]"
-          >
-            <i class="nav-icon"></i>
-            <span class="nav-text" v-show="isExpanded">Guardados</span>
-            <div class="tooltip" v-if="!isExpanded">Guardados</div>
+        <!-- Link a Gestión de Actualizaciones (Ejemplo) -->
+        <!-- OJO: Aquí pondrías la ruta a tu tabla/lista de actualizaciones del admin -->
+        <router-link to="/admin" custom v-slot="{ navigate, isActive }">
+          <li @click="navigate" :class="['nav-item', { active: isActive }]">
+            <i class="nav-icon">b</i>
+            <span class="nav-text" v-show="isExpanded">Panel administrativo</span>
+            <div class="tooltip" v-if="!isExpanded">Panel administrativo</div>
           </li>
         </router-link>
       </ul>
-    </aside> -->
+    </aside>
 
     <div class="main">
       <header class="navbar">
         <div class="navbar-left">
-          <!-- <button class="mobile-toggle" @click="toggleSidebar">
+          <!-- Botón hamburguesa móvil: Solo visible para admins -->
+          <button v-if="isAdmin" class="mobile-toggle" @click="toggleSidebar">
             ☰
-          </button> -->
+          </button>
+
           <a href="/" class="logo-link">
+            <!-- NOTA: Verifica que la ruta de tu imagen sea correcta -->
             <img src="../assets/Asotrauma3.png" alt="logo" class="logo" />
           </a>
         </div>
 
         <div class="navbar-right">
-          <button class="btn-primary">
+          <!-- Muestra un link directo a guardados si el usuario está logueado -->
+          <router-link v-if="isLoggedIn && !isAdmin" to="/guardados" class="nav-link-header d-none d-md-flex">
+            <i class="bi bi-bookmark-fill fs-4"></i>
+          </router-link>
+
+          <!-- Botón de Cerrar Sesión (Para todos los logueados) -->
+          <button v-if="isLoggedIn" class="btn-logout ms-3" @click="cerrarSesion">
+            Cerrar Sesión
+          </button>
+
+          <!-- Botón de Iniciar Sesión (Si NO está logueado) -->
+          <button v-else class="btn-primary" @click="irALogin">
             <span class="icon">→</span>
             Iniciar Sesión
           </button>
@@ -68,11 +77,6 @@
       <footer class="footer">
         <div class="footer-content">
           <span>© 2026 - Sistema de Versiones</span>
-          <!-- <div class="footer-links">
-            <a href="#">Términos</a>
-            <a href="#">Privacidad</a>
-            <a href="#">Soporte</a>
-          </div> -->
         </div>
       </footer>
     </div>
@@ -80,26 +84,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+
+const router = useRouter();
+const route = useRoute();
 
 const isExpanded = ref(true);
 const isMobile = ref(false);
 
+const isAdmin = ref(false);
+const isEmpleado = ref(false); // Nueva bandera
+const isLoggedIn = ref(false);
+
 const toggleSidebar = () => {
-  // Se quitó la restricción para que el botón funcione en móviles
   isExpanded.value = !isExpanded.value;
 };
 
 const checkMobile = () => {
-  // Sincronizado exactamente con el media query del CSS (768px)
   isMobile.value = window.innerWidth <= 768;
-  
-  // Si es móvil, arranca colapsado. Si es escritorio, arranca expandido.
   isExpanded.value = !isMobile.value;
 };
 
+// Validar estado de sesión y rol
+const checkAuth = () => {
+  const token = localStorage.getItem('auth_token');
+  const userDataStr = localStorage.getItem('user_data');
+
+  if (token && userDataStr) {
+    isLoggedIn.value = true;
+    try {
+      const user = JSON.parse(userDataStr);
+      isAdmin.value = user.rol === 'admin';
+      isEmpleado.value = user.rol === 'empleado';
+    } catch (e) {
+      isAdmin.value = false;
+      isEmpleado.value = false;
+    }
+  } else {
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isEmpleado.value = false;
+  }
+};
+
+const irALogin = () => {
+  router.push({ name: 'login' });
+};
+
+const cerrarSesion = () => {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user_data');
+  isLoggedIn.value = false;
+  isAdmin.value = false;
+  isEmpleado.value = false;
+  router.push({ name: 'inicio' }); // Lo devuelve a la zona pública
+};
+
+watch(() => route.path, () => {
+  checkAuth();
+});
+
 onMounted(() => {
   checkMobile();
+  checkAuth();
   window.addEventListener("resize", checkMobile);
 });
 
@@ -126,7 +174,8 @@ onUnmounted(() => {
   height: 100vh;
   background: #f0f2f5;
   overflow: hidden;
-  position: relative; /* Agregado para contener el overlay correctamente */
+  position: relative;
+  /* Agregado para contener el overlay correctamente */
 }
 
 /* ========== OVERLAY MÓVIL ========== */
@@ -144,8 +193,13 @@ onUnmounted(() => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ========== SIDEBAR MODERNO ========== */
@@ -188,6 +242,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -575,11 +630,11 @@ onUnmounted(() => {
   .sidebar.expanded {
     width: 220px;
   }
-  
+
   .content {
     padding: 20px;
   }
-  
+
   .content-card-2 {
     padding: 20px;
   }
@@ -602,5 +657,63 @@ onUnmounted(() => {
 
 .content::-webkit-scrollbar-thumb:hover {
   background: var(--warning);
+}
+
+/* Botón Logout (Rojo) */
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-logout:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-logout:active {
+  transform: scale(0.97);
+}
+
+/* RESPONSIVE HACKS (Añade a tu @media max-width: 768px) */
+@media (max-width: 768px) {
+  .btn-logout span:not(.icon) {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 10px;
+  }
+
+  .btn-logout .icon {
+    margin: 0;
+  }
+}
+
+.nav-link-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--secondary);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+.nav-link-header:hover {
+  background: rgba(7, 126, 157, 0.1);
+  color: var(--primary);
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
     <div class="pagina-principal container-fluid mt-4">
 
-        <div class="row justify-content-center align-items-center mb-4">
+        <div class="row justify-content-center align-items-center mb-4 titulo">
             <div class="col-lg-10">
                 <h2>Actualizaciones</h2>
             </div>
@@ -63,22 +63,22 @@ const avisarALaLista = () => {
 };
 
 const cerrarModalBootstrap = async () => {
-  await nextTick()
-  const el = modalNuevoRegistroRef.value
-  if (!el) return
+    await nextTick()
+    const el = modalNuevoRegistroRef.value
+    if (!el) return
 
-  let modal = Modal.getInstance(el)
-  if (!modal) modal = new Modal(el)
-  
-  modal.hide()
+    let modal = Modal.getInstance(el)
+    if (!modal) modal = new Modal(el)
 
-  // Esperar a que Bootstrap termine la animación fade (300ms) y limpiar
-  setTimeout(() => {
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
-    document.body.classList.remove('modal-open')
-    document.body.style.overflow = ''
-    document.body.style.paddingRight = ''
-  }, 300)
+    modal.hide()
+
+    // Esperar a que Bootstrap termine la animación fade (300ms) y limpiar
+    setTimeout(() => {
+        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+        document.body.classList.remove('modal-open')
+        document.body.style.overflow = ''
+        document.body.style.paddingRight = ''
+    }, 300)
 }
 
 

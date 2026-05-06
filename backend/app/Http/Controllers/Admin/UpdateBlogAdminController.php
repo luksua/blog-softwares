@@ -250,15 +250,18 @@ class UpdateBlogAdminController extends Controller
     {
         $actualizacion = UpdateBlog::findOrFail($id);
 
+        // Agregamos categoria_id y area_servicio_id a las reglas
         $data = $request->validate([
-            'actualizacion_titulo' => 'sometimes|required|string|max:255',
-            'actualizacion_version' => 'sometimes|required|string|max:50',
-            'actualizacion_imagen_destacada' => 'sometimes|nullable|string|max:255',
-            'actualizacion_resumen' => 'sometimes|required|string|max:255',
-            'actualizacion_estado' => 'sometimes|required|in:publicado,borrador,revision,inactivo',
+            'actualizacion_titulo'            => 'sometimes|required|string|max:255',
+            'actualizacion_version'           => 'sometimes|required|string|max:50',
+            'actualizacion_imagen_destacada'  => 'sometimes|nullable|string|max:255',
+            'actualizacion_resumen'           => 'sometimes|required|string|max:255',
+            'actualizacion_estado'            => 'sometimes|required|in:publicado,borrador,revision,inactivo',
             'actualizacion_fecha_publicacion' => 'nullable|date',
-            'actualizacion_fecha_creacion' => 'nullable|date',
-            'actualizacion_contenido' => 'sometimes|required|array',
+            'actualizacion_fecha_creacion'    => 'nullable|date',
+            'actualizacion_contenido'         => 'sometimes|required|array',
+            'actualizacion_categoria_id'      => 'sometimes|required|integer',
+            'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
         ]);
 
         $actualizacion->update($data);

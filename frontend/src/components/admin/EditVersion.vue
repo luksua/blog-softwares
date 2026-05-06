@@ -65,12 +65,23 @@
 
           <div class="col-md-6 mb-3">
             <label for="categoria" class="form-label fw-bold">Categoría *</label>
-            <select id="categoria" class="form-select" v-model="form.actualizacion_categoria_id" required>
-              <option value="" disabled>Selecciona una categoría...</option>
+            <!--
+              FIXES aplicados:
+              1. v-model apunta a form.categoria_id (nombre unificado, tipo Number)
+              2. :value de cada option usa Number() para evitar mismatch string/number
+              3. Se añade :key con el mismo valor para forzar reactividad
+            -->
+            <select
+              id="categoria"
+              class="form-select"
+              v-model="form.categoria_id"
+              required
+            >
+              <option :value="null" disabled>Selecciona una categoría...</option>
               <option
                 v-for="categoria in listaCategorias"
                 :key="categoria.categoria_actualizacion_id"
-                :value="categoria.categoria_actualizacion_id"
+                :value="Number(categoria.categoria_actualizacion_id)"
               >
                 {{ categoria.categoria_actualizacion_nombre }}
               </option>
@@ -184,15 +195,18 @@ const previewImagen = ref<string | null>(null)
 const listaAreas = ref<any[]>([])
 const listaCategorias = ref<any[]>([])
 
-const form = reactive<NewVersion>({
+// ── Form unificado ────────────────────────────────────────────────
+// Se usa "categoria_id" como nombre interno (Number) para evitar el
+// mismatch de tipos entre lo que devuelve la API y lo que espera el select.
+const form = reactive({
   titulo: '',
   version: '',
   contenido: '',
   resumen: '',
   imagen_destacada: '',
-  area_servicio_id: null,
-  actualizacion_categoria_id: null,
-  usuario_id_autor: null,
+  area_servicio_id: null as number | null,
+  categoria_id: null as number | null,   // ← nombre unificado, siempre Number
+  usuario_id_autor: null as number | null,
   estado: 'borrador',
   fecha_creacion: '',
   fecha_publicacion: ''
@@ -200,7 +214,6 @@ const form = reactive<NewVersion>({
 
 const manejarImagen = (event: Event) => {
   const target = event.target as HTMLInputElement
-
   if (target.files && target.files.length > 0) {
     archivoImagen.value = target.files[0]
     previewImagen.value = URL.createObjectURL(target.files[0])
@@ -213,20 +226,16 @@ const manejarImagen = (event: Event) => {
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
   if (ruta.startsWith('http')) return ruta
-
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
   return `${baseUrl}/storage/${ruta}`
 }
 
 const formatearFechaParaInput = (fecha: any) => {
   if (!fecha) return ''
-
   const fechaObj = typeof fecha === 'number' && fecha < 10000000000
     ? new Date(fecha * 1000)
     : new Date(fecha)
-
   if (isNaN(fechaObj.getTime())) return ''
-
   return fechaObj.toISOString().split('T')[0]
 }
 
@@ -265,13 +274,8 @@ const initEditor = (initialData: any = {}) => {
               try {
                 const formData = new FormData()
                 formData.append('imagen', file)
-
                 const respuesta = await api.post('/admin/subir-imagen-blog', formData)
-
-                return {
-                  success: 1,
-                  file: { url: respuesta.data.url }
-                }
+                return { success: 1, file: { url: respuesta.data.url } }
               } catch (error) {
                 console.error('Error subiendo imagen:', error)
                 alert('Hubo un error al subir la imagen.')
@@ -295,7 +299,12 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
       viejoEstado === 'borrador' ||
       viejoEstado === 'revision'
     ) {
-      form.fecha_publicacion = new Date().toISOString().split('T')[0]
+      const hoy = new Date();
+      const año = hoy.getFullYear();
+      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoy.getDate()).padStart(2, '0');
+
+      form.fecha_publicacion = `${año}-${mes}-${dia}`;
     }
   } else if (nuevoEstado === 'inactivo' || nuevoEstado === 'borrador') {
     form.fecha_publicacion = ''
@@ -304,7 +313,6 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 
 const enfocarTitulo = async () => {
   await nextTick()
-
   setTimeout(() => {
     inputTitulo.value?.focus()
     inputTitulo.value?.select()
@@ -322,31 +330,35 @@ const cargarRegistro = async () => {
     const respuesta = await api.get(`/admin/actualizaciones/${props.id}`)
     const data = respuesta.data.data
 
-    form.titulo = data.actualizacion_titulo ?? ''
-    form.version = data.actualizacion_version ?? ''
-    form.imagen_destacada = data.actualizacion_imagen_destacada ?? ''
-    form.resumen = data.actualizacion_resumen ?? ''
-    form.estado = data.actualizacion_estado ?? 'borrador'
+    form.titulo               = data.actualizacion_titulo ?? ''
+    form.version              = data.actualizacion_version ?? ''
+    form.imagen_destacada     = data.actualizacion_imagen_destacada ?? ''
+    form.resumen              = data.actualizacion_resumen ?? ''
+    form.estado               = data.actualizacion_estado ?? 'borrador'
+    form.fecha_publicacion    = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
+    form.fecha_creacion       = formatearFechaParaInput(data.actualizacion_fecha_creacion)
 
-    form.area_servicio_id = data.actualizacion_area_servicio_id ?? ''
-    form.actualizacion_categoria_id = data.actualizacion_categoria_id ?? ''
+    // ── FIX: convertir siempre a Number para que coincida con el :value del option ──
+    form.area_servicio_id = data.actualizacion_area_servicio_id
+      ? Number(data.actualizacion_area_servicio_id)
+      : null
 
-    form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
-    form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion)
+    form.categoria_id = data.actualizacion_categoria_id
+      ? Number(data.actualizacion_categoria_id)
+      : null
 
     const contenidoBD = data.actualizacion_contenido
 
     await nextTick()
 
     let editorData = {}
-
     if (contenidoBD) {
       try {
         editorData = typeof contenidoBD === 'string'
           ? JSON.parse(contenidoBD)
           : contenidoBD
       } catch (e) {
-        console.error('Error al parsear el JSON:', e)
+        console.error('Error al parsear el JSON del editor:', e)
       }
     }
 
@@ -355,12 +367,8 @@ const cargarRegistro = async () => {
     console.error('Error al cargar registro:', error)
   } finally {
     cargando.value = false
-
     await nextTick()
-
-    setTimeout(() => {
-      inputTitulo.value?.focus()
-    }, 100)
+    setTimeout(() => { inputTitulo.value?.focus() }, 100)
   }
 }
 
@@ -376,33 +384,28 @@ const guardarCambios = async () => {
 
     if (editor.value) {
       contenidoFinal = await editor.value.save()
-      form.contenido = contenidoFinal
+      form.contenido = JSON.stringify(contenidoFinal)
     }
 
     if (archivoImagen.value) {
       const imgData = new FormData()
       imgData.append('imagen', archivoImagen.value)
-
       const res = await api.post('/admin/subir-imagen-portada', imgData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
-
       rutaImagen = res.data.path
     }
 
     const payload = {
-      actualizacion_titulo: form.titulo,
-      actualizacion_version: form.version,
-      actualizacion_resumen: form.resumen,
-      actualizacion_imagen_destacada: rutaImagen,
-      actualizacion_estado: form.estado,
-      actualizacion_fecha_publicacion: form.fecha_publicacion,
-      actualizacion_contenido: contenidoFinal,
-
-      actualizacion_area_servicio_id: form.area_servicio_id,
-      actualizacion_categoria_id: form.actualizacion_categoria_id
+      actualizacion_titulo:             form.titulo,
+      actualizacion_version:            form.version,
+      actualizacion_resumen:            form.resumen,
+      actualizacion_imagen_destacada:   rutaImagen,
+      actualizacion_estado:             form.estado,
+      actualizacion_fecha_publicacion:  form.fecha_publicacion,
+      actualizacion_contenido:          contenidoFinal,
+      actualizacion_area_servicio_id:   form.area_servicio_id,
+      actualizacion_categoria_id:       form.categoria_id,   // ← nombre correcto para la API
     }
 
     await api.post(`/admin/actualizaciones/${props.id}`, payload)
@@ -411,7 +414,6 @@ const guardarCambios = async () => {
     emit('guardado')
   } catch (error: any) {
     console.error('Error al guardar:', error)
-
     if (error.response?.status === 422) {
       errores.value = error.response.data.errors || {}
     }
@@ -422,7 +424,6 @@ const guardarCambios = async () => {
 
 onMounted(async () => {
   await cargarListas()
-
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
 })
@@ -430,7 +431,6 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
-
   if (editor.value && typeof editor.value.destroy === 'function') {
     editor.value.destroy()
   }
@@ -438,11 +438,7 @@ onBeforeUnmount(() => {
 
 watch(
   () => props.id,
-  () => {
-    if (props.id) {
-      cargarRegistro()
-    }
-  },
+  () => { if (props.id) cargarRegistro() },
   { immediate: true }
 )
 </script>
