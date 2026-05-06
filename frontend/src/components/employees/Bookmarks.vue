@@ -1,14 +1,14 @@
 <template>
   <div class="contenedor-lista">
     <div class="cabecera mb-4">
-      <h2>Actualizaciones</h2>
+      <h2>Guardados</h2>
     </div>
 
     <div v-if="cargando && actualizaciones.length === 0" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
       </div>
-      <p>Cargando actualizaciones...</p>
+      <p>Cargando guardados...</p>
     </div>
 
     <div v-else-if="error" class="estado-mensaje error">

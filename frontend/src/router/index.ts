@@ -7,6 +7,7 @@ import ListaActualizaciones from '../components/employees/List.vue';
 import VerActualizacion from '../components/employees/ListVersion.vue';
 import VerActualizacionAdmin from '../components/admin/ListVersion.vue';
 import EditarActualizacionAdmin from '../components/admin/EditVersion.vue';
+import VerGuardados from '../features/employee/Bookmarks.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,7 +16,7 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/Login.vue'),
+      component: () => import('../features/Login.vue'),
       meta: { requiresAuth: false }
     },
 
@@ -41,6 +42,11 @@ const router = createRouter({
           component: VerActualizacion,
           props: true,
           meta: { sinPadding: true }
+        },
+        {
+          path: 'employee/guardados',
+          name: 'employee-guardados',
+          component: VerGuardados,
         },
 
         // Rutas de Administración (SÍ requieren auth simulado)

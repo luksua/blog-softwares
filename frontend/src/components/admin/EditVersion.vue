@@ -166,7 +166,6 @@
 <script setup lang="ts">
 import { reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import api from '../../api/api'
-import type { NewVersion } from '../../types/newVersion'
 
 import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'

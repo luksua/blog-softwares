@@ -1,4 +1,3 @@
-
 export interface Version {
   id: number;
   actualizacion_titulo: string;
@@ -10,6 +9,7 @@ export interface Version {
   actualizacion_fecha_creacion: string;
   actualizacion_imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
   area_servicio: AreaServicio;
+  categoria: Category;
 }
 
 export interface ImagenGaleria {
@@ -20,4 +20,9 @@ export interface ImagenGaleria {
 export interface AreaServicio {
   id?: number;
   area_servicio_nombre: string;
+}
+
+export interface Category {
+  id?: number;
+  categoria_actualizacion_nombre: string;
 }

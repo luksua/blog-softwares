@@ -20,15 +20,28 @@ class ActualizacionResource extends JsonResource
             'actualizacion_fecha_creacion' => $this->actualizacion_fecha_creacion,
             'actualizacion_imagen_destacada' => $this->actualizacion_imagen_destacada,
             'actualizacion_resumen' => $this->actualizacion_resumen,
-
-            // JSON original, por si lo necesitas
             'actualizacion_contenido' => $this->actualizacion_contenido,
             'actualizacion_estado' => $this->actualizacion_estado,
-            // HTML listo para Vue
+
             'actualizacion_contenido_html' => $renderer->render($this->actualizacion_contenido),
+
             'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
-            'area_servicio' => $this->whenLoaded('areaServicio'),
             'actualizacion_categoria_id' => $this->actualizacion_categoria_id,
+
+            'area_servicio' => $this->whenLoaded('areaServicio', function () {
+                return [
+                    'area_servicio_id' => $this->areaServicio?->area_servicio_id,
+                    'area_servicio_nombre' => $this->areaServicio?->area_servicio_nombre,
+                    'area_servicio_correo' => $this->areaServicio?->area_servicio_correo,
+                ];
+            }),
+
+            'categoria' => $this->whenLoaded('categoria', function () {
+                return [
+                    'categoria_actualizacion_id' => $this->categoria?->categoria_actualizacion_id,
+                    'categoria_actualizacion_nombre' => $this->categoria?->categoria_actualizacion_nombre,
+                ];
+            }),
         ];
     }
 }

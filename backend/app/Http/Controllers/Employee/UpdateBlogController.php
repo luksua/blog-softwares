@@ -13,7 +13,7 @@ class UpdateBlogController extends Controller
 {
     public function index(Request $request)
     {
-        $query = UpdateBlog::with('areaServicio')
+        $query = UpdateBlog::with(['areaServicio', 'categoria'])
             ->where('actualizacion_estado', 'publicado');
 
         if ($request->filled('busqueda')) {
@@ -25,6 +25,13 @@ class UpdateBlogController extends Controller
 
         if ($request->filled('area_servicio_id')) {
             $query->where('actualizacion_area_servicio_id', $request->area_servicio_id);
+        }
+
+        if ($request->filled('actualizacion_categoria_id')) {
+            $query->where(
+                'actualizacion_categoria_id',
+                $request->actualizacion_categoria_id
+            );
         }
 
         if ($request->filled('fecha_desde')) {
@@ -58,7 +65,7 @@ class UpdateBlogController extends Controller
         ]);
     }
 
-        public function getCategorias()
+    public function getCategorias()
     {
         $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
             ->orderBy('categoria_actualizacion_nombre', 'asc')
@@ -71,7 +78,7 @@ class UpdateBlogController extends Controller
 
     public function show($id)
     {
-        $actualizacion = UpdateBlog::with('areaServicio')
+        $actualizacion = UpdateBlog::with(['areaServicio', 'categoria'])
             ->where('actualizacion_estado', 'publicado')
             ->findOrFail($id);
 

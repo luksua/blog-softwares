@@ -23,8 +23,6 @@
           </li>
         </router-link>
 
-        <!-- Link a Gestión de Actualizaciones (Ejemplo) -->
-        <!-- OJO: Aquí pondrías la ruta a tu tabla/lista de actualizaciones del admin -->
         <router-link to="/admin" custom v-slot="{ navigate, isActive }">
           <li @click="navigate" :class="['nav-item', { active: isActive }]">
             <i class="nav-icon">b</i>
@@ -51,7 +49,7 @@
 
         <div class="navbar-right">
           <!-- Muestra un link directo a guardados si el usuario está logueado -->
-          <router-link v-if="isLoggedIn && !isAdmin" to="/guardados" class="nav-link-header d-none d-md-flex">
+          <router-link v-if="isLoggedIn && !isAdmin" to="/employee/guardados" class="nav-link-header d-none d-md-flex">
             <i class="bi bi-bookmark-fill fs-4"></i>
           </router-link>
 
@@ -686,7 +684,6 @@ onUnmounted(() => {
   transform: scale(0.97);
 }
 
-/* RESPONSIVE HACKS (Añade a tu @media max-width: 768px) */
 @media (max-width: 768px) {
   .btn-logout span:not(.icon) {
     display: none;

@@ -22,63 +22,75 @@
     </div>
 
     <div v-else class="tabla-con-filtros">
-      <!-- Filtros -->
+      <!-- Filtros - Versión Responsive -->
       <div class="filtros-barra">
-        <div class="filtro-grupo filtro-busqueda">
-          <label for="busqueda" class="filtro-label">Buscar</label>
-          <div class="input-busqueda-wrapper">
-            <i class="bi bi-search icono-busqueda"></i>
-            <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
-              placeholder="Título o resumen..." />
+        <!-- Botón toggle para móvil -->
+        <button 
+          class="btn-toggle-filtros d-md-none" 
+          @click="mostrarFiltros = !mostrarFiltros"
+          type="button"
+        >
+          <i class="bi bi-funnel"></i>
+          {{ mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros' }}
+        </button>
+
+        <div :class="['filtros-contenido', { 'filtros-visible': mostrarFiltros }]">
+          <div class="filtro-grupo filtro-busqueda">
+            <label for="busqueda" class="filtro-label">Buscar</label>
+            <div class="input-busqueda-wrapper">
+              <i class="bi bi-search icono-busqueda"></i>
+              <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
+                placeholder="Título o resumen..." />
+            </div>
           </div>
-        </div>
 
-        <div class="filtro-grupo">
-          <label for="fechaDesde">Fecha desde</label>
-          <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
-        </div>
+          <div class="filtro-grupo">
+            <label for="fechaDesde">Fecha desde</label>
+            <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
+          </div>
 
-        <div class="filtro-grupo">
-          <label for="fechaHasta">Fecha hasta</label>
-          <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
-        </div>
+          <div class="filtro-grupo">
+            <label for="fechaHasta">Fecha hasta</label>
+            <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
+          </div>
 
-        <div class="filtro-grupo">
-          <label for="estado">Estado</label>
-          <select id="estado" v-model="filtros.estado" class="filtro-input" :disabled="cargandoFiltros">
-            <option value="">Todos</option>
-            <option v-for="estado in estadosDisponibles" :key="estado.id" :value="estado.id">
-              {{ estado.nombre }}
-            </option>
-          </select>
-        </div>
+          <div class="filtro-grupo">
+            <label for="estado">Estado</label>
+            <select id="estado" v-model="filtros.estado" class="filtro-input" :disabled="cargandoFiltros">
+              <option value="">Todos</option>
+              <option v-for="estado in estadosDisponibles" :key="estado.id" :value="estado.id">
+                {{ estado.nombre }}
+              </option>
+            </select>
+          </div>
 
-        <div class="filtro-grupo">
-          <label for="area">Área</label>
-          <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
-            <option value="">Todas</option>
-            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
-              :value="Number(area.area_servicio_id)">
-              {{ area.area_servicio_nombre }}
-            </option>
-          </select>
-        </div>
+          <div class="filtro-grupo">
+            <label for="area">Área</label>
+            <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
+              <option value="">Todas</option>
+              <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+                :value="Number(area.area_servicio_id)">
+                {{ area.area_servicio_nombre }}
+              </option>
+            </select>
+          </div>
 
-        <div class="filtro-grupo">
-          <label for="area">Categoria</label>
-          <select id="area" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
-            <option value="">Todas</option>
-            <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
-              :value="Number(categoria.categoria_actualizacion_id)">
-              {{ categoria.categoria_actualizacion_nombre }}
-            </option>
-          </select>
-        </div>
+          <div class="filtro-grupo">
+            <label for="categoria">Categoria</label>
+            <select id="categoria" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
+              <option value="">Todas</option>
+              <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
+                :value="Number(categoria.categoria_actualizacion_id)">
+                {{ categoria.categoria_actualizacion_nombre }}
+              </option>
+            </select>
+          </div>
 
-        <div class="filtro-acciones">
-          <button class="btn-limpiar" @click="limpiarFiltros">
-            Limpiar
-          </button>
+          <div class="filtro-acciones">
+            <button class="btn-limpiar" @click="limpiarFiltros">
+              Limpiar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -94,6 +106,7 @@
             <tr>
               <th class="col-titulo">TÍTULO</th>
               <th class="col-area">ÁREA</th>
+              <th class="col-categoria">CATEGORIA</th>
               <th class="col-version">VERSIÓN</th>
               <th class="col-fecha">FECHA</th>
               <th class="col-estado">ESTADO</th>
@@ -109,6 +122,10 @@
 
               <td class="cell-area" data-label="Área">
                 <span class="area-texto">{{ obtenerNombreArea(item) }}</span>
+              </td>
+
+              <td class="cell-categoria" data-label="Categoria">
+                <span class="area-texto">{{ obtenerNombreCategoria(item) }}</span>
               </td>
 
               <td class="cell-version" data-label="Versión">
@@ -189,7 +206,7 @@
       </div>
     </div>
 
-    <!-- Modal de eliminación -->
+    <!-- Modales (sin cambios) -->
     <div class="modal fade" id="modalEliminarRegistro" tabindex="-1" aria-labelledby="modalEliminarLabel"
       aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -221,7 +238,6 @@
       </div>
     </div>
 
-    <!-- Modal de activación -->
     <div class="modal fade" id="modalDesarchivarRegistro" tabindex="-1" aria-labelledby="modalDesarchivarLabel"
       aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -256,20 +272,20 @@
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
-            @click="cerrarModalEdicion"></button>
-        </div>
+    <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
+              @click="cerrarModalEdicion"></button>
+          </div>
 
-        <div class="modal-body">
-          <Edit v-if="idEditando" :key="idEditando" :id="idEditando" @guardado="actualizacionGuardada"
-            @cerrar="cerrarModalEdicion" />
+          <div class="modal-body">
+            <Edit v-if="idEditando" :key="idEditando" :id="idEditando" @guardado="actualizacionGuardada"
+              @cerrar="cerrarModalEdicion" />
+          </div>
         </div>
       </div>
     </div>
@@ -302,6 +318,7 @@ type EstadoFiltro = {
 const router = useRouter()
 
 const ENDPOINT_AREAS = '/admin/area-servicio'
+const ENDPOINT_CATEGORIAS = '/admin/categorias'
 const ENDPOINT_STATUS = '/admin/estados-actualizacion'
 
 const actualizaciones = ref<Version[]>([])
@@ -314,6 +331,8 @@ const totalRegistros = ref(0)
 
 const itemAEliminar = ref<Version | null>(null)
 const idEditando = ref<number | null>(null)
+
+const mostrarFiltros = ref(false) // Controla la visibilidad en móvil
 
 const filtros = ref<{
   busqueda: string
@@ -342,7 +361,8 @@ const hayFiltrosActivos = computed(() => {
     filtros.value.fechaDesde ||
     filtros.value.fechaHasta ||
     filtros.value.estado ||
-    filtros.value.areaServicioId
+    filtros.value.areaServicioId ||
+    filtros.value.categoriaId
   )
 })
 
@@ -384,12 +404,14 @@ const obtenerCatalogosFiltros = async () => {
   cargandoFiltros.value = true
 
   try {
-    const [areasResp, estadosResp] = await Promise.all([
+    const [areasResp, categoriasResp, estadosResp] = await Promise.all([
       api.get(ENDPOINT_AREAS),
+      api.get(ENDPOINT_CATEGORIAS),
       api.get(ENDPOINT_STATUS)
     ])
 
     areasDisponibles.value = areasResp.data?.data || []
+    categoriasDisponibles.value = categoriasResp.data?.data || []
     estadosDisponibles.value = estadosResp.data?.data || []
   } catch (err) {
     console.error('Error al cargar catálogos de filtros:', err)
@@ -426,6 +448,10 @@ const obtenerActualizaciones = async (page = 1) => {
       params.append('area_servicio_id', String(filtros.value.areaServicioId))
     }
 
+    if (filtros.value.categoriaId !== '') {
+      params.append('categoria_actualizacion_id', String(filtros.value.categoriaId))
+    }
+
     const respuesta = await api.get(`/admin/actualizaciones?${params.toString()}`)
 
     actualizaciones.value = respuesta.data.data
@@ -437,6 +463,10 @@ const obtenerActualizaciones = async (page = 1) => {
     error.value = 'No se pudo conectar con el servidor para obtener los datos.'
   } finally {
     cargando.value = false
+    // En móvil, después de filtrar, ocultar los filtros automáticamente
+    if (window.innerWidth < 768) {
+      mostrarFiltros.value = false
+    }
   }
 }
 
@@ -491,6 +521,10 @@ watch(
 
 const obtenerNombreArea = (item: Version) => {
   return item.area_servicio?.area_servicio_nombre || 'Sin área'
+}
+
+const obtenerNombreCategoria = (item: Version) => {
+  return item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
 }
 
 const cambiarPagina = (pagina: number) => {
@@ -611,6 +645,13 @@ defineExpose({
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  padding: 0 16px;
+}
+
+@media (min-width: 768px) {
+  .contenedor-lista-tabla {
+    padding: 0 24px;
+  }
 }
 
 .estado-mensaje {
@@ -659,16 +700,68 @@ defineExpose({
   gap: 16px;
 }
 
+/* Filtros Responsive */
 .filtros-barra {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(180px, 1fr)) auto;
-  gap: 16px;
-  align-items: end;
   background: white;
   border: 1px solid #e1e7f0;
   border-radius: 16px;
   padding: 18px;
   box-shadow: var(--shadow-sm);
+}
+
+.btn-toggle-filtros {
+  width: 100%;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e1e7f0;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-toggle-filtros:hover {
+  background: #f0f2f5;
+}
+
+.filtros-contenido {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 16px;
+  transition: all 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .filtros-contenido {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 0;
+  }
+  
+  .btn-toggle-filtros {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .filtros-contenido {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.filtros-visible {
+  display: grid;
+}
+
+@media (max-width: 767px) {
+  .filtros-contenido:not(.filtros-visible) {
+    display: none;
+  }
 }
 
 .filtro-grupo {
@@ -715,7 +808,12 @@ defineExpose({
   align-items: end;
 }
 
-.btn-filtrar,
+@media (min-width: 1200px) {
+  .filtro-acciones {
+    grid-column: auto;
+  }
+}
+
 .btn-limpiar {
   height: 42px;
   padding: 0 16px;
@@ -725,29 +823,21 @@ defineExpose({
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
-}
-
-.btn-filtrar {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: white;
-}
-
-.btn-limpiar {
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #e1e7f0;
 }
 
-.btn-filtrar:hover,
 .btn-limpiar:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
 }
 
+/* Tabla Responsive */
 .table-container {
   background: white;
   border-radius: 16px;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #e1e7f0;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
@@ -760,6 +850,13 @@ defineExpose({
 .base-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 600px;
+}
+
+@media (max-width: 768px) {
+  .base-table {
+    min-width: 100%;
+  }
 }
 
 .base-table thead tr {
@@ -816,29 +913,50 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-.col-titulo {
-  width: 28%;
-}
+/* Responsive: Convertir tabla en tarjetas en móvil */
+@media (max-width: 768px) {
+  .base-table thead {
+    display: none;
+  }
 
-.col-area {
-  width: 16%;
-}
+  .base-table tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #e1e7f0;
+  }
 
-.col-version {
-  width: 12%;
-}
+  .base-table tbody tr:hover {
+    transform: translateX(4px) scale(1.02);
+  }
 
-.col-fecha {
-  width: 18%;
-}
+  .base-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f2f5;
+    text-align: right;
+  }
 
-.col-estado {
-  width: 12%;
-}
+  .base-table td:last-child {
+    border-bottom: none;
+  }
 
-.col-acciones {
-  width: 14%;
-  text-align: right;
+  .base-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.8rem;
+    text-align: left;
+    min-width: 100px;
+  }
+
+  .icon-group {
+    justify-content: flex-end;
+  }
 }
 
 .titulo-texto {
@@ -863,27 +981,6 @@ defineExpose({
   border: 1px solid #e1e7f0;
   transition: var(--transition-smooth);
 }
-
-.filtro-busqueda {
-  grid-column: span 2;
-}
-
-@media (max-width: 1024px) {
-  .filtro-busqueda {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 640px) {
-  .filtro-busqueda {
-    grid-column: span 1;
-  }
-}
-
-/* 
-.filtro-input::placeholder {
-  color: #9ca3af;
-} */
 
 .fecha-info {
   display: flex;
@@ -980,6 +1077,13 @@ defineExpose({
   gap: 16px;
 }
 
+@media (max-width: 768px) {
+  .table-footer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
 .info-registros {
   font-size: 0.85rem;
   color: #6b7280;
@@ -996,6 +1100,8 @@ defineExpose({
   list-style: none;
   margin: 0;
   padding: 0;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .pagination-moderno li {
@@ -1006,7 +1112,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 36px;
+  min-width: 30px;
   height: 36px;
   padding: 0 8px;
   background: white;
@@ -1036,6 +1142,35 @@ defineExpose({
   cursor: not-allowed;
 }
 
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.icono-busqueda {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.filtro-input {
+  padding-left: 30px;
+}
+
+/* Modales responsive */
+.modal-content {
+  margin: 16px;
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    margin: 0;
+  }
+}
+
 .modal-header {
   border-bottom: none;
   border-top: 3px solid var(--warning);
@@ -1058,92 +1193,191 @@ defineExpose({
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 1024px) {
+/* Mejora de filtros solo en pantallas grandes */
+@media (min-width: 1200px) {
   .filtros-barra {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    padding: 22px 24px;
+    border-radius: 20px;
+  }
+
+  .filtros-contenido {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px 16px;
+    align-items: end;
+    margin-top: 0;
+  }
+
+  .filtro-busqueda {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(2),
+  .filtro-grupo:nth-child(3) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(4) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(5),
+  .filtro-grupo:nth-child(6) {
+    grid-column: span 2;
   }
 
   .filtro-acciones {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 768px) {
-  .base-table thead {
-    display: none;
-  }
-
-  .base-table tbody tr {
-    display: block;
-    margin-bottom: 16px;
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid #e1e7f0;
-  }
-
-  .base-table tbody tr:hover {
-    transform: translateX(4px) scale(1.02);
-  }
-
-  .base-table td {
+    grid-column: span 1;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #f0f2f5;
-    text-align: right;
+    align-items: end;
+    justify-content: flex-end;
   }
 
-  .base-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--primary);
-    font-size: 0.8rem;
-    text-align: left;
+  .btn-limpiar {
+    width: 100%;
+    min-width: 92px;
   }
 
-  .table-footer {
-    flex-direction: column;
-    text-align: center;
+  .filtro-input {
+    height: 44px;
   }
 
-  .icon-group {
-    justify-content: center;
+  .filtro-grupo label {
+    min-height: 16px;
+    margin-bottom: 2px;
   }
 }
 
-@media (max-width: 640px) {
-  .filtros-barra {
-    grid-template-columns: 1fr;
+@media (min-width: 1400px) {
+  .filtros-contenido {
+    grid-template-columns: repeat(14, minmax(0, 1fr));
+  }
+
+  .filtro-busqueda {
+    grid-column: span 4;
+  }
+
+  .filtro-grupo:nth-child(2),
+  .filtro-grupo:nth-child(3) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(4) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(5),
+  .filtro-grupo:nth-child(6) {
+    grid-column: span 2;
   }
 
   .filtro-acciones {
-    flex-direction: column;
-    align-items: stretch;
+    grid-column: span 2;
   }
 }
+/* Mejora desktop: categoría más amplia y botón limpiar compacto */
+@media (min-width: 1200px) {
+  .filtros-contenido {
+    display: grid;
+    grid-template-columns: repeat(18, minmax(0, 1fr));
+    gap: 14px 16px;
+    align-items: end;
+    margin-top: 0;
+  }
 
-.input-busqueda-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
+  .filtro-busqueda {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(3) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(4) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(5) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(6) {
+    grid-column: span 3;
+  }
+
+  .filtro-acciones {
+    grid-column: span 1;
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+  }
+
+  .btn-limpiar {
+    width: auto;
+    min-width: 76px;
+    padding: 0 12px;
+  }
 }
+/* Desktop: filtros con categoría amplia y botón limpiar compacto con separación */
+@media (min-width: 1200px) {
+  .filtros-contenido {
+    display: grid;
+    grid-template-columns: repeat(20, minmax(0, 1fr));
+    gap: 14px 18px;
+    align-items: end;
+    margin-top: 0;
+  }
 
-.icono-busqueda {
-  position: absolute;
-  left: 12px;
-  color: #9ca3af;
-  font-size: 0.95rem;
-  pointer-events: none;
-  /* para que el click pase al input */
-}
+  .filtro-busqueda {
+    grid-column: span 3;
+  }
 
-.filtro-input {
-  padding-left: 36px;
-  /* espacio para el icono */
-  /* tus estilos actuales del input... */
+  /* Fecha desde */
+  .filtro-grupo:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  /* Fecha hasta */
+  .filtro-grupo:nth-child(3) {
+    grid-column: span 3;
+  }
+
+  /* Estado */
+  .filtro-grupo:nth-child(4) {
+    grid-column: span 2;
+  }
+
+  /* Área */
+  .filtro-grupo:nth-child(5) {
+    grid-column: span 3;
+  }
+
+  /* Categoría */
+  .filtro-grupo:nth-child(6) {
+    grid-column: span 4;
+  }
+
+  /* Botón limpiar */
+  .filtro-acciones {
+    grid-column: span 2;
+    display: flex;
+    align-items: end;
+    justify-content: flex-start;
+    padding-left: 6px;
+  }
+
+  .btn-limpiar {
+    width: auto;
+    min-width: 76px;
+    height: 44px;
+    padding: 0 12px;
+  }
 }
 </style>
