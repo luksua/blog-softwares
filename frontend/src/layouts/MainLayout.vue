@@ -49,19 +49,12 @@
 
         <div class="navbar-right">
           <!-- Muestra un link directo a guardados si el usuario está logueado -->
-          <router-link v-if="isLoggedIn && !isAdmin" to="/employee/guardados" class="nav-link-header d-none d-md-flex">
+          <router-link v-if="isLoggedIn && !isAdmin" to="/guardados" class="nav-link-header d-none d-md-flex">
             <i class="bi bi-bookmark-fill fs-4"></i>
           </router-link>
 
-          <!-- Botón de Cerrar Sesión (Para todos los logueados) -->
           <button v-if="isLoggedIn" class="btn-logout ms-3" @click="logout">
             Cerrar Sesión
-          </button>
-
-          <!-- Botón de Iniciar Sesión (Si NO está logueado) -->
-          <button v-else class="btn-primary" @click="irALogin">
-            <span class="icon">→</span>
-            Iniciar Sesión
           </button>
         </div>
       </header>
@@ -83,10 +76,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
-import api from '../api/api'
+import api, { INTRANET_ENTRY_URL } from '../api/api'
 
-const router = useRouter();
 
 const isExpanded = ref(true);
 const isMobile = ref(false);
@@ -133,10 +124,6 @@ const checkAuth = () => {
   }
 };
 
-const irALogin = () => {
-  router.push({ name: 'login' });
-};
-
 const logout = async () => {
   try {
     await api.post('/logout');
@@ -146,8 +133,7 @@ const logout = async () => {
     isAdmin.value = false;
     isEmpleado.value = false;
 
-    // Mejor redirigir a intranet o home
-    window.location.href = '/';
+    window.location.href = INTRANET_ENTRY_URL || '/';
   } catch (error) {
     console.error(error);
   }

@@ -317,9 +317,9 @@ type EstadoFiltro = {
 
 const router = useRouter()
 
-const ENDPOINT_AREAS = '/admin/area-servicio'
-const ENDPOINT_CATEGORIAS = '/admin/categorias'
-const ENDPOINT_STATUS = '/admin/estados-actualizacion'
+const ENDPOINT_AREAS = '/area-servicio'
+const ENDPOINT_CATEGORIAS = '/categorias'
+const ENDPOINT_STATUS = '/estados-actualizacion'
 
 const actualizaciones = ref<Version[]>([])
 const cargando = ref(true)
@@ -426,7 +426,9 @@ const obtenerActualizaciones = async (page = 1) => {
 
   try {
     const params = new URLSearchParams()
+
     params.append('page', String(page))
+    params.append('vista', 'mis-registros')
 
     if (filtros.value.busqueda.trim()) {
       params.append('busqueda', filtros.value.busqueda.trim())
@@ -449,21 +451,24 @@ const obtenerActualizaciones = async (page = 1) => {
     }
 
     if (filtros.value.categoriaId !== '') {
-      params.append('categoria_actualizacion_id', String(filtros.value.categoriaId))
+      params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
     }
 
-    const respuesta = await api.get(`/admin/actualizaciones?${params.toString()}`)
+    const respuesta = await api.get(`/actualizaciones?${params.toString()}`)
 
-    actualizaciones.value = respuesta.data.data
-    paginaActual.value = respuesta.data.current_page
-    totalPaginas.value = respuesta.data.last_page
-    totalRegistros.value = respuesta.data.total
+    actualizaciones.value = respuesta.data.data || []
+
+    const meta = respuesta.data.meta || respuesta.data
+
+    paginaActual.value = meta.current_page || 1
+    totalPaginas.value = meta.last_page || 1
+    totalRegistros.value = meta.total || actualizaciones.value.length
   } catch (err) {
     console.error('Error al cargar la lista:', err)
     error.value = 'No se pudo conectar con el servidor para obtener los datos.'
   } finally {
     cargando.value = false
-    // En móvil, después de filtrar, ocultar los filtros automáticamente
+
     if (window.innerWidth < 768) {
       mostrarFiltros.value = false
     }
@@ -535,8 +540,8 @@ const cambiarPagina = (pagina: number) => {
 
 const verDetalles = (id: number) => {
   router.push({
-    name: 'admin-actualizaciones-show',
-    params: { id }
+    name: 'mis-registros-show',
+    params: { id },
   })
 }
 
@@ -583,7 +588,7 @@ const inactivarActualizacion = async () => {
   const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
 
   try {
-    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/inactivar`)
+    await api.post(`/actualizaciones/${itemAEliminar.value.id}/inactivar`)
 
     itemAEliminar.value = null
     await obtenerActualizaciones(paginaActual.value)
@@ -604,7 +609,7 @@ const activarActualizacion = async () => {
   const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
 
   try {
-    await api.post(`/admin/actualizaciones/${itemAEliminar.value.id}/activar`)
+    await api.post(`/actualizaciones/${itemAEliminar.value.id}/activar`)
 
     itemAEliminar.value = null
     await obtenerActualizaciones(paginaActual.value)

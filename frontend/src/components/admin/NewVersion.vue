@@ -277,20 +277,20 @@ const enfocarTitulo = async () => {
 }
 onMounted(async () => {
   try {
-    const resAreas = await api.get('/admin/area-servicio')
+    const resAreas = await api.get('/area-servicio')
     listaAreas.value = resAreas.data.data
   } catch (error) {
   }
 
   try {
-    const resCategorias = await api.get('/admin/categorias')
+    const resCategorias = await api.get('/categorias')
     listaCategorias.value = resCategorias.data.data
   } catch (error) {
     console.error('Error al cargar las categorías:', error)
   }
 
   try {
-    const resEstados = await api.get('/admin/estados-actualizacion')
+    const resEstados = await api.get('/estados-actualizacion')
     listaEstados.value = resEstados.data.data
   } catch (error) {
     console.error('Error al cargar los estados:', error)
@@ -316,7 +316,7 @@ onMounted(async () => {
               try {
                 const formData = new FormData()
                 formData.append('imagen', file)
-                const respuesta = await api.post('/admin/subir-imagen-blog', formData)
+                const respuesta = await api.post('/subir-imagen-blog', formData)
                 return { success: 1, file: { url: respuesta.data.url } }
               } catch (error) {
                 console.error('Error subiendo imagen:', error)
@@ -376,7 +376,7 @@ const guardarRegistro = async () => {
       formData.append('actualizacion_imagen_destacada', archivoMiniatura.value)
     }
 
-    const respuesta = await api.post('/admin/actualizaciones', formData, {
+    const respuesta = await api.post('/actualizaciones', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
 

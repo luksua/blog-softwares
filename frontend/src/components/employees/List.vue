@@ -26,11 +26,7 @@
     <div v-else class="vista-con-filtros">
       <!-- Botón toggle para filtros en móvil -->
       <div class="filtros-toggle-wrapper d-md-none">
-        <button 
-          class="btn-toggle-filtros" 
-          @click="mostrarFiltros = !mostrarFiltros"
-          type="button"
-        >
+        <button class="btn-toggle-filtros" @click="mostrarFiltros = !mostrarFiltros" type="button">
           <i class="bi bi-funnel"></i>
           {{ mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros' }}
           <span v-if="hayFiltrosActivos" class="filtros-activos-badge">•</span>
@@ -43,13 +39,8 @@
         <div class="filtro-seccion-completa">
           <label class="filtro-label">Ordenar por</label>
           <div class="chips-grupo">
-            <span 
-              v-for="op in opcionesOrden" 
-              :key="op.valor" 
-              class="chip"
-              :class="{ activo: filtros.orden === op.valor }" 
-              @click="aplicarOrden(op.valor)"
-            >
+            <span v-for="op in opcionesOrden" :key="op.valor" class="chip"
+              :class="{ activo: filtros.orden === op.valor }" @click="aplicarOrden(op.valor)">
               {{ op.label }}
             </span>
           </div>
@@ -60,31 +51,18 @@
           <label for="busqueda" class="filtro-label">Buscar</label>
           <div class="input-busqueda-wrapper">
             <i class="bi bi-search icono-busqueda"></i>
-            <input 
-              id="busqueda" 
-              v-model="filtros.busqueda" 
-              type="text" 
-              class="filtro-input"
-              placeholder="Título o resumen..." 
-            />
+            <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
+              placeholder="Título o resumen..." />
           </div>
         </div>
 
         <!-- Área -->
         <div class="filtro-grupo">
           <label for="area" class="filtro-label">Área / Servicio</label>
-          <select 
-            id="area" 
-            v-model="filtros.areaServicioId" 
-            class="filtro-input" 
-            :disabled="cargandoFiltros"
-          >
+          <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
             <option value="">Todas las áreas</option>
-            <option 
-              v-for="area in areasDisponibles" 
-              :key="area.area_servicio_id"
-              :value="Number(area.area_servicio_id)"
-            >
+            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+              :value="Number(area.area_servicio_id)">
               {{ area.area_servicio_nombre }}
             </option>
           </select>
@@ -93,18 +71,10 @@
         <!-- Categoría -->
         <div class="filtro-grupo">
           <label for="categoria" class="filtro-label">Categoría</label>
-          <select 
-            id="categoria" 
-            v-model="filtros.categoriaId" 
-            class="filtro-input" 
-            :disabled="cargandoFiltros"
-          >
+          <select id="categoria" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
             <option value="">Todas las categorías</option>
-            <option 
-              v-for="categoria in categoriasDisponibles" 
-              :key="categoria.categoria_actualizacion_id"
-              :value="Number(categoria.categoria_actualizacion_id)"
-            >
+            <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
+              :value="Number(categoria.categoria_actualizacion_id)">
               {{ categoria.categoria_actualizacion_nombre }}
             </option>
           </select>
@@ -113,23 +83,13 @@
         <!-- Fecha desde -->
         <div class="filtro-grupo">
           <label for="fechaDesde" class="filtro-label">Desde</label>
-          <input 
-            id="fechaDesde" 
-            v-model="filtros.fechaDesde" 
-            type="date" 
-            class="filtro-input" 
-          />
+          <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
         </div>
 
         <!-- Fecha hasta -->
         <div class="filtro-grupo">
           <label for="fechaHasta" class="filtro-label">Hasta</label>
-          <input 
-            id="fechaHasta" 
-            v-model="filtros.fechaHasta" 
-            type="date" 
-            class="filtro-input" 
-          />
+          <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
         </div>
 
         <!-- Limpiar -->
@@ -151,20 +111,12 @@
       <div v-else>
         <!-- Grid de tarjetas -->
         <div class="row lista-feed g-3 g-md-4">
-          <div 
-            v-for="item in actualizaciones" 
-            :key="item.id" 
-            class="col-12 col-sm-6 col-lg-4 col-xl-3"
-          >
+          <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-sm-6 col-lg-4 col-xl-3">
             <div class="tarjeta-changelog h-100">
               <div class="tarjeta-header">
                 <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                  <img 
-                    :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" 
-                    alt="Imagen destacada"
-                    class="imagen-destacada" 
-                    loading="lazy"
-                  />
+                  <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                    class="imagen-destacada" loading="lazy" />
                 </div>
                 <div v-else class="sin-imagen">
                   <span>🖼️</span>
@@ -198,7 +150,7 @@
                   </button>
 
                   <button class="btn-enlace" @click="verDetalle(item.id)">
-                    Ver más 
+                    Ver más
                     <i class="bi bi-arrow-right"></i>
                   </button>
                 </div>
@@ -304,14 +256,14 @@ const paginasMostradas = computed(() => {
   const maxPages = window.innerWidth < 768 ? 3 : 5
   const current = paginaActual.value
   const total = totalPaginas.value
-  
+
   if (total <= maxPages) return Array.from({ length: total }, (_, i) => i + 1)
-  
+
   let start = Math.max(1, current - Math.floor(maxPages / 2))
   let end = Math.min(total, start + maxPages - 1)
-  
+
   if (end - start + 1 < maxPages) start = Math.max(1, end - maxPages + 1)
-  
+
   return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
@@ -320,8 +272,8 @@ const obtenerCatalogosFiltros = async () => {
   cargandoFiltros.value = true
   try {
     const [areasResp, categoriasResp] = await Promise.all([
-      api.get('/employee/area-servicio'),
-      api.get('/employee/categorias')
+      api.get('/area-servicio'),
+      api.get('/categorias')
     ])
 
     areasDisponibles.value = areasResp.data?.data || []
@@ -339,34 +291,44 @@ const obtenerActualizaciones = async (page = 1) => {
 
   try {
     const params = new URLSearchParams()
+
     params.append('page', String(page))
+    params.append('vista', 'blog')
 
-    if (filtros.value.busqueda.trim())
+    if (filtros.value.busqueda.trim()) {
       params.append('busqueda', filtros.value.busqueda.trim())
+    }
 
-    if (filtros.value.fechaDesde)
+    if (filtros.value.fechaDesde) {
       params.append('fecha_desde', filtros.value.fechaDesde)
+    }
 
-    if (filtros.value.fechaHasta)
+    if (filtros.value.fechaHasta) {
       params.append('fecha_hasta', filtros.value.fechaHasta)
+    }
 
-    if (filtros.value.areaServicioId !== '')
+    if (filtros.value.areaServicioId !== '') {
       params.append('area_servicio_id', String(filtros.value.areaServicioId))
+    }
 
-    if (filtros.value.categoriaId !== '')
+    if (filtros.value.categoriaId !== '') {
       params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
+    }
 
-    if (filtros.value.orden)
+    if (filtros.value.orden) {
       params.append('orden', filtros.value.orden)
+    }
 
-    const respuesta = await api.get(`/employee/actualizaciones?${params.toString()}`)
+    const respuesta = await api.get(`/actualizaciones?${params.toString()}`)
 
-    actualizaciones.value = respuesta.data.data
-    paginaActual.value = respuesta.data.current_page
-    totalPaginas.value = respuesta.data.last_page
-    totalRegistros.value = respuesta.data.total
+    actualizaciones.value = respuesta.data.data || []
 
-    // En móvil, ocultar filtros después de buscar
+    const meta = respuesta.data.meta || respuesta.data
+
+    paginaActual.value = meta.current_page || 1
+    totalPaginas.value = meta.last_page || 1
+    totalRegistros.value = meta.total || actualizaciones.value.length
+
     if (window.innerWidth < 768 && hayFiltrosActivos.value) {
       mostrarFiltros.value = false
     }
@@ -452,9 +414,22 @@ const cambiarPagina = (pagina: number) => {
 
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
-  if (ruta.startsWith('http')) return ruta
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${baseUrl}/storage/${ruta}`
+
+  if (ruta.startsWith('http')) {
+    return ruta
+  }
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  if (ruta.startsWith('/storage/')) {
+    return `${backendUrl}${ruta}`
+  }
+
+  if (ruta.startsWith('storage/')) {
+    return `${backendUrl}/${ruta}`
+  }
+
+  return `${backendUrl}/storage/${ruta}`
 }
 
 const formatearFecha = (fechaString: string) => {
@@ -920,7 +895,7 @@ onUnmounted(() => {
     font-size: 0.75rem;
     padding: 5px 12px;
   }
-  
+
   .tag-gris:hover {
     background-color: var(--primary);
     color: white;
@@ -952,7 +927,7 @@ onUnmounted(() => {
   .btn-icon:hover {
     background: rgba(7, 126, 157, 0.1);
   }
-  
+
   .btn-icon:hover i {
     color: var(--primary);
   }
@@ -987,7 +962,7 @@ onUnmounted(() => {
     color: var(--primary);
     background: rgba(7, 126, 157, 0.08);
   }
-  
+
   .btn-enlace:hover i {
     transform: translateX(4px);
   }
@@ -1004,11 +979,11 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .tags-container {
     justify-content: center;
   }
-  
+
   .tags-right {
     justify-content: center;
   }
@@ -1132,6 +1107,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

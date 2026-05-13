@@ -8,18 +8,15 @@
     </div>
 
     <div v-else-if="actualizacion" class="detalle-card">
-      
-      <div class="hero-banner" :class="{'sin-imagen': !actualizacion.actualizacion_imagen_destacada}">
-        
+
+      <div class="hero-banner" :class="{ 'sin-imagen': !actualizacion.actualizacion_imagen_destacada }">
+
         <button class="btn-volver hero-btn-pos" @click="volver">
           <span class="arrow-icon">←</span>
-          Volver
+          Volver a mis registros
         </button>
-
-        <img v-if="actualizacion.actualizacion_imagen_destacada" 
-             :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" 
-             alt="Portada"
-             class="hero-image" />
+        <img v-if="actualizacion.actualizacion_imagen_destacada"
+          :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada" class="hero-image" />
 
         <div class="hero-overlay"></div>
 
@@ -89,9 +86,14 @@ const obtenerDetalle = async () => {
   cargando.value = true
 
   try {
-    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`)
+    const respuesta = await api.get(`/actualizaciones/${props.id}`)
+
     actualizacion.value = respuesta.data.data
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    })
   } catch (error) {
     console.error('Error al cargar la actualización:', error)
     actualizacion.value = null
@@ -101,33 +103,51 @@ const obtenerDetalle = async () => {
 }
 
 const volver = () => {
-  router.push({ name: 'inicioAdmin' })
+  router.push({
+    name: 'mis-registros',
+  })
 }
 
 const formatearFecha = (fechaString: string) => {
   if (!fechaString) return 'Sin fecha'
 
-  return new Date(fechaString).toLocaleDateString('es-ES', {
+  const fecha = new Date(fechaString).toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   })
+
+  return fecha.charAt(0).toUpperCase() + fecha.slice(1)
 }
 
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
-  if (ruta.startsWith('http')) return ruta
 
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${baseUrl}/storage/${ruta}`
+  if (ruta.startsWith('http')) {
+    return ruta
+  }
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  if (ruta.startsWith('/storage/')) {
+    return `${backendUrl}${ruta}`
+  }
+
+  if (ruta.startsWith('storage/')) {
+    return `${backendUrl}/${ruta}`
+  }
+
+  return `${backendUrl}/storage/${ruta}`
 }
 
 const mapearClaseEstado = (estado: string) => {
   const estadoMin = estado?.toLowerCase() || ''
+
   if (estadoMin === 'publicado') return 'estado-publicado'
   if (estadoMin === 'borrador') return 'estado-borrador'
   if (estadoMin === 'revision') return 'estado-revision'
   if (estadoMin === 'inactivo') return 'estado-inactivo'
+
   return 'estado-default'
 }
 
@@ -135,9 +155,12 @@ onMounted(() => {
   obtenerDetalle()
 })
 
-watch(() => props.id, () => {
-  obtenerDetalle()
-})
+watch(
+  () => props.id,
+  () => {
+    obtenerDetalle()
+  }
+)
 </script>
 
 <style scoped>
@@ -174,21 +197,24 @@ watch(() => props.id, () => {
 /* Tarjeta principal */
 .detalle-card {
   background: white;
-  border-radius: 0 0 24px 24px; /* Quitamos bordes redondeados arriba porque toca los bordes de la pantalla/sidebar */
+  border-radius: 0 0 24px 24px;
+  /* Quitamos bordes redondeados arriba porque toca los bordes de la pantalla/sidebar */
   box-shadow: var(--shadow-md);
-  overflow: hidden; 
+  overflow: hidden;
   transition: var(--transition);
 }
 
 /* --- HERO BANNER (OCUPA EL 100%) --- */
 .hero-banner {
   position: relative;
-  width: 100%; /* La imagen ahora abarca todo lo ancho */
-  min-height: 300px; 
+  width: 100%;
+  /* La imagen ahora abarca todo lo ancho */
+  min-height: 300px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  border-radius: 0; /* Sin bordes para que parezca un banner real de lado a lado */
+  border-radius: 0;
+  /* Sin bordes para que parezca un banner real de lado a lado */
   overflow: hidden;
   background-color: var(--secondary);
 }
@@ -238,14 +264,14 @@ watch(() => props.id, () => {
   gap: 8px;
   background: none;
   border: none;
-  color: var(--primary); 
+  color: var(--primary);
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
   padding: 8px 16px;
   border-radius: 10px;
   transition: var(--transition);
-  background: rgba(255, 255, 255, 0.85); 
+  background: rgba(255, 255, 255, 0.85);
 }
 
 .btn-volver:hover {
@@ -298,20 +324,53 @@ watch(() => props.id, () => {
   display: inline-block;
 }
 
-.estado-publicado { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #2e7d32; }
-.estado-publicado .estado-dot { background: #4caf50; box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2); }
+.estado-publicado {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  color: #2e7d32;
+}
 
-.estado-borrador { background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); color: #f57c00; }
-.estado-borrador .estado-dot { background: #ff9800; box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2); }
+.estado-publicado .estado-dot {
+  background: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
 
-.estado-revision { background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%); color: #c62828; }
-.estado-revision .estado-dot { background: #f44336; box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2); }
+.estado-borrador {
+  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+  color: #f57c00;
+}
 
-.estado-inactivo { background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%); color: #424242; }
-.estado-inactivo .estado-dot { background: #757575; }
+.estado-borrador .estado-dot {
+  background: #ff9800;
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
+}
 
-.estado-default { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; }
-.estado-default .estado-dot { background: #2196f3; }
+.estado-revision {
+  background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+  color: #c62828;
+}
+
+.estado-revision .estado-dot {
+  background: #f44336;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}
+
+.estado-inactivo {
+  background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+  color: #424242;
+}
+
+.estado-inactivo .estado-dot {
+  background: #757575;
+}
+
+.estado-default {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  color: #1976d2;
+}
+
+.estado-default .estado-dot {
+  background: #2196f3;
+}
 
 /* Textos sobre el Banner */
 .hero-titulo {
@@ -352,8 +411,10 @@ watch(() => props.id, () => {
 
 /* --- RESUMEN Y CONTENIDO (AHORA SON MÁS ESTRECHOS Y CENTRADOS) --- */
 .resumen-container {
-  max-width: 800px; /* Ancho máximo para no cansar la vista */
-  margin: 40px auto 32px auto; /* Margin "auto" a los lados lo centra perfectamente */
+  max-width: 800px;
+  /* Ancho máximo para no cansar la vista */
+  margin: 40px auto 32px auto;
+  /* Margin "auto" a los lados lo centra perfectamente */
   padding: 24px;
   background: #f8fafc;
   border-radius: 12px;
@@ -368,9 +429,12 @@ watch(() => props.id, () => {
 }
 
 .contenido-container {
-  max-width: 800px; /* Ancho máximo para el contenido completo */
-  margin: 0 auto 60px auto; /* Centrado igual que el resumen */
-  padding: 0 20px; /* Un poco de padding lateral por si las pantallas se hacen pequeñas */
+  max-width: 800px;
+  /* Ancho máximo para el contenido completo */
+  margin: 0 auto 60px auto;
+  /* Centrado igual que el resumen */
+  padding: 0 20px;
+  /* Un poco de padding lateral por si las pantallas se hacen pequeñas */
 }
 
 .contenido-header {
@@ -394,10 +458,32 @@ watch(() => props.id, () => {
   color: #334155;
 }
 
-:deep(.editorjs-editor p) { margin-bottom: 1.2rem; }
-:deep(.editorjs-editor h1), :deep(.editorjs-editor h2), :deep(.editorjs-editor h3) { margin-top: 2rem; margin-bottom: 1rem; color: #0f172a; }
-:deep(.editorjs-editor ul), :deep(.editorjs-editor ol) { margin-bottom: 1.2rem; padding-left: 2rem; }
-:deep(.editorjs-editor img) { max-width: 100%; height: auto; border-radius: 12px; box-shadow: var(--shadow-sm); margin: 24px auto; display: block; }
+:deep(.editorjs-editor p) {
+  margin-bottom: 1.2rem;
+}
+
+:deep(.editorjs-editor h1),
+:deep(.editorjs-editor h2),
+:deep(.editorjs-editor h3) {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #0f172a;
+}
+
+:deep(.editorjs-editor ul),
+:deep(.editorjs-editor ol) {
+  margin-bottom: 1.2rem;
+  padding-left: 2rem;
+}
+
+:deep(.editorjs-editor img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  margin: 24px auto;
+  display: block;
+}
 
 /* Error container */
 .error-container {
@@ -438,16 +524,42 @@ watch(() => props.id, () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .hero-banner { min-height: 250px; }
-  .hero-content { padding: 60px 20px 20px 20px; }
-  .hero-titulo { font-size: 1.8rem; }
-  .resumen-container { margin: 24px 20px; padding: 16px; }
-  .contenido-container { margin: 0 20px 32px 20px; }
-  .hero-btn-pos { left: 20px; top: 16px; }
+  .hero-banner {
+    min-height: 250px;
+  }
+
+  .hero-content {
+    padding: 60px 20px 20px 20px;
+  }
+
+  .hero-titulo {
+    font-size: 1.8rem;
+  }
+
+  .resumen-container {
+    margin: 24px 20px;
+    padding: 16px;
+  }
+
+  .contenido-container {
+    margin: 0 20px 32px 20px;
+  }
+
+  .hero-btn-pos {
+    left: 20px;
+    top: 16px;
+  }
 }
 
 @media (max-width: 480px) {
-  .hero-titulo { font-size: 1.5rem; }
-  .hero-bottom-info { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .hero-titulo {
+    font-size: 1.5rem;
+  }
+
+  .hero-bottom-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }
 </style>

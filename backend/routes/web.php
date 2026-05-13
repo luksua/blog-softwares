@@ -2,31 +2,27 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SSOController;
-use App\Http\Controllers\Admin\UpdateBlogAdminController;
-use App\Http\Controllers\Employee\UpdateBlogController;
-use App\Http\Controllers\SimuladorLoginController;
-use App\Models\UsuarioIntranet;
 
-Route::get('/test-legacy', function () {
+Route::get('/sso-login', [SSOController::class, 'login'])->name('sso.login');
 
-    return UsuarioIntranet::first();
+Route::get('/dev-sso/{user}', function ($user) {
+    if (! app()->environment('local')) {
+        abort(404);
+    }
+
+    $user = strtoupper($user);
+    $ts = time();
+    $secret = config('services.sso.secret');
+
+    if (! $secret) {
+        abort(500, 'SSO_SECRET no configurado.');
+    }
+
+    $sig = hash_hmac('sha256', $user . '|' . $ts, $secret);
+
+    return redirect("/sso-login?user={$user}&ts={$ts}&sig={$sig}");
 });
 
-// Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);
-// Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'index']);
-// Route::post('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
-
-// Route::prefix('api')->group(function () {
-//     Route::post('/simulador-login', [SimuladorLoginController::class, 'login']);
-//     Route::get('/me', [SimuladorLoginController::class, 'me']);
-//     Route::post('/logout', [SimuladorLoginController::class, 'logout']);
-// });
-
-Route::get('/sso-login', [SSOController::class, 'login']);
-
-Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-
-        return redirect('http://localhost:5173');
-    });
+Route::middleware('auth')->get('/dashboard', function () {
+    return redirect()->away(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')));
 });

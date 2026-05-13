@@ -309,7 +309,7 @@ const obtenerRelacionados = async () => {
     let resultado: any[] = []
 
     if (areaId) {
-      const respArea = await api.get('/employee/actualizaciones', {
+      const respArea = await api.get('/actualizaciones', {
         params: { area_servicio_id: areaId, orden: 'recientes', per_page: 10 }
       })
       resultado = (respArea.data.data as any[]).filter(item => item.id !== currentId)
@@ -317,7 +317,7 @@ const obtenerRelacionados = async () => {
 
     if (resultado.length < 3) {
       const idsYaIncluidos = new Set([currentId, ...resultado.map((i: any) => i.id)])
-      const respRecientes = await api.get('/employee/actualizaciones', {
+      const respRecientes = await api.get('/actualizaciones', {
         params: { orden: 'recientes', per_page: 20 }
       })
       const extras = (respRecientes.data.data as any[]).filter(item => !idsYaIncluidos.has(item.id))
@@ -342,7 +342,7 @@ const obtenerDetalle = async () => {
   cargando.value = true
   headingActivo.value = 'resumen'
   try {
-    const respuesta = await api.get(`/employee/actualizaciones/${props.id}`)
+    const respuesta = await api.get(`/actualizaciones/${props.id}`)
     actualizacion.value = respuesta.data.data
     scrollAlTope()
     await obtenerRelacionados()

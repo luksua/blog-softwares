@@ -224,9 +224,22 @@ const manejarImagen = (event: Event) => {
 
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
-  if (ruta.startsWith('http')) return ruta
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-  return `${baseUrl}/storage/${ruta}`
+
+  if (ruta.startsWith('http')) {
+    return ruta
+  }
+
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  if (ruta.startsWith('/storage/')) {
+    return `${backendUrl}${ruta}`
+  }
+
+  if (ruta.startsWith('storage/')) {
+    return `${backendUrl}/${ruta}`
+  }
+
+  return `${backendUrl}/storage/${ruta}`
 }
 
 const formatearFechaParaInput = (fecha: any) => {
@@ -240,14 +253,14 @@ const formatearFechaParaInput = (fecha: any) => {
 
 const cargarListas = async () => {
   try {
-    const resAreas = await api.get('/admin/area-servicio')
+    const resAreas = await api.get('/area-servicio')
     listaAreas.value = resAreas.data.data
   } catch (error) {
     console.error('Error al cargar áreas:', error)
   }
 
   try {
-    const resCategorias = await api.get('/admin/categorias')
+    const resCategorias = await api.get('/categorias')
     listaCategorias.value = resCategorias.data.data
   } catch (error) {
     console.error('Error al cargar categorías:', error)
@@ -273,7 +286,7 @@ const initEditor = (initialData: any = {}) => {
               try {
                 const formData = new FormData()
                 formData.append('imagen', file)
-                const respuesta = await api.post('/admin/subir-imagen-blog', formData)
+                const respuesta = await api.post('/subir-imagen-blog', formData)
                 return { success: 1, file: { url: respuesta.data.url } }
               } catch (error) {
                 console.error('Error subiendo imagen:', error)
@@ -326,7 +339,7 @@ const cargarRegistro = async () => {
   previewImagen.value = null
 
   try {
-    const respuesta = await api.get(`/admin/actualizaciones/${props.id}`)
+    const respuesta = await api.get(`/actualizaciones/${props.id}`)
     const data = respuesta.data.data
 
     form.titulo               = data.actualizacion_titulo ?? ''
@@ -383,36 +396,53 @@ const guardarCambios = async () => {
 
     if (editor.value) {
       contenidoFinal = await editor.value.save()
-      form.contenido = JSON.stringify(contenidoFinal)
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Subir imagen destacada
+    |--------------------------------------------------------------------------
+    | Esta ruta debe ser POST, no PUT.
+    */
 
     if (archivoImagen.value) {
       const imgData = new FormData()
       imgData.append('imagen', archivoImagen.value)
-      const res = await api.post('/admin/subir-imagen-portada', imgData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+
+      const res = await api.post('/subir-imagen-destacada', imgData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       })
+
       rutaImagen = res.data.path
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Actualizar registro
+    |--------------------------------------------------------------------------
+    | Esta ruta sí puede ser PUT.
+    */
+
     const payload = {
-      actualizacion_titulo:             form.titulo,
-      actualizacion_version:            form.version,
-      actualizacion_resumen:            form.resumen,
-      actualizacion_imagen_destacada:   rutaImagen,
-      actualizacion_estado:             form.estado,
-      actualizacion_fecha_publicacion:  form.fecha_publicacion,
-      actualizacion_contenido:          contenidoFinal,
-      actualizacion_area_servicio_id:   form.area_servicio_id,
-      actualizacion_categoria_id:       form.categoria_id,   // ← nombre correcto para la API
+      actualizacion_titulo: form.titulo,
+      actualizacion_version: form.version,
+      actualizacion_resumen: form.resumen,
+      actualizacion_imagen_destacada: rutaImagen,
+      actualizacion_estado: form.estado,
+      actualizacion_fecha_publicacion: form.fecha_publicacion,
+      actualizacion_contenido: contenidoFinal,
+      actualizacion_categoria_id: form.categoria_id,
     }
 
-    await api.post(`/admin/actualizaciones/${props.id}`, payload)
+    await api.put(`/actualizaciones/${props.id}`, payload)
 
     mensajeOk.value = 'Guardado exitosamente.'
     emit('guardado')
   } catch (error: any) {
     console.error('Error al guardar:', error)
+
     if (error.response?.status === 422) {
       errores.value = error.response.data.errors || {}
     }

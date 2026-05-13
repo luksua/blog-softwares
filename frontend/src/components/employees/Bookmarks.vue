@@ -323,8 +323,8 @@ const obtenerCatalogosFiltros = async () => {
   cargandoFiltros.value = true
   try {
     const [areasResp, categoriasResp] = await Promise.all([
-      api.get('/employee/area-servicio'),
-      api.get('/employee/categorias')
+      api.get('/area-servicio'),
+      api.get('/categorias')
     ])
 
     areasDisponibles.value = areasResp.data?.data || []
@@ -362,7 +362,7 @@ const obtenerActualizaciones = async (page = 1) => {
     if (filtros.value.orden)
       params.append('orden', filtros.value.orden)
 
-    const respuesta = await api.get(`/employee/actualizaciones?${params.toString()}`)
+    const respuesta = await api.get(`/actualizaciones?${params.toString()}`)
 
     actualizaciones.value = respuesta.data.data
     paginaActual.value = respuesta.data.current_page

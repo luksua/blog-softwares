@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import api from '../api/api.ts'
+import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
 
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
@@ -16,51 +16,70 @@ const router = createRouter({
     {
       path: '/',
       component: MainLayout,
+      meta: {
+        requiresAuth: true,
+      },
       children: [
         {
           path: '',
           name: 'inicio',
           component: HomePage,
+          meta: {
+            requiresEmployee: true,
+          },
         },
         {
           path: 'employee/actualizaciones',
           name: 'employee-actualizaciones',
           component: ListaActualizaciones,
+          meta: {
+            requiresEmployee: true,
+          },
         },
         {
           path: 'employee/actualizaciones/:id',
           name: 'employee-actualizaciones-show',
           component: VerActualizacion,
           props: true,
-          meta: { sinPadding: true },
+          meta: {
+            sinPadding: true,
+            requiresEmployee: true,
+          },
         },
         {
           path: 'employee/guardados',
           name: 'employee-guardados',
           component: VerGuardados,
           meta: {
-            requiresAuth: true,
-            requiresEmployee: true
+            requiresEmployee: true,
           },
         },
+        // {
+        //   path: 'admin',
+        //   name: 'inicioAdmin',
+        //   component: HomePageAdmin,
+        //   meta: {
+        //     requiresEmployee: true,
+        //   },
+        // },
         {
-          path: 'admin',
-          name: 'inicioAdmin',
+          path: 'mis-registros',
+          name: 'mis-registros',
           component: HomePageAdmin,
+          props: true,
           meta: {
-            requiresAuth: true,
-            requiresAdmin: true
+            sinPadding: true,
+            requiresEmployee: true,
           },
         },
         {
-          path: 'admin/actualizaciones/:id',
-          name: 'admin-actualizaciones-show',
+          path: 'mis-registros/:id',
+          name: 'mis-registros-show',
           component: VerActualizacionAdmin,
           props: true,
           meta: {
             sinPadding: true,
-            requiresAuth: true,
-            requiresAdmin: true
+            requiresEmployee: true,
           },
         },
         {
@@ -69,94 +88,96 @@ const router = createRouter({
           component: EditarActualizacionAdmin,
           props: true,
           meta: {
-            requiresAuth: true,
-            requiresAdmin: true
+            requiresAdmin: true,
           },
         },
       ],
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
     },
   ],
 })
 
 let usuarioVerificado: any = null
+let intentoMeRealizado = false
 
-router.beforeEach(async (to) => {
+async function cargarUsuario() {
+  if (usuarioVerificado) {
+    return usuarioVerificado
+  }
 
-  const requiresAuth = to.matched.some(
-    record => record.meta.requiresAuth
-  )
+  if (intentoMeRealizado) {
+    return null
+  }
 
-  const requiresAdmin = to.matched.some(
-    record => record.meta.requiresAdmin
-  )
-
-  const requiresEmployee = to.matched.some(
-    record => record.meta.requiresEmployee
-  )
+  intentoMeRealizado = true
 
   try {
+    await ensureCsrfCookie()
 
-    // SOLO consultar backend si aún no sabemos usuario
-    if (!usuarioVerificado) {
+    const response = await api.get('/me')
 
-      const response = await api.get('/me')
+    usuarioVerificado = response.data.usuario
 
-      usuarioVerificado = response.data.usuario
+    localStorage.setItem('user_data', JSON.stringify(usuarioVerificado))
 
-      localStorage.setItem(
-        'user_data',
-        JSON.stringify(usuarioVerificado)
-      )
-    }
-
-    // SI intenta entrar al login teniendo sesión
-    if (to.name === 'login') {
-
-      if (
-        usuarioVerificado.usuario_grupo === 'ADMIN'
-      ) {
-
-        return { name: 'inicioAdmin' }
-      }
-
-      return { name: 'inicio' }
-    }
-
-    // RUTA REQUIERE LOGIN
-    if (requiresAuth && !usuarioVerificado) {
-
-      return { name: 'login' }
-    }
-
-    // RUTA SOLO ADMIN
-    if (
-      requiresAdmin &&
-      usuarioVerificado.usuario_grupo !== 'ADMIN'
-    ) {
-
-      return { name: 'inicio' }
-    }
-
-    // RUTA SOLO EMPLEADO
-    if (
-      requiresEmployee &&
-      usuarioVerificado.usuario_grupo === 'ADMIN'
-    ) {
-
-      return { name: 'inicioAdmin' }
-    }
-
-    return true
-
+    return usuarioVerificado
   } catch {
-
     usuarioVerificado = null
     localStorage.removeItem('user_data')
     localStorage.removeItem('auth_token')
-    window.location.href =
-      'http://localhost/simulador_login.php'
+
+    return null
+  }
+}
+
+function enviarAIntranet() {
+  localStorage.removeItem('user_data')
+  localStorage.removeItem('auth_token')
+
+  if (INTRANET_ENTRY_URL) {
+    window.location.href = INTRANET_ENTRY_URL
+    return
+  }
+
+  document.body.innerHTML = `
+    <main style="font-family: Arial, sans-serif; padding: 32px;">
+      <h1>Sesión no iniciada</h1>
+      <p>Este sistema no tiene inicio de sesión propio. Debes ingresar desde el menú de la intranet.</p>
+    </main>
+  `
+}
+
+router.beforeEach(async (to) => {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
+  const requiresEmployee = to.matched.some(record => record.meta.requiresEmployee)
+
+  if (!requiresAuth) {
+    return true
+  }
+
+  const usuario = await cargarUsuario()
+
+  if (!usuario) {
+    enviarAIntranet()
     return false
   }
+
+  const grupo = String(usuario.usuario_grupo || '').toUpperCase()
+  const esAdmin = grupo === 'ADMIN'
+
+  if (requiresAdmin && !esAdmin) {
+    return { name: 'inicio' }
+  }
+
+  if (requiresEmployee && esAdmin) {
+    return { name: 'inicioAdmin' }
+  }
+
+  return true
 })
 
 export default router

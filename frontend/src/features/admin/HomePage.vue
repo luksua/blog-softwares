@@ -5,9 +5,9 @@
             <div class="col-lg-10">
                 <h2>Actualizaciones</h2>
             </div>
-            <p v-if="usuario">
+            <!-- <p v-if="usuario">
                 Bienvenido {{ usuario.usuario_usuario }}
-            </p>
+            </p> -->
             <div class="col-lg-2 text-end">
                 <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoRegistro">
                     +<i class="bi bi-pencil-fill"></i> Nuevo Registro
