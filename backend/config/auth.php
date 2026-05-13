@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Models\UsuarioIntranet;
 use Illuminate\Support\Facades\App;
-use App\Models\UsuarioSistema;
 
 return [
 
@@ -42,7 +42,7 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'usuarios_sistema',
+            'provider' => 'users',
         ],
     ],
 
@@ -66,7 +66,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => UsuarioSistema::class,
+            'model' => UsuarioIntranet::class,
         ],
 
         // 'users' => [

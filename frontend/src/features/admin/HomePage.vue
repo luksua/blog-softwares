@@ -5,6 +5,9 @@
             <div class="col-lg-10">
                 <h2>Actualizaciones</h2>
             </div>
+            <p v-if="usuario">
+                Bienvenido {{ usuario.usuario_usuario }}
+            </p>
             <div class="col-lg-2 text-end">
                 <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoRegistro">
                     +<i class="bi bi-pencil-fill"></i> Nuevo Registro
@@ -47,8 +50,12 @@
 import List from '../../components/admin/List.vue';
 import Store from '../../components/admin/NewVersion.vue';
 // Borramos la importación de MainLayout de aquí
-import { ref, nextTick } from 'vue';
 import { Modal } from 'bootstrap';
+import { ref, onMounted, nextTick } from 'vue'
+import api from '../../api/api'
+
+
+const usuario = ref<any>(null)
 
 // referencia conectada al componente <List />
 const componenteLista = ref<InstanceType<typeof List> | null>(null);
@@ -81,7 +88,19 @@ const cerrarModalBootstrap = async () => {
     }, 300)
 }
 
+onMounted(async () => {
 
+    try {
+
+        const response = await api.get('/me')
+
+        usuario.value = response.data.usuario
+
+    } catch (error) {
+
+        console.error(error)
+    }
+})
 // const limpiarBackdropResidual = () => {
 //   document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
 //   document.body.classList.remove('modal-open');

@@ -126,6 +126,20 @@ return [
             'strict' => false,
         ],
 
+        'asotraum_calidad' => [
+            'driver' => 'mysql',
+            'host' => env('DB_LEGACY_HOST', '127.0.0.1'),
+            'port' => env('DB_LEGACY_PORT', '3306'),
+            'database' => env('DB_LEGACY_DATABASE', 'forge'),
+            'username' => env('DB_LEGACY_USERNAME', 'forge'),
+            'password' => env('DB_LEGACY_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'permisos' => [
             'driver' => 'mysql',
             'host' => env('DB_PERMISOS_HOST', '127.0.0.1'),
@@ -137,6 +151,19 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'strict' => false,
+        ],
+
+        // ASOTRAUMA BD CONEXION
+        'asotraum_permisos' => [
+            'driver' => 'mysql',
+            'host' => env('DB_PERMISOS_HOST', '192.168.1.16'),
+            'port' => env('DB_PERMISOS_PORT', '3306'),
+            'database' => env('DB_PERMISOS_DATABASE', '441'),
+            'username' => env('DB_PERMISOS_USERNAME', 'root'),
+            'password' => env('DB_PERMISOS_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
         ],
 
     ],

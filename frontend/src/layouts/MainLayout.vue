@@ -54,7 +54,7 @@
           </router-link>
 
           <!-- Botón de Cerrar Sesión (Para todos los logueados) -->
-          <button v-if="isLoggedIn" class="btn-logout ms-3" @click="cerrarSesion">
+          <button v-if="isLoggedIn" class="btn-logout ms-3" @click="logout">
             Cerrar Sesión
           </button>
 
@@ -82,11 +82,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { ref, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
+import api from '../api/api'
 
 const router = useRouter();
-const route = useRoute();
 
 const isExpanded = ref(true);
 const isMobile = ref(false);
@@ -106,20 +106,27 @@ const checkMobile = () => {
 
 // Validar estado de sesión y rol
 const checkAuth = () => {
-  const token = localStorage.getItem('auth_token');
   const userDataStr = localStorage.getItem('user_data');
 
-  if (token && userDataStr) {
+  if (!userDataStr) {
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isEmpleado.value = false;
+    return;
+  }
+  try {
+
+    const user = JSON.parse(userDataStr);
     isLoggedIn.value = true;
-    try {
-      const user = JSON.parse(userDataStr);
-      isAdmin.value = user.rol === 'admin';
-      isEmpleado.value = user.rol === 'empleado';
-    } catch (e) {
-      isAdmin.value = false;
-      isEmpleado.value = false;
-    }
-  } else {
+    // IMPORTANTE:
+    // usar el campo real que viene de Laravel
+    const grupo = user.usuario_grupo;
+    isAdmin.value =
+      grupo === 'ADMIN';
+    isEmpleado.value =
+      grupo !== 'ADMIN';
+  } catch (error) {
+    console.error(error);
     isLoggedIn.value = false;
     isAdmin.value = false;
     isEmpleado.value = false;
@@ -130,18 +137,21 @@ const irALogin = () => {
   router.push({ name: 'login' });
 };
 
-const cerrarSesion = () => {
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user_data');
-  isLoggedIn.value = false;
-  isAdmin.value = false;
-  isEmpleado.value = false;
-  router.push({ name: 'inicio' }); // Lo devuelve a la zona pública
-};
+const logout = async () => {
+  try {
+    await api.post('/logout');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('auth_token');
+    isLoggedIn.value = false;
+    isAdmin.value = false;
+    isEmpleado.value = false;
 
-watch(() => route.path, () => {
-  checkAuth();
-});
+    // Mejor redirigir a intranet o home
+    window.location.href = '/';
+  } catch (error) {
+    console.error(error);
+  }
+}
 
 onMounted(() => {
   checkMobile();

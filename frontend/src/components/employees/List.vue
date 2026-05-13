@@ -146,9 +146,6 @@
         <div class="empty-icon">🔎</div>
         <h3>Sin resultados</h3>
         <p>No se encontraron actualizaciones con los filtros aplicados.</p>
-        <button class="btn-limpiar mt-3" @click="limpiarFiltros">
-          Limpiar filtros
-        </button>
       </div>
 
       <div v-else>

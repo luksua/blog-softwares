@@ -34,6 +34,25 @@ Route::post('/admin/subir-imagen-portada', [UpdateBlogAdminController::class, 's
 
 
 
+Route::middleware('auth')->get('/me', function (Request $request) {
+    return response()->json([
+        'usuario' => auth()->user()
+    ]);
+});
+
+Route::post('/logout', function (Request $request) {
+
+    Auth::logout();
+
+    $request->session()->invalidate();
+
+    $request->session()->regenerateToken();
+
+    return response()->json([
+        'success' => true
+    ]);
+});
+
 // V2
 
 // <?php
