@@ -4,10 +4,10 @@ import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
 import HomePageAdmin from '../features/admin/HomePage.vue'
-import ListaActualizaciones from '../components/employees/List.vue'
-import VerActualizacion from '../components/employees/ListVersion.vue'
-import VerActualizacionAdmin from '../components/admin/ListVersion.vue'
-import EditarActualizacionAdmin from '../components/admin/EditVersion.vue'
+import ListaActualizaciones from '../components/employees/home/List.vue'
+import VerActualizacion from '../components/employees/home/ListVersion.vue'
+import VerActualizacionAdmin from '../components/employees/register/ListVersion.vue'
+import EditarActualizacionAdmin from '../components/employees/register/EditVersion.vue'
 import VerGuardados from '../features/employee/Bookmarks.vue'
 
 const router = createRouter({
@@ -25,43 +25,53 @@ const router = createRouter({
           name: 'inicio',
           component: HomePage,
           meta: {
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
+
         {
-          path: 'employee/actualizaciones',
-          name: 'employee-actualizaciones',
+          path: 'admin',
+          redirect: {
+            name: 'mis-registros',
+          },
+        },
+
+        {
+          path: 'actualizaciones',
+          name: 'actualizaciones',
           component: ListaActualizaciones,
           meta: {
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
+
         {
-          path: 'employee/actualizaciones/:id',
-          name: 'employee-actualizaciones-show',
+          path: 'actualizaciones/:id',
+          name: 'actualizaciones-show',
           component: VerActualizacion,
           props: true,
           meta: {
             sinPadding: true,
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
+
         {
-          path: 'employee/guardados',
+          path: 'guardados',
           name: 'employee-guardados',
           component: VerGuardados,
           meta: {
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
-        // {
-        //   path: 'admin',
-        //   name: 'inicioAdmin',
-        //   component: HomePageAdmin,
-        //   meta: {
-        //     requiresEmployee: true,
-        //   },
-        // },
+
+        {
+          path: 'employee/guardados',
+          redirect: {
+            name: 'employee-guardados',
+          },
+        },
+
         {
           path: 'mis-registros',
           name: 'mis-registros',
@@ -69,9 +79,10 @@ const router = createRouter({
           props: true,
           meta: {
             sinPadding: true,
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
+
         {
           path: 'mis-registros/:id',
           name: 'mis-registros-show',
@@ -79,20 +90,78 @@ const router = createRouter({
           props: true,
           meta: {
             sinPadding: true,
-            requiresEmployee: true,
+            requiresAuth: true,
           },
         },
+
+        {
+          path: 'actualizaciones/nueva',
+          name: 'actualizaciones-crear',
+          component: EditarActualizacionAdmin,
+          props: {
+            modo: 'crear',
+          },
+          meta: {
+            requiresAuth: true,
+          },
+        },
+
+        {
+          path: 'actualizaciones/:id/editar',
+          name: 'actualizaciones-editar',
+          component: EditarActualizacionAdmin,
+          props: route => ({
+            id: route.params.id,
+            modo: 'editar',
+          }),
+          meta: {
+            requiresAuth: true,
+          },
+        },
+
+        {
+          path: 'supervision',
+          name: 'supervision',
+          component: HomePageAdmin,
+          props: {
+            vista: 'supervision',
+          },
+          meta: {
+            sinPadding: true,
+            requiresAuth: true,
+            requiresSupervisor: true,
+          },
+        },
+
+        {
+          path: 'employee/actualizaciones',
+          redirect: {
+            name: 'actualizaciones',
+          },
+        },
+
+        {
+          path: 'employee/actualizaciones/:id',
+          redirect: to => ({
+            name: 'actualizaciones-show',
+            params: {
+              id: to.params.id,
+            },
+          }),
+        },
+
         {
           path: 'admin/actualizaciones/:id/editar',
-          name: 'admin-actualizaciones-edit',
-          component: EditarActualizacionAdmin,
-          props: true,
-          meta: {
-            requiresAdmin: true,
-          },
+          redirect: to => ({
+            name: 'actualizaciones-editar',
+            params: {
+              id: to.params.id,
+            },
+          }),
         },
       ],
     },
+
     {
       path: '/:pathMatch(.*)*',
       redirect: '/',
@@ -100,12 +169,27 @@ const router = createRouter({
   ],
 })
 
-let usuarioVerificado: any = null
+let authVerificado: any = null
 let intentoMeRealizado = false
 
-async function cargarUsuario() {
-  if (usuarioVerificado) {
-    return usuarioVerificado
+function normalizarPermisos(valor: any): string[] {
+  if (!Array.isArray(valor)) {
+    return []
+  }
+
+  return valor
+    .map((item: any) => {
+      if (typeof item === 'string') return item
+      if (item?.permiso_nombre) return item.permiso_nombre
+      if (item?.nombre) return item.nombre
+      return ''
+    })
+    .filter(Boolean)
+}
+
+async function cargarAuth() {
+  if (authVerificado) {
+    return authVerificado
   }
 
   if (intentoMeRealizado) {
@@ -119,13 +203,28 @@ async function cargarUsuario() {
 
     const response = await api.get('/me')
 
-    usuarioVerificado = response.data.usuario
+    const data = response.data
+    const usuario = data.usuario || data.user || data
+    const permisos = normalizarPermisos(data.permisos || usuario?.permisos || [])
 
-    localStorage.setItem('user_data', JSON.stringify(usuarioVerificado))
+    const grupo = String(usuario.usuario_grupo || '').toUpperCase()
+    const esAdmin = grupo === 'ADMIN'
 
-    return usuarioVerificado
-  } catch {
-    usuarioVerificado = null
+    authVerificado = {
+      usuario,
+      permisos,
+      es_admin: data.es_admin ?? esAdmin,
+      puede_supervisar_area:
+        data.puede_supervisar_area || permisos.includes('blog.supervisar_area'),
+    }
+
+    localStorage.setItem('user_data', JSON.stringify(usuario))
+
+    return authVerificado
+  } catch (error) {
+    console.error(error)
+
+    authVerificado = null
     localStorage.removeItem('user_data')
     localStorage.removeItem('auth_token')
 
@@ -152,29 +251,23 @@ function enviarAIntranet() {
 
 router.beforeEach(async (to) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
-  const requiresEmployee = to.matched.some(record => record.meta.requiresEmployee)
+  const requiresSupervisor = to.matched.some(record => record.meta.requiresSupervisor)
 
   if (!requiresAuth) {
     return true
   }
 
-  const usuario = await cargarUsuario()
+  const auth = await cargarAuth()
 
-  if (!usuario) {
+  if (!auth?.usuario) {
     enviarAIntranet()
     return false
   }
 
-  const grupo = String(usuario.usuario_grupo || '').toUpperCase()
-  const esAdmin = grupo === 'ADMIN'
-
-  if (requiresAdmin && !esAdmin) {
-    return { name: 'inicio' }
-  }
-
-  if (requiresEmployee && esAdmin) {
-    return { name: 'inicioAdmin' }
+  if (requiresSupervisor && !auth.es_admin && !auth.puede_supervisar_area) {
+    return {
+      name: 'inicio',
+    }
   }
 
   return true

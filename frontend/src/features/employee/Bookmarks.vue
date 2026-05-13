@@ -14,7 +14,7 @@
 </template>
 <script setup lang="ts">
 
-import Bookmarks from '../../components/employees/Bookmarks.vue';
+import Bookmarks from '../../components/employees/home/Bookmarks.vue';
 
 // Borramos la importación de MainLayout de aquí
 </script>

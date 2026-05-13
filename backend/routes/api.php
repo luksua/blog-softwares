@@ -35,6 +35,25 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
+    Route::get('/me', function (Request $request) {
+    $usuario = $request->user();
+
+    $permisos = session('tz_permisos', []);
+
+    $esAdmin = strtoupper((string) $usuario->usuario_grupo) === 'ADMIN';
+
+    $puedeSupervisarArea =
+        $esAdmin ||
+        in_array('blog.supervisar_area', $permisos, true);
+
+    return response()->json([
+        'usuario' => $usuario->loadMissing('areaServicio'),
+        'permisos' => $permisos,
+        'es_admin' => $esAdmin,
+        'puede_supervisar_area' => $puedeSupervisarArea,
+    ]);
+});
+
     Route::post('/logout', function (Request $request) {
         Auth::guard('web')->logout();
 

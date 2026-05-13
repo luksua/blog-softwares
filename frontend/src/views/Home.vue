@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import Lista from '../components/employees/List.vue';
+import Lista from '../components/employees/home/List.vue';
 
 </script>
 

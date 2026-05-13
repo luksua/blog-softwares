@@ -295,9 +295,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../api/api'
-import type { Version } from '../../types/version';
-import Edit from '../../components/admin/EditVersion.vue'
+import api from '../../../api/api'
+import type { Version } from '../../../types/version';
+import Edit from '../register/EditVersion.vue'
 import { Modal } from 'bootstrap'
 
 type AreaFiltro = {

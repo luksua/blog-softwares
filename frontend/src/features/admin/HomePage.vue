@@ -47,8 +47,8 @@
 
 <script setup lang="ts">
 
-import List from '../../components/admin/List.vue';
-import Store from '../../components/admin/NewVersion.vue';
+import List from '../../components/employees/register/List.vue';
+import Store from '../../components/employees/register/NewVersion.vue';
 // Borramos la importación de MainLayout de aquí
 import { Modal } from 'bootstrap';
 import { ref, onMounted, nextTick } from 'vue'
