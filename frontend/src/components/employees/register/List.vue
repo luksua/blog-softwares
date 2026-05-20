@@ -1,5 +1,5 @@
 <template>
-  <div class="contenedor-lista-tabla">
+  <div :class="['contenedor-lista-tabla', { 'modo-supervision': esVistaSupervision }]">
     <div v-if="cargando" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -17,8 +17,8 @@
 
     <div v-else-if="actualizaciones.length === 0 && !hayFiltrosActivos" class="estado-mensaje vacio">
       <div class="empty-icon">📭</div>
-      <h3>No hay registros para mostrar</h3>
-      <p>Aún no se ha registrado ninguna actualización en el sistema.</p>
+      <h3>{{ tituloVacio }}</h3>
+      <p>{{ textoVacio }}</p>
     </div>
 
     <div v-else class="tabla-con-filtros">
@@ -64,7 +64,7 @@
             </select>
           </div>
 
-          <div class="filtro-grupo">
+          <div v-if="!esVistaSupervision" class="filtro-grupo">
             <label for="area">Área</label>
             <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
               <option value="">Todas</option>
@@ -105,6 +105,7 @@
           <thead>
             <tr>
               <th class="col-titulo">TÍTULO</th>
+              <th v-if="esVistaSupervision" class="col-autor">EMPLEADO</th>
               <th class="col-area">ÁREA</th>
               <th class="col-categoria">CATEGORIA</th>
               <th class="col-version">VERSIÓN</th>
@@ -118,6 +119,10 @@
             <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro" @click="verDetalles(item.id)">
               <td class="cell-titulo" data-label="Título">
                 <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
+              </td>
+
+              <td v-if="esVistaSupervision" class="cell-autor" data-label="Empleado">
+                <span class="autor-texto">{{ obtenerNombreAutor(item) }}</span>
               </td>
 
               <td class="cell-area" data-label="Área">
@@ -155,26 +160,45 @@
 
               <td class="cell-acciones" data-label="Acciones">
                 <div class="icon-group">
-                  <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
-                    @click.stop="editarActualizacion(item.id)">
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-
                   <button title="Ver" class="btn-icon" @click.stop="verDetalles(item.id)">
                     <i class="bi bi-eye"></i>
                   </button>
 
-                  <div v-if="item.actualizacion_estado !== 'inactivo'">
-                    <button title="Archivar" class="btn-icon" @click.stop="confirmarEliminar(item)">
-                      <i class="bi bi-x-lg"></i>
+                  <template v-if="esVistaSupervision">
+                    <button
+                      v-if="item.actualizacion_estado !== 'revision'"
+                      title="Marcar como revisión"
+                      class="btn-icon btn-icon-revision"
+                      @click.stop="confirmarRevision(item)"
+                    >
+                      <i class="bi bi-clipboard-check"></i>
+                      <!-- <span class="accion-texto d-none d-xl-inline">Revisión</span> -->
                     </button>
-                  </div>
+                  </template>
 
-                  <div v-else>
-                    <button title="Desarchivar" class="btn-icon" @click.stop="confirmarActivar(item)">
-                      <i class="bi bi-check-lg"></i>
+                  <template v-else>
+                    <button
+                      title="Editar"
+                      class="btn-icon"
+                      data-bs-toggle="modal"
+                      data-bs-target="#modalEditarRegistro"
+                      @click.stop="editarActualizacion(item.id)"
+                    >
+                      <i class="bi bi-pencil-square"></i>
                     </button>
-                  </div>
+
+                    <div v-if="item.actualizacion_estado !== 'inactivo'">
+                      <button title="Archivar" class="btn-icon" @click.stop="confirmarEliminar(item)">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+
+                    <div v-else>
+                      <button title="Desarchivar" class="btn-icon" @click.stop="confirmarActivar(item)">
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </td>
             </tr>
@@ -273,6 +297,61 @@
       </div>
     </div>
 
+    <div class="modal fade" id="modalRevisionRegistro" tabindex="-1" aria-labelledby="modalRevisionLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalRevisionLabel">
+              ¿Deseas marcar este registro como revisión?
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p>El registro quedará marcado con el estado <strong>Revisión</strong>.</p>
+
+            <strong class="modal-item-title">
+              {{ itemARevision?.actualizacion_titulo }}
+            </strong>
+
+            <div class="revision-observacion-group">
+              <label for="observacionRevision" class="form-label">
+                Motivo de revisión <span class="campo-obligatorio">*</span>
+              </label>
+
+              <textarea
+                id="observacionRevision"
+                v-model.trim="observacionRevision"
+                class="form-control"
+                rows="4"
+                maxlength="2000"
+                placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."
+              ></textarea>
+
+              <small class="form-text text-muted">
+                Este mensaje quedará guardado como soporte de la revisión.
+              </small>
+
+              <p v-if="errorObservacionRevision" class="revision-observacion-error">
+                {{ errorObservacionRevision }}
+              </p>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="button" class="btn btn-warning" @click="marcarRevisionActualizacion">
+              Marcar revisión
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -317,6 +396,24 @@ type EstadoFiltro = {
 
 const router = useRouter()
 
+const props = withDefaults(defineProps<{
+  vista?: 'mis-registros' | 'supervision'
+}>(), {
+  vista: 'mis-registros',
+})
+
+const esVistaSupervision = computed(() => props.vista === 'supervision')
+
+const tituloVacio = computed(() =>
+  esVistaSupervision.value ? 'No hay registros pendientes en tu área' : 'No hay registros para mostrar'
+)
+
+const textoVacio = computed(() =>
+  esVistaSupervision.value
+    ? 'Cuando los empleados de tu área creen registros, aparecerán en esta bandeja de supervisión.'
+    : 'Aún no se ha registrado ninguna actualización en el sistema.'
+)
+
 const ENDPOINT_AREAS = '/area-servicio'
 const ENDPOINT_CATEGORIAS = '/categorias'
 const ENDPOINT_STATUS = '/estados-actualizacion'
@@ -330,6 +427,9 @@ const totalPaginas = ref(1)
 const totalRegistros = ref(0)
 
 const itemAEliminar = ref<Version | null>(null)
+const itemARevision = ref<Version | null>(null)
+const observacionRevision = ref('')
+const errorObservacionRevision = ref('')
 const idEditando = ref<number | null>(null)
 
 const mostrarFiltros = ref(false) // Controla la visibilidad en móvil
@@ -428,7 +528,7 @@ const obtenerActualizaciones = async (page = 1) => {
     const params = new URLSearchParams()
 
     params.append('page', String(page))
-    params.append('vista', 'mis-registros')
+    params.append('vista', props.vista)
 
     if (filtros.value.busqueda.trim()) {
       params.append('busqueda', filtros.value.busqueda.trim())
@@ -532,6 +632,26 @@ const obtenerNombreCategoria = (item: Version) => {
   return item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
 }
 
+const obtenerNombreAutor = (item: any) => {
+  const autor = item.usuario_autor || item.autor || item.usuario
+
+  if (!autor) {
+    return 'Empleado del área'
+  }
+
+  const nombres = [
+    autor.usuario_nombre1,
+    autor.usuario_nombre2,
+    autor.usuario_apellido1,
+    autor.usuario_apellido2,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+
+  return nombres || autor.usuario_nombre || autor.usuario_usuario || autor.usuario_login || 'Empleado del área'
+}
+
 const cambiarPagina = (pagina: number) => {
   if (pagina >= 1 && pagina <= totalPaginas.value && pagina !== paginaActual.value) {
     obtenerActualizaciones(pagina)
@@ -540,7 +660,7 @@ const cambiarPagina = (pagina: number) => {
 
 const verDetalles = (id: number) => {
   router.push({
-    name: 'mis-registros-show',
+    name: esVistaSupervision.value ? 'supervision-show' : 'mis-registros-show',
     params: { id },
   })
 }
@@ -567,6 +687,20 @@ const confirmarActivar = async (item: Version) => {
   await nextTick()
 
   const modalElement = document.getElementById('modalDesarchivarRegistro')
+  if (modalElement) {
+    const modalInstance = Modal.getOrCreateInstance(modalElement)
+    modalInstance.show()
+  }
+}
+
+const confirmarRevision = async (item: Version) => {
+  itemARevision.value = item
+  observacionRevision.value = ''
+  errorObservacionRevision.value = ''
+
+  await nextTick()
+
+  const modalElement = document.getElementById('modalRevisionRegistro')
   if (modalElement) {
     const modalInstance = Modal.getOrCreateInstance(modalElement)
     modalInstance.show()
@@ -624,6 +758,39 @@ const activarActualizacion = async () => {
   }
 }
 
+const marcarRevisionActualizacion = async () => {
+  if (!itemARevision.value) return
+
+  const motivo = observacionRevision.value.trim()
+
+  if (motivo.length < 10) {
+    errorObservacionRevision.value = 'Escribe un motivo de al menos 10 caracteres.'
+    return
+  }
+
+  const modalElement = document.getElementById('modalRevisionRegistro')
+  const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
+
+  try {
+    await api.post(`/actualizaciones/${itemARevision.value.id}/revision`, {
+      observacion_revision: motivo,
+    })
+
+    itemARevision.value = null
+    observacionRevision.value = ''
+    errorObservacionRevision.value = ''
+    await obtenerActualizaciones(paginaActual.value)
+
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
+  } catch (err) {
+    console.error('Error al marcar revisión:', err)
+    error.value = 'No se pudo marcar el registro como revisión.'
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
+  }
+}
+
 onMounted(async () => {
   await obtenerCatalogosFiltros()
   await obtenerActualizaciones(1)
@@ -657,6 +824,40 @@ defineExpose({
   .contenedor-lista-tabla {
     padding: 0 24px;
   }
+}
+
+.modo-supervision {
+  max-width: 1500px;
+}
+
+
+
+.col-autor,
+.cell-autor {
+  min-width: 170px;
+}
+
+.autor-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.autor-texto::before {
+  font-size: 0.9rem;
+}
+
+.btn-icon-revision {
+  width: auto;
+  padding: 8px 11px;
+  gap: 6px;
+}
+
+.accion-texto {
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .estado-mensaje {
@@ -1385,4 +1586,28 @@ defineExpose({
     padding: 0 12px;
   }
 }
+
+.btn-icon-revision {
+  color: #b45309;
+}
+
+.btn-icon-revision:hover {
+  color: #92400e;
+}
+
+.revision-observacion-group {
+  margin-top: 18px;
+}
+
+.campo-obligatorio {
+  color: #dc3545;
+}
+
+.revision-observacion-error {
+  margin: 8px 0 0;
+  color: #dc3545;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 </style>

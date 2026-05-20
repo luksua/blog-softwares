@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UpdateBlogController;
+use App\Http\Controllers\Api\BookmarkController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -14,7 +15,17 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/me', function (Request $request) {
-        $usuario = $request->user();
+        $usuario = $request->user()->loadMissing([
+            'areaServicio',
+            'jefaturasActivas.areaServicio',
+        ]);
+
+        $permisos = session('tz_permisos', []);
+
+        $esAdminGlobal = $usuario->esAdmin();
+        $areasSupervisadas = $usuario->areasSupervisadas();
+        $esAdminArea = $areasSupervisadas->isNotEmpty();
+        $puedeSupervisarArea = $esAdminGlobal || $esAdminArea;
 
         return response()->json([
             'usuario' => [
@@ -28,31 +39,22 @@ Route::middleware('auth:sanctum')->group(function () {
                 'cargo_id' => $usuario->cargo_id,
                 'medico_id' => $usuario->medico_id,
                 'area_servicio_id' => $usuario->area_servicio_id,
+                'area_servicio' => $usuario->areaServicio,
                 'area' => $request->session()->get('area'),
                 'nombre' => $request->session()->get('nombre'),
-                'permisos' => $request->session()->get('tz_permisos', []),
+                'permisos' => $permisos,
+                'jefaturas' => $usuario->jefaturasActivas,
+                'areas_supervisadas' => $areasSupervisadas,
+                'tipo_usuario' => $puedeSupervisarArea ? 'admin' : 'employee',
             ],
+            'permisos' => $permisos,
+            'tipo_usuario' => $puedeSupervisarArea ? 'admin' : 'employee',
+            'es_admin' => $esAdminGlobal,
+            'es_admin_area' => $esAdminArea,
+            'puede_supervisar_area' => $puedeSupervisarArea,
+            'areas_supervisadas' => $areasSupervisadas,
         ]);
     });
-
-    Route::get('/me', function (Request $request) {
-    $usuario = $request->user();
-
-    $permisos = session('tz_permisos', []);
-
-    $esAdmin = strtoupper((string) $usuario->usuario_grupo) === 'ADMIN';
-
-    $puedeSupervisarArea =
-        $esAdmin ||
-        in_array('blog.supervisar_area', $permisos, true);
-
-    return response()->json([
-        'usuario' => $usuario->loadMissing('areaServicio'),
-        'permisos' => $permisos,
-        'es_admin' => $esAdmin,
-        'puede_supervisar_area' => $puedeSupervisarArea,
-    ]);
-});
 
     Route::post('/logout', function (Request $request) {
         Auth::guard('web')->logout();
@@ -74,6 +76,20 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/area-servicio', [UpdateBlogController::class, 'getAreas']);
     Route::get('/categorias', [UpdateBlogController::class, 'getCategorias']);
     Route::get('/estados-actualizacion', [UpdateBlogController::class, 'getStatus']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guardados / bookmarks
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/bookmarks', [BookmarkController::class, 'index']);
+    Route::get('/bookmarks/ids', [BookmarkController::class, 'ids']);
+    Route::post('/bookmarks/{actualizacion}', [BookmarkController::class, 'store'])
+        ->whereNumber('actualizacion');
+    Route::delete('/bookmarks/{actualizacion}', [BookmarkController::class, 'destroy'])
+        ->whereNumber('actualizacion');
+    Route::delete('/bookmarks', [BookmarkController::class, 'destroyAll']);
 
     /*
     |--------------------------------------------------------------------------
@@ -105,63 +121,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/actualizaciones/{id}/estado', [UpdateBlogController::class, 'cambiarEstado'])
         ->whereNumber('id');
 
+    Route::post('/actualizaciones/{id}/revision', [UpdateBlogController::class, 'marcarRevision'])
+        ->whereNumber('id');
+
     Route::post('/actualizaciones/{id}/activar', [UpdateBlogController::class, 'activar'])
         ->whereNumber('id');
 
     Route::post('/actualizaciones/{id}/inactivar', [UpdateBlogController::class, 'inactivar'])
         ->whereNumber('id');
-}); 
-
-
-// V2
-
-// <?php
-
-// use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\Admin\UpdateBlogAdminController;
-// use App\Http\Controllers\Employee\UpdateBlogController;
-// use App\Http\Controllers\SimuladorLoginController;
-
-// /*
-// |--------------------------------------------------------------------------
-// | Login simulado con sesión
-// |--------------------------------------------------------------------------
-// | Estas rutas siguen siendo:
-// | /api/simulador-login
-// | /api/me
-// | /api/logout
-// |
-// | Pero ahora pasan por middleware web para que Laravel maneje sesión/cookies.
-// */
-// Route::middleware('web')->group(function () {
-//     Route::post('/simulador-login', [SimuladorLoginController::class, 'login']);
-//     Route::get('/me', [SimuladorLoginController::class, 'me']);
-//     Route::post('/logout', [SimuladorLoginController::class, 'logout']);
-// });
-
-// /*
-// |--------------------------------------------------------------------------
-// | Rutas públicas o sin sesión
-// |--------------------------------------------------------------------------
-// */
-// Route::get('/admin/actualizaciones', [UpdateBlogAdminController::class, 'index']);
-// Route::get('/employee/actualizaciones', [UpdateBlogController::class, 'index']);
-// Route::get('/admin/area-servicio', [UpdateBlogAdminController::class, 'getAreas']);
-// Route::get('/employee/area-servicio', [UpdateBlogController::class, 'getAreas']);
-// Route::get('/admin/categorias', [UpdateBlogAdminController::class, 'getCategorias']);
-// Route::get('/employee/categorias', [UpdateBlogController::class, 'getCategorias']);
-// Route::get('/admin/estados-actualizacion', [UpdateBlogAdminController::class, 'getStatus']);
-// Route::get('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'show']);
-// Route::get('/employee/actualizaciones/{id}', [UpdateBlogController::class, 'show']);
-
-// /*
-// |--------------------------------------------------------------------------
-// | Rutas POST de admin
-// |--------------------------------------------------------------------------
-// */
-// Route::post('/admin/actualizaciones', [UpdateBlogAdminController::class, 'store']);
-// Route::post('/admin/actualizaciones/{id}', [UpdateBlogAdminController::class, 'update']);
-// Route::post('/admin/actualizaciones/{id}/inactivar', [UpdateBlogAdminController::class, 'inactivar']);
-// Route::post('/admin/actualizaciones/{id}/activar', [UpdateBlogAdminController::class, 'activar']);
-// Route::post('/admin/subir-imagen-blog', [UpdateBlogAdminController::class, 'subirImagenEditor']);
-// Route::post('/admin/subir-imagen-portada', [UpdateBlogAdminController::class, 'subirImagen']);
+});

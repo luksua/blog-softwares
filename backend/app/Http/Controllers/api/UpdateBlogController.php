@@ -22,6 +22,8 @@ class UpdateBlogController extends Controller
             'areaServicio',
             'categoria',
             'imagenes',
+            'usuarioAutor',
+            'ultimaRevisionObservacion.supervisor',
         ]);
 
         /*
@@ -93,14 +95,20 @@ class UpdateBlogController extends Controller
     |
     */
 
-            if (! $this->esAdmin($usuario) && ! $this->esJefeArea()) {
+            if (! $this->esAdmin($usuario) && ! $this->esJefeArea($usuario)) {
                 abort(403, 'No tienes permiso para supervisar registros.');
             }
 
             if (! $this->esAdmin($usuario)) {
-                $query->where(
+                $areasSupervisadas = $this->areasSupervisadas($usuario);
+
+                if (empty($areasSupervisadas)) {
+                    abort(403, 'No tienes áreas asignadas para supervisar.');
+                }
+
+                $query->whereIn(
                     'actualizacion_area_servicio_id',
-                    $usuario->area_servicio_id
+                    $areasSupervisadas
                 );
             }
         } elseif ($vista === 'todos') {
@@ -196,6 +204,8 @@ class UpdateBlogController extends Controller
             'areaServicio',
             'categoria',
             'imagenes',
+            'usuarioAutor',
+            'ultimaRevisionObservacion.supervisor',
         ])->findOrFail($id);
 
         if (! $this->puedeVer($usuario, $actualizacion)) {
@@ -303,6 +313,8 @@ class UpdateBlogController extends Controller
                         'areaServicio',
                         'categoria',
                         'imagenes',
+                        'usuarioAutor',
+                        'ultimaRevisionObservacion.supervisor',
                     ])
                 ),
             ], 201);
@@ -386,6 +398,8 @@ class UpdateBlogController extends Controller
                     'areaServicio',
                     'categoria',
                     'imagenes',
+                    'usuarioAutor',
+                    'ultimaRevisionObservacion.supervisor',
                 ])
             ),
         ]);
@@ -396,10 +410,6 @@ class UpdateBlogController extends Controller
         $usuario = $request->user();
 
         $actualizacion = UpdateBlog::findOrFail($id);
-
-        if (! $this->puedeCambiarEstado($usuario, $actualizacion)) {
-            abort(403, 'No tienes permiso para cambiar el estado de este registro.');
-        }
 
         $data = $request->validate([
             'actualizacion_estado' => [
@@ -412,6 +422,10 @@ class UpdateBlogController extends Controller
                 ]),
             ],
         ]);
+
+        if (! $this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
+            abort(403, 'No tienes permiso para cambiar el estado de este registro.');
+        }
 
         $actualizacion->actualizacion_estado = $data['actualizacion_estado'];
 
@@ -434,6 +448,56 @@ class UpdateBlogController extends Controller
                     'areaServicio',
                     'categoria',
                     'imagenes',
+                    'usuarioAutor',
+                    'ultimaRevisionObservacion.supervisor',
+                ])
+            ),
+        ]);
+    }
+
+    public function marcarRevision(Request $request, int $id)
+    {
+        $usuario = $request->user();
+
+        $actualizacion = UpdateBlog::findOrFail($id);
+
+        $data = $request->validate([
+            'observacion_revision' => ['required', 'string', 'min:10', 'max:2000'],
+        ], [
+            'observacion_revision.required' => 'Debes escribir el motivo por el que el registro pasa a revisión.',
+            'observacion_revision.min' => 'El motivo de revisión debe tener al menos 10 caracteres.',
+            'observacion_revision.max' => 'El motivo de revisión no puede superar 2000 caracteres.',
+        ]);
+
+        if (! $this->puedeCambiarEstado($usuario, $actualizacion, 'revision')) {
+            abort(403, 'No tienes permiso para marcar este registro como revisión.');
+        }
+
+        DB::transaction(function () use ($actualizacion, $usuario, $data) {
+            $estadoAnterior = $actualizacion->actualizacion_estado;
+
+            $actualizacion->actualizacion_estado = 'revision';
+            $actualizacion->actualizacion_version =
+                (string) (((int) $actualizacion->actualizacion_version) + 1);
+            $actualizacion->save();
+
+            $actualizacion->revisionObservaciones()->create([
+                'usuario_id_supervisor' => $usuario->usuario_id,
+                'observacion' => trim($data['observacion_revision']),
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => 'revision',
+            ]);
+        });
+
+        return response()->json([
+            'message' => 'Registro marcado como revisión correctamente.',
+            'data' => new ActualizacionResource(
+                $actualizacion->fresh([
+                    'areaServicio',
+                    'categoria',
+                    'imagenes',
+                    'usuarioAutor',
+                    'ultimaRevisionObservacion.supervisor',
                 ])
             ),
         ]);
@@ -571,7 +635,7 @@ class UpdateBlogController extends Controller
             return true;
         }
 
-        if ($this->esJefeArea() && $this->esMismaArea($usuario, $actualizacion)) {
+        if ($this->esJefeArea($usuario) && $this->esAreaSupervisada($usuario, $actualizacion)) {
             return true;
         }
 
@@ -587,13 +651,19 @@ class UpdateBlogController extends Controller
         return $this->esPropietario($usuario, $actualizacion);
     }
 
-    private function puedeCambiarEstado($usuario, UpdateBlog $actualizacion): bool
+    private function puedeCambiarEstado($usuario, UpdateBlog $actualizacion, string $nuevoEstado): bool
     {
         if ($this->esAdmin($usuario)) {
             return true;
         }
 
-        return $this->esPropietario($usuario, $actualizacion);
+        if ($this->esPropietario($usuario, $actualizacion)) {
+            return true;
+        }
+
+        return $nuevoEstado === 'revision' &&
+            $this->esJefeArea($usuario) &&
+            $this->esAreaSupervisada($usuario, $actualizacion);
     }
 
     private function esAdmin($usuario): bool
@@ -601,13 +671,17 @@ class UpdateBlogController extends Controller
         return strtoupper((string) $usuario->usuario_grupo) === 'ADMIN';
     }
 
-    private function esJefeArea(): bool
+    private function esJefeArea($usuario): bool
     {
-        return in_array(
-            'blog.supervisar_area',
-            session('tz_permisos', []),
-            true
-        );
+        if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
+            return true;
+        }
+
+        if (method_exists($usuario, 'esJefeArea') && $usuario->esJefeArea()) {
+            return true;
+        }
+
+        return ! empty($this->areasSupervisadas($usuario));
     }
 
     private function esPropietario($usuario, UpdateBlog $actualizacion): bool
@@ -616,10 +690,39 @@ class UpdateBlogController extends Controller
             (int) $usuario->usuario_id;
     }
 
-    private function esMismaArea($usuario, UpdateBlog $actualizacion): bool
+    private function esAreaSupervisada($usuario, UpdateBlog $actualizacion): bool
     {
-        return (int) $actualizacion->actualizacion_area_servicio_id ===
-            (int) $usuario->area_servicio_id;
+        return in_array(
+            (int) $actualizacion->actualizacion_area_servicio_id,
+            $this->areasSupervisadas($usuario),
+            true
+        );
+    }
+
+    private function areasSupervisadas($usuario): array
+    {
+        $areas = [];
+
+        if (method_exists($usuario, 'areasSupervisadas')) {
+            $areasDesdeUsuario = $usuario->areasSupervisadas();
+
+            if ($areasDesdeUsuario instanceof \Illuminate\Support\Collection) {
+                $areasDesdeUsuario = $areasDesdeUsuario->all();
+            }
+
+            $areas = array_merge($areas, (array) $areasDesdeUsuario);
+        }
+
+        if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
+            $areas[] = $usuario->area_servicio_id;
+        }
+
+        return collect($areas)
+            ->filter(fn ($areaId) => $areaId !== null && $areaId !== '')
+            ->map(fn ($areaId) => (int) $areaId)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function normalizarContenido($contenido): string

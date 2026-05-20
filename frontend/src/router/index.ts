@@ -4,6 +4,7 @@ import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
 import HomePageAdmin from '../features/admin/HomePage.vue'
+import SupervisionPage from '../features/admin/SupervisionPage.vue'
 import ListaActualizaciones from '../components/employees/home/List.vue'
 import VerActualizacion from '../components/employees/home/ListVersion.vue'
 import VerActualizacionAdmin from '../components/employees/register/ListVersion.vue'
@@ -122,10 +123,19 @@ const router = createRouter({
         {
           path: 'supervision',
           name: 'supervision',
-          component: HomePageAdmin,
-          props: {
-            vista: 'supervision',
+          component: SupervisionPage,
+          meta: {
+            sinPadding: true,
+            requiresAuth: true,
+            requiresSupervisor: true,
           },
+        },
+
+        {
+          path: 'supervision/:id',
+          name: 'supervision-show',
+          component: VerActualizacionAdmin,
+          props: true,
           meta: {
             sinPadding: true,
             requiresAuth: true,
@@ -208,14 +218,18 @@ async function cargarAuth() {
     const permisos = normalizarPermisos(data.permisos || usuario?.permisos || [])
 
     const grupo = String(usuario.usuario_grupo || '').toUpperCase()
-    const esAdmin = grupo === 'ADMIN'
+    const esAdmin = data.es_admin ?? grupo === 'ADMIN'
+    const puedeSupervisarArea =
+      data.puede_supervisar_area ||
+      data.tipo_usuario === 'admin' ||
+      usuario.tipo_usuario === 'admin' ||
+      permisos.includes('blog.supervisar_area')
 
     authVerificado = {
       usuario,
       permisos,
-      es_admin: data.es_admin ?? esAdmin,
-      puede_supervisar_area:
-        data.puede_supervisar_area || permisos.includes('blog.supervisar_area'),
+      es_admin: esAdmin,
+      puede_supervisar_area: puedeSupervisarArea,
     }
 
     localStorage.setItem('user_data', JSON.stringify(usuario))

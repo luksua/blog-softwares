@@ -1,10 +1,16 @@
 <template>
   <div class="contenedor-guardados">
-    <div class="cabecera">
+    <div class="supervision-hero">
       <div>
-        <h2>Guardados</h2>
+        <span class="eyebrow">Bookmarks</span>
+        <h2>Registros guardados</h2>
         <p>Consulta las actualizaciones que marcaste para revisar después.</p>
       </div>
+
+      <!-- <div class="hero-badge">
+        <i class="bi bi-shield-check"></i>
+        <span>Supervisor</span>
+      </div> -->
     </div>
 
     <div v-if="cargando" class="estado-mensaje">
@@ -44,7 +50,7 @@
         no estén publicadas.
       </p>
 
-      <button class="btn-primary-custom" type="button" @click="limpiarGuardados">
+      <button class="btn-primary-custom" type="button" @click="confirmarLimpiarGuardados">
         Limpiar guardados
       </button>
     </div>
@@ -62,18 +68,10 @@
       </div>
 
       <div class="grid-guardados">
-        <article
-          v-for="item in actualizaciones"
-          :key="item.id"
-          class="tarjeta-guardado"
-        >
+        <article v-for="item in actualizaciones" :key="item.id" class="tarjeta-guardado">
           <div class="tarjeta-imagen" @click="verDetalle(item.id)">
-            <img
-              v-if="item.actualizacion_imagen_destacada"
-              :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
-              :alt="item.actualizacion_titulo"
-              loading="lazy"
-            />
+            <img v-if="item.actualizacion_imagen_destacada" :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
+              :alt="item.actualizacion_titulo" loading="lazy" />
 
             <div v-else class="sin-imagen">
               <span>🖼️</span>
@@ -106,20 +104,12 @@
             </div>
 
             <div class="acciones">
-              <button
-                class="btn-quitar"
-                type="button"
-                title="Quitar de guardados"
-                @click.stop="quitarGuardado(item.id)"
-              >
+              <button class="btn-quitar" type="button" title="Quitar de guardados"
+                @click.stop="quitarGuardado(item.id)">
                 <i class="bi bi-bookmark-x-fill fs-5"></i>
               </button>
 
-              <button
-                class="btn-ver"
-                type="button"
-                @click.stop="verDetalle(item.id)"
-              >
+              <button class="btn-ver" type="button" @click.stop="verDetalle(item.id)">
                 Ver más
                 <i class="bi bi-arrow-right"></i>
               </button>
@@ -134,14 +124,49 @@
         Puede que ya no estén disponibles.
       </div>
     </div>
+
+    <div class="modal fade" id="modalLimpiarGuardados" tabindex="-1" aria-labelledby="modalLimpiarGuardadosLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalLimpiarGuardadosLabel">
+              ¿Deseas limpiar todos tus guardados?
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <p>
+              Al aceptar, se eliminarán todas las actualizaciones guardadas de tu cuenta.
+            </p>
+            <strong class="modal-item-title">
+              Esta acción no eliminará las publicaciones originales.
+            </strong>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancelar
+            </button>
+
+            <button type="button" class="btn btn-danger" :disabled="limpiandoGuardados" @click="limpiarGuardados">
+              {{ limpiandoGuardados ? 'Limpiando...' : 'Aceptar' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../../api/api'
+import { obtenerBookmarks, quitarBookmark, limpiarBookmarks } from '../../../api/bookmarks'
 import type { Version } from '../../../types/version'
+import { Modal } from 'bootstrap'
+import { toast } from 'vue-sonner'
 
 const router = useRouter()
 
@@ -150,59 +175,12 @@ const idsGuardados = ref<number[]>([])
 const cargando = ref(false)
 const error = ref('')
 const guardadosNoEncontrados = ref(0)
+const limpiandoGuardados = ref(false)
 
-const STORAGE_KEY = 'bookmarkedUpdates'
-
-const leerIdsGuardados = (): number[] => {
-  const raw = localStorage.getItem(STORAGE_KEY)
-
-  if (!raw) {
-    return []
-  }
-
-  try {
-    const parsed = JSON.parse(raw)
-
-    if (!Array.isArray(parsed)) {
-      return []
-    }
-
-    return parsed
-      .map((id) => Number(id))
-      .filter((id) => Number.isFinite(id))
-  } catch (err) {
-    console.error('Error leyendo guardados:', err)
-    return []
-  }
-}
-
-const guardarIds = (ids: number[]) => {
-  const idsUnicos = [...new Set(ids.map((id) => Number(id)))]
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(idsUnicos))
-  idsGuardados.value = idsUnicos
-
-  window.dispatchEvent(new Event('bookmarks-updated'))
-}
-
-const normalizarActualizacion = (payload: any): Version | null => {
-  const item = payload?.data || payload?.actualizacion || payload
-
-  if (!item || !item.id) {
-    return null
-  }
-
-  return item as Version
-}
-
-const obtenerActualizacionPorId = async (id: number): Promise<Version | null> => {
-  try {
-    const response = await api.get(`/actualizaciones/${id}`)
-    return normalizarActualizacion(response.data)
-  } catch (err) {
-    console.error(`No se pudo cargar la actualización ${id}:`, err)
-    return null
-  }
+const sincronizarIdsDesdeActualizaciones = () => {
+  idsGuardados.value = actualizaciones.value
+    .map((item) => Number(item.id))
+    .filter((id) => Number.isFinite(id))
 }
 
 const obtenerGuardados = async () => {
@@ -211,22 +189,8 @@ const obtenerGuardados = async () => {
   guardadosNoEncontrados.value = 0
 
   try {
-    const ids = leerIdsGuardados()
-    idsGuardados.value = ids
-
-    if (ids.length === 0) {
-      actualizaciones.value = []
-      return
-    }
-
-    const resultados = await Promise.all(
-      ids.map((id) => obtenerActualizacionPorId(id))
-    )
-
-    const itemsEncontrados = resultados.filter(Boolean) as Version[]
-
-    actualizaciones.value = itemsEncontrados
-    guardadosNoEncontrados.value = ids.length - itemsEncontrados.length
+    actualizaciones.value = await obtenerBookmarks()
+    sincronizarIdsDesdeActualizaciones()
   } catch (err) {
     console.error(err)
     error.value = 'Error al conectar con el servidor.'
@@ -235,30 +199,82 @@ const obtenerGuardados = async () => {
   }
 }
 
-const quitarGuardado = (id: number) => {
-  const nuevosIds = idsGuardados.value.filter((guardadoId) => guardadoId !== Number(id))
+const quitarGuardado = async (id: number) => {
+  const idNormalizado = Number(id)
 
-  guardarIds(nuevosIds)
-
-  actualizaciones.value = actualizaciones.value.filter(
-    (item) => Number(item.id) !== Number(id)
-  )
-}
-
-const limpiarGuardados = () => {
-  guardarIds([])
-  actualizaciones.value = []
-  guardadosNoEncontrados.value = 0
-}
-
-const confirmarLimpiarGuardados = () => {
-  const confirmar = window.confirm('¿Deseas quitar todas las actualizaciones guardadas?')
-
-  if (!confirmar) {
+  if (!Number.isFinite(idNormalizado)) {
     return
   }
 
-  limpiarGuardados()
+  try {
+    await quitarBookmark(idNormalizado)
+
+    actualizaciones.value = actualizaciones.value.filter(
+      (item) => Number(item.id) !== idNormalizado
+    )
+
+    sincronizarIdsDesdeActualizaciones()
+    window.dispatchEvent(new Event('bookmarks-updated'))
+    toast.success('¡Se quitó de tus guardados!')
+  } catch (err) {
+    console.error('Error al quitar guardado:', err)
+    error.value = 'No se pudo quitar el guardado.'
+  }
+}
+
+const limpiarFondoModal = () => {
+  const backdrops = document.querySelectorAll('.modal-backdrop')
+  backdrops.forEach((backdrop) => backdrop.remove())
+  document.body.classList.remove('modal-open')
+  document.body.style.overflow = ''
+  document.body.style.paddingRight = ''
+}
+
+const obtenerModalLimpiarGuardados = () => {
+  const modalElement = document.getElementById('modalLimpiarGuardados')
+
+  if (!modalElement) {
+    return null
+  }
+
+  return Modal.getInstance(modalElement) || new Modal(modalElement)
+}
+
+const limpiarGuardados = async () => {
+  const modalInstance = obtenerModalLimpiarGuardados()
+  limpiandoGuardados.value = true
+
+  try {
+    await limpiarBookmarks()
+
+    actualizaciones.value = []
+    idsGuardados.value = []
+    guardadosNoEncontrados.value = 0
+    window.dispatchEvent(new Event('bookmarks-updated'))
+
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
+
+    toast.info('¡Todos tus guardados fueron eliminados!')
+  } catch (err) {
+    console.error('Error al limpiar guardados:', err)
+    error.value = 'No se pudieron limpiar tus guardados.'
+
+    if (modalInstance) modalInstance.hide()
+    limpiarFondoModal()
+  } finally {
+    limpiandoGuardados.value = false
+  }
+}
+
+const confirmarLimpiarGuardados = async () => {
+  await nextTick()
+
+  const modalInstance = obtenerModalLimpiarGuardados()
+
+  if (modalInstance) {
+    modalInstance.show()
+  }
 }
 
 const volverAlBlog = () => {
@@ -380,7 +396,7 @@ onMounted(() => {
   border-radius: 20px;
   box-shadow: var(--shadow-sm);
   color: #6b7280;
-  border-top: 3px solid var(--warning);
+  /* border-top: 3px solid var(--warning); */
 }
 
 .estado-mensaje.error {
@@ -674,6 +690,90 @@ onMounted(() => {
   .btn-ver {
     width: 100%;
     justify-content: center;
+  }
+}
+
+.supervision-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: center;
+  max-width: 1500px;
+  margin: 0 auto 20px;
+  padding: 28px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(252, 187, 28, 0.24), transparent 32%),
+    linear-gradient(135deg, #073b4c 0%, var(--secondary) 100%);
+  color: white;
+  box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
+}
+
+.supervision-hero h2 {
+  margin: 6px 0 10px;
+  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  font-weight: 800;
+}
+
+.supervision-hero p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 1rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff7d6;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 130px;
+  height: 120px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  font-weight: 800;
+}
+
+.hero-badge i {
+  font-size: 2rem;
+  color: var(--warning);
+  margin-bottom: 8px;
+}
+
+@media (max-width: 900px) {
+  .supervision-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero-badge {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .hero-badge i {
+    margin-bottom: 0;
+  }
+
+  .supervision-resumen {
+    grid-template-columns: 1fr;
   }
 }
 </style>

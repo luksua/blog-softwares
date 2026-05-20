@@ -35,8 +35,41 @@ class UsuarioIntranet extends Authenticatable
         return strtoupper((string) $this->usuario_grupo) === 'ADMIN';
     }
 
+    public function esJefeArea(): bool
+    {
+        return $this->jefaturasActivas()->exists();
+    }
+
+    public function areasSupervisadas()
+    {
+        return $this->jefaturasActivas()
+            ->pluck('jefe_area')
+            ->filter()
+            ->map(fn ($areaId) => (int) $areaId)
+            ->unique()
+            ->values();
+    }
+
     public function areaServicio()
     {
-        return $this->belongsTo(Area::class, 'actualizacion_area_servicio_id');
+        return $this->belongsTo(
+            Area::class,
+            'area_servicio_id',
+            'area_servicio_id'
+        );
+    }
+
+    public function jefaturas()
+    {
+        return $this->hasMany(
+            JefeArea::class,
+            'id_usuario',
+            'usuario_id'
+        );
+    }
+
+    public function jefaturasActivas()
+    {
+        return $this->jefaturas()->activos();
     }
 }

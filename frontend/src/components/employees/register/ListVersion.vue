@@ -13,7 +13,7 @@
 
         <button class="btn-volver hero-btn-pos" @click="volver">
           <span class="arrow-icon">←</span>
-          Volver a mis registros
+          {{ textoVolver }}
         </button>
         <img v-if="actualizacion.actualizacion_imagen_destacada"
           :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)" alt="Portada" class="hero-image" />
@@ -46,6 +46,21 @@
           </div>
         </div>
       </div>
+      <div v-if="esDetalleSupervision" class="supervision-meta-container">
+        <div class="supervision-meta-card">
+          <span class="supervision-meta-label">Empleado autor</span>
+          <strong>{{ obtenerNombreAutor(actualizacion) }}</strong>
+        </div>
+
+        <div v-if="actualizacion.revision_observacion?.observacion" class="supervision-meta-card revision-motivo-card">
+          <span class="supervision-meta-label">Motivo de revisión</span>
+          <p>{{ actualizacion.revision_observacion.observacion }}</p>
+          <small v-if="actualizacion.revision_observacion?.supervisor">
+            Marcado por {{ obtenerNombrePersona(actualizacion.revision_observacion.supervisor) }}
+          </small>
+        </div>
+      </div>
+
       <div class="resumen-container">
         <p class="resumen-texto">
           {{ actualizacion.actualizacion_resumen }}
@@ -69,8 +84,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '../../../api/api'
 
 const props = defineProps<{
@@ -78,6 +93,10 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const route = useRoute()
+
+const esDetalleSupervision = computed(() => String(route.name) === 'supervision-show')
+const textoVolver = computed(() => esDetalleSupervision.value ? 'Volver a supervisión' : 'Volver a mis registros')
 
 const actualizacion = ref<any>(null)
 const cargando = ref(true)
@@ -104,7 +123,7 @@ const obtenerDetalle = async () => {
 
 const volver = () => {
   router.push({
-    name: 'mis-registros',
+    name: esDetalleSupervision.value ? 'supervision' : 'mis-registros',
   })
 }
 
@@ -118,6 +137,26 @@ const formatearFecha = (fechaString: string) => {
   })
 
   return fecha.charAt(0).toUpperCase() + fecha.slice(1)
+}
+
+const obtenerNombrePersona = (persona: any) => {
+  if (!persona) return 'Sin información'
+
+  const nombres = [
+    persona.usuario_nombre1,
+    persona.usuario_nombre2,
+    persona.usuario_apellido1,
+    persona.usuario_apellido2,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim()
+
+  return nombres || persona.usuario_nombre || persona.usuario_usuario || persona.usuario_login || 'Sin información'
+}
+
+const obtenerNombreAutor = (item: any) => {
+  return obtenerNombrePersona(item?.usuario_autor || item?.autor || item?.usuario)
 }
 
 const obtenerUrlImagen = (ruta: string) => {
@@ -180,6 +219,45 @@ watch(
   width: 100%;
   max-width: 100%;
   margin: 0;
+}
+
+
+.supervision-meta-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 24px 25% 0 25%;
+}
+
+.supervision-meta-card {
+  padding: 18px 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.supervision-meta-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.supervision-meta-card strong {
+  color: #0f172a;
+}
+
+.revision-motivo-card p {
+  margin: 0 0 8px;
+  color: #334155;
+  white-space: pre-line;
+}
+
+.revision-motivo-card small {
+  color: #64748b;
 }
 
 /* Estado de carga */

@@ -126,6 +126,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
 
+const puedeSupervisarArea = ref(false)
+
 const router = useRouter()
 const route = useRoute()
 
@@ -147,12 +149,12 @@ const mostrarGuardados = computed(() => {
   return isLoggedIn.value && existeRuta('employee-guardados')
 })
 
-const puedeSupervisarArea = computed(() => {
-  return isAdmin.value || permisos.value.includes('blog.supervisar_area')
-})
+// const puedeSupervisarArea = computed(() => {
+//   return isAdmin.value || permisos.value.includes('blog.supervisar_area')
+// })
 
 const mostrarSupervision = computed(() => {
-  return isLoggedIn.value && puedeSupervisarArea.value && existeRuta('supervision')
+  return isLoggedIn.value && puedeSupervisarArea.value && router.hasRoute('supervision')
 })
 
 const estaEnFormularioRegistro = computed(() => {
@@ -194,13 +196,20 @@ const aplicarUsuario = (data: any) => {
     return
   }
 
-  const grupo = String(user.usuario_grupo || '').toUpperCase()
+  const permisosNormalizados = normalizarPermisos(data?.permisos || user?.permisos || [])
 
   isLoggedIn.value = true
-  isAdmin.value = grupo === 'ADMIN'
-  isEmpleado.value = grupo !== 'ADMIN'
 
-  permisos.value = normalizarPermisos(data?.permisos || user?.permisos || [])
+  isAdmin.value = data?.es_admin === true
+  isEmpleado.value = !isAdmin.value
+
+  puedeSupervisarArea.value =
+    data?.puede_supervisar_area === true ||
+    data?.es_admin_area === true ||
+    data?.tipo_usuario === 'admin' ||
+    permisosNormalizados.includes('blog.supervisar_area')
+
+  permisos.value = permisosNormalizados
 
   localStorage.setItem('user_data', JSON.stringify(user))
 }
@@ -257,6 +266,7 @@ const limpiarSesionLocal = () => {
   isLoggedIn.value = false
   isAdmin.value = false
   isEmpleado.value = false
+  puedeSupervisarArea.value = false
   permisos.value = []
 }
 

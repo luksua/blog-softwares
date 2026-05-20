@@ -145,7 +145,7 @@
                   </span>
                 </div>
                 <div class="tags-right">
-                  <button class="btn-icon" @click.stop="toggleBookmark(item.id)" title="Guardar">
+                  <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)" @click.stop="toggleBookmark(item.id)" title="Guardar">
                     <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
                   </button>
 
@@ -193,8 +193,10 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../../api/api'
+import { obtenerIdsBookmarks, guardarBookmark, quitarBookmark } from '../../../api/bookmarks'
 import type { Version } from '../../../types/version'
-
+import { toast } from 'vue-sonner'
+ 
 type AreaFiltro = {
   area_servicio_id: number | string
   area_servicio_nombre: string
@@ -219,6 +221,7 @@ const totalRegistros = ref(0)
 
 // Bookmark state
 const bookmarkedItems = ref<Set<number>>(new Set())
+const bookmarksProcesando = ref<Set<number>>(new Set())
 
 // ── Filtros ───────────────────────────────────────────────────────
 const filtros = ref({
@@ -356,26 +359,73 @@ const limpiarFiltros = () => {
   }
 }
 
-const toggleBookmark = (id: number) => {
-  if (bookmarkedItems.value.has(id)) {
-    bookmarkedItems.value.delete(id)
+const actualizarBookmarkProcesando = (id: number, enProceso: boolean) => {
+  const siguiente = new Set(bookmarksProcesando.value)
+
+  if (enProceso) {
+    siguiente.add(id)
   } else {
-    bookmarkedItems.value.add(id)
+    siguiente.delete(id)
   }
-  // Aquí puedes guardar en localStorage o hacer una llamada API
-  localStorage.setItem('bookmarkedUpdates', JSON.stringify([...bookmarkedItems.value]))
+
+  bookmarksProcesando.value = siguiente
+}
+
+const bookmarkEnProceso = (id: number) => {
+  return bookmarksProcesando.value.has(Number(id))
+}
+
+const toggleBookmark = async (id: number) => {
+  const idNormalizado = Number(id)
+
+  if (!Number.isFinite(idNormalizado) || bookmarkEnProceso(idNormalizado)) {
+    return
+  }
+
+  const estabaGuardado = bookmarkedItems.value.has(idNormalizado)
+  const estadoAnterior = new Set(bookmarkedItems.value)
+  const siguienteEstado = new Set(bookmarkedItems.value)
+
+  if (estabaGuardado) {
+    siguienteEstado.delete(idNormalizado)
+  } else {
+    siguienteEstado.add(idNormalizado)
+  }
+
+  bookmarkedItems.value = siguienteEstado
+  actualizarBookmarkProcesando(idNormalizado, true)
+
+  try {
+    if (estabaGuardado) {
+      await quitarBookmark(idNormalizado)
+      toast.success('¡Se quitó de tus guardados!')
+    } else {
+      await guardarBookmark(idNormalizado)
+      toast.success('¡Registro añadido a guardados!')
+    }
+
+    window.dispatchEvent(new Event('bookmarks-updated'))
+  } catch (err) {
+    console.error('Error actualizando bookmark:', err)
+    bookmarkedItems.value = estadoAnterior
+    toast.error('No se pudo actualizar el guardado. Inténtalo nuevamente.')
+  } finally {
+    actualizarBookmarkProcesando(idNormalizado, false)
+  }
 }
 
 const isBookmarked = (id: number) => {
-  return bookmarkedItems.value.has(id)
+  return bookmarkedItems.value.has(Number(id))
 }
 
-// Cargar bookmarks guardados
-const loadBookmarks = () => {
-  const saved = localStorage.getItem('bookmarkedUpdates')
-  if (saved) {
-    const bookmarks = JSON.parse(saved)
-    bookmarkedItems.value = new Set(bookmarks)
+// Cargar bookmarks guardados desde BD
+const loadBookmarks = async () => {
+  try {
+    const ids = await obtenerIdsBookmarks()
+    bookmarkedItems.value = new Set(ids)
+  } catch (err) {
+    console.error('Error cargando bookmarks:', err)
+    bookmarkedItems.value = new Set()
   }
 }
 
@@ -442,7 +492,7 @@ const formatearFecha = (fechaString: string) => {
 
 // ── Montaje ───────────────────────────────────────────────────────
 onMounted(async () => {
-  loadBookmarks()
+  await loadBookmarks()
   await obtenerCatalogosFiltros()
   await obtenerActualizaciones(1)
   window.addEventListener('resize', handleResize)
