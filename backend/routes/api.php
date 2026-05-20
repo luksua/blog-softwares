@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UpdateBlogController;
 use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\Api\BlogNotificationController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -76,6 +77,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/area-servicio', [UpdateBlogController::class, 'getAreas']);
     Route::get('/categorias', [UpdateBlogController::class, 'getCategorias']);
     Route::get('/estados-actualizacion', [UpdateBlogController::class, 'getStatus']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notificaciones
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/notificaciones', [BlogNotificationController::class, 'index']);
+    Route::get('/notificaciones/contador', [BlogNotificationController::class, 'contador']);
+    Route::post('/notificaciones/{id}/leida', [BlogNotificationController::class, 'marcarLeida'])
+        ->whereNumber('id');
+    Route::post('/notificaciones/marcar-todas-leidas', [BlogNotificationController::class, 'marcarTodasLeidas']);
 
     /*
     |--------------------------------------------------------------------------

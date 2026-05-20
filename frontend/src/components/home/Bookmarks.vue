@@ -19,7 +19,7 @@
       </div>
       <p>Cargando guardados...</p>
     </div>
-
+    
     <div v-else-if="error" class="estado-mensaje error">
       <div class="estado-icono">⚠️</div>
       <h3>No se pudieron cargar tus guardados</h3>
@@ -163,8 +163,8 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { obtenerBookmarks, quitarBookmark, limpiarBookmarks } from '../../../api/bookmarks'
-import type { Version } from '../../../types/version'
+import { obtenerBookmarks, quitarBookmark, limpiarBookmarks } from '../../api/bookmarks'
+import type { Version } from '../../types/version'
 import { Modal } from 'bootstrap'
 import { toast } from 'vue-sonner'
 
@@ -710,9 +710,7 @@ onMounted(() => {
 }
 
 .supervision-hero h2 {
-  margin: 6px 0 10px;
-  font-size: clamp(1.7rem, 3vw, 2.6rem);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .supervision-hero p {

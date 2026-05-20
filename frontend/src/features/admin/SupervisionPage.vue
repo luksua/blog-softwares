@@ -10,10 +10,10 @@
         </p>
       </div>
 
-      <div class="hero-badge">
+      <!-- <div class="hero-badge">
         <i class="bi bi-shield-check"></i>
         <span>Supervisor</span>
-      </div>
+      </div> -->
     </div>
 
     <!-- <div class="supervision-resumen">
@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import api from '../../api/api'
-import List from '../../components/employees/register/List.vue'
+import List from '../../components/register/List.vue'
 
 const componenteLista = ref<InstanceType<typeof List> | null>(null)
  const usuario = ref<any>(null)
@@ -102,9 +102,7 @@ onMounted(async () => {
 }
 
 .supervision-hero h2 {
-  margin: 6px 0 10px;
-  font-size: clamp(1.7rem, 3vw, 2.6rem);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .supervision-hero p {

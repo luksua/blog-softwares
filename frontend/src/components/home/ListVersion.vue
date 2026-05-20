@@ -181,7 +181,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../../api/api'
+import api from '../../api/api'
 
 const props = defineProps<{
   id: string | number

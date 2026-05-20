@@ -192,9 +192,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../../api/api'
-import { obtenerIdsBookmarks, guardarBookmark, quitarBookmark } from '../../../api/bookmarks'
-import type { Version } from '../../../types/version'
+import api from '../../api/api'
+import { obtenerIdsBookmarks, guardarBookmark, quitarBookmark } from '../../api/bookmarks'
+import type { Version } from '../../types/version'
 import { toast } from 'vue-sonner'
  
 type AreaFiltro = {

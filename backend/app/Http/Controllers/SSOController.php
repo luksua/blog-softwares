@@ -76,19 +76,19 @@ class SSOController extends Controller
             'grupo' => $usuario->usuario_grupo,
             'nombre' => $nombreCompleto,
             'area' => $usuario->areaServicio?->area_servicio_nombre,
-            'piso' => $request->query('piso'),
+            // 'piso' => $request->query('piso'),
         ]);
 
-        $permisos = DB::connection('permisos')
-            ->table('tz_permisos as P')
-            ->distinct()
-            ->join('tz_roles_permisos as RP', 'P.id', '=', 'RP.permiso_id')
-            ->join('tz_usuarios_roles as UR', 'UR.rol_id', '=', 'RP.rol_id')
-            ->where('UR.usuario_id', $usuario->usuario_id)
-            ->pluck('P.key')
-            ->toArray();
+        // $permisos = DB::connection('permisos')
+        //     ->table('tz_permisos as P')
+        //     ->distinct()
+        //     ->join('tz_roles_permisos as RP', 'P.id', '=', 'RP.permiso_id')
+        //     ->join('tz_usuarios_roles as UR', 'UR.rol_id', '=', 'RP.rol_id')
+        //     ->where('UR.usuario_id', $usuario->usuario_id)
+        //     ->pluck('P.key')
+        //     ->toArray();
 
-        $request->session()->put('tz_permisos', $permisos);
+        // $request->session()->put('tz_permisos', $permisos);
 
         $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
 

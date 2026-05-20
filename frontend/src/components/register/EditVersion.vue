@@ -165,7 +165,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
-import api from '../../../api/api'
+import api from '../../api/api'
 
 import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'
@@ -434,6 +434,7 @@ const guardarCambios = async () => {
       actualizacion_fecha_publicacion: form.fecha_publicacion,
       actualizacion_contenido: contenidoFinal,
       actualizacion_categoria_id: form.categoria_id,
+      actualizacion_area_servicio_id: form.area_servicio_id,
     }
 
     await api.put(`/actualizaciones/${props.id}`, payload)

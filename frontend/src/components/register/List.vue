@@ -25,11 +25,7 @@
       <!-- Filtros - Versión Responsive -->
       <div class="filtros-barra">
         <!-- Botón toggle para móvil -->
-        <button 
-          class="btn-toggle-filtros d-md-none" 
-          @click="mostrarFiltros = !mostrarFiltros"
-          type="button"
-        >
+        <button class="btn-toggle-filtros d-md-none" @click="mostrarFiltros = !mostrarFiltros" type="button">
           <i class="bi bi-funnel"></i>
           {{ mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros' }}
         </button>
@@ -100,7 +96,56 @@
         <p>No se encontraron actualizaciones con los filtros aplicados.</p>
       </div>
 
-      <div v-else class="table-container">
+
+      <div v-if="mostrarAlertaRevision" class="alert alert-warning revision-alert">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+          <div>
+            <h5 class="mb-1">
+              Tienes registros marcados para revisión
+            </h5>
+
+            <p class="mb-0">
+              Revisa las observaciones del supervisor y realiza los ajustes necesarios.
+            </p>
+          </div>
+
+          <span class="badge bg-warning text-dark">
+            {{ notificacionesRevision.length }}
+          </span>
+        </div>
+
+        <div class="revision-alert-list mt-3">
+          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="revision-alert-item">
+            <div>
+              <strong>{{ notificacion.titulo }}</strong>
+
+              <p v-if="notificacion.mensaje" class="mb-1">
+                {{ notificacion.mensaje }}
+              </p>
+
+              <small class="text-muted">
+                {{ new Date(notificacion.created_at).toLocaleString('es-CO') }}
+              </small>
+            </div>
+
+            <div class="d-flex gap-2">
+              <router-link v-if="notificacion.actualizacion_id" :to="{
+                name: 'mis-registros-show',
+                params: { id: notificacion.actualizacion_id }
+              }" class="btn btn-sm btn-outline-dark">
+                Ver registro
+              </router-link>
+
+              <button type="button" class="btn btn-sm btn-outline-secondary" @click="marcarRevisionLeida(notificacion)">
+                Marcar leída
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="table-container">
         <table class="base-table">
           <thead>
             <tr>
@@ -165,25 +210,16 @@
                   </button>
 
                   <template v-if="esVistaSupervision">
-                    <button
-                      v-if="item.actualizacion_estado !== 'revision'"
-                      title="Marcar como revisión"
-                      class="btn-icon btn-icon-revision"
-                      @click.stop="confirmarRevision(item)"
-                    >
+                    <button v-if="item.actualizacion_estado !== 'revision'" title="Marcar como revisión"
+                      class="btn-icon btn-icon-revision" @click.stop="confirmarRevision(item)">
                       <i class="bi bi-clipboard-check"></i>
                       <!-- <span class="accion-texto d-none d-xl-inline">Revisión</span> -->
                     </button>
                   </template>
 
                   <template v-else>
-                    <button
-                      title="Editar"
-                      class="btn-icon"
-                      data-bs-toggle="modal"
-                      data-bs-target="#modalEditarRegistro"
-                      @click.stop="editarActualizacion(item.id)"
-                    >
+                    <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
+                      @click.stop="editarActualizacion(item.id)">
                       <i class="bi bi-pencil-square"></i>
                     </button>
 
@@ -320,14 +356,9 @@
                 Motivo de revisión <span class="campo-obligatorio">*</span>
               </label>
 
-              <textarea
-                id="observacionRevision"
-                v-model.trim="observacionRevision"
-                class="form-control"
-                rows="4"
+              <textarea id="observacionRevision" v-model.trim="observacionRevision" class="form-control" rows="4"
                 maxlength="2000"
-                placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."
-              ></textarea>
+                placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."></textarea>
 
               <small class="form-text text-muted">
                 Este mensaje quedará guardado como soporte de la revisión.
@@ -374,10 +405,14 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import api from '../../../api/api'
-import type { Version } from '../../../types/version';
-import Edit from '../register/EditVersion.vue'
+import api from '../../api/api'
+import type { Version } from '../../types/version';
+import Edit from './EditVersion.vue'
 import { Modal } from 'bootstrap'
+import type { Notificacion } from '../../types/notificaciones'
+import {
+  marcarNotificacionLeida,
+} from '../../api/notificaciones'
 
 type AreaFiltro = {
   area_servicio_id: number | string
@@ -454,6 +489,45 @@ const areasDisponibles = ref<AreaFiltro[]>([])
 const categoriasDisponibles = ref<CategoriaFiltro[]>([])
 const estadosDisponibles = ref<EstadoFiltro[]>([])
 const cargandoFiltros = ref(false)
+
+const notificaciones = ref<Notificacion[]>([])
+const cargandoNotificaciones = ref(false)
+
+const notificacionesRevision = computed(() => {
+  return notificaciones.value.filter((item) => {
+    return item.tipo === 'revision' && !item.leido
+  })
+})
+
+const mostrarAlertaRevision = computed(() => {
+  return !esVistaSupervision.value && notificacionesRevision.value.length > 0
+})
+
+const cargarNotificacionesRevision = async () => {
+  try {
+    cargandoNotificaciones.value = true
+
+    notificaciones.value = data.filter((item) => {
+      return item.tipo === 'revision'
+    })
+  } catch (error) {
+    console.error('Error cargando notificaciones de revisión:', error)
+  } finally {
+    cargandoNotificaciones.value = false
+  }
+}
+
+const marcarRevisionLeida = async (notificacion: Notificacion) => {
+  try {
+    await marcarNotificacionLeida(notificacion.id)
+
+    notificacion.leido = true
+
+    window.dispatchEvent(new Event('notificaciones-updated'))
+  } catch (error) {
+    console.error('Error marcando notificación como leída:', error)
+  }
+}
 
 const hayFiltrosActivos = computed(() => {
   return Boolean(
@@ -773,7 +847,7 @@ const marcarRevisionActualizacion = async () => {
 
   try {
     await api.post(`/actualizaciones/${itemARevision.value.id}/revision`, {
-      observacion_revision: motivo,
+      observacion: motivo,
     })
 
     itemARevision.value = null
@@ -794,6 +868,10 @@ const marcarRevisionActualizacion = async () => {
 onMounted(async () => {
   await obtenerCatalogosFiltros()
   await obtenerActualizaciones(1)
+
+  if (!esVistaSupervision.value) {
+    cargarNotificacionesRevision()
+  }
 })
 
 defineExpose({
@@ -948,7 +1026,7 @@ defineExpose({
     grid-template-columns: repeat(2, 1fr);
     margin-top: 0;
   }
-  
+
   .btn-toggle-filtros {
     display: none;
   }
@@ -1484,6 +1562,7 @@ defineExpose({
     grid-column: span 2;
   }
 }
+
 /* Mejora desktop: categoría más amplia y botón limpiar compacto */
 @media (min-width: 1200px) {
   .filtros-contenido {
@@ -1531,6 +1610,7 @@ defineExpose({
     padding: 0 12px;
   }
 }
+
 /* Desktop: filtros con categoría amplia y botón limpiar compacto con separación */
 @media (min-width: 1200px) {
   .filtros-contenido {
@@ -1610,4 +1690,30 @@ defineExpose({
   font-weight: 600;
 }
 
+.revision-alert {
+  border: 1px solid #ffe08a;
+  background: #fff8e1;
+  border-radius: 14px;
+}
+
+.revision-alert-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.revision-alert-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #f3df9b;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+}
+
+@media (max-width: 768px) {
+  .revision-alert-item {
+    flex-direction: column;
+  }
+}
 </style>

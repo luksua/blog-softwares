@@ -85,6 +85,55 @@ route: {{ route.name }}
               </router-link>
             </nav>
 
+            <div class="notification-wrapper" @click.stop>
+              <button class="notification-button" type="button" title="Notificaciones" @click="togglePanelNotificaciones">
+                <i class="bi bi-bell"></i>
+                <span v-if="notificacionesNoLeidas > 0" class="notification-badge">
+                  {{ etiquetaNotificacionesNoLeidas }}
+                </span>
+              </button>
+
+              <section v-if="mostrarPanelNotificaciones" class="notification-panel">
+                <header class="notification-panel-header">
+                  <div>
+                    <strong>Notificaciones</strong>
+                    <small>{{ notificacionesNoLeidas }} sin leer</small>
+                  </div>
+
+                  <button
+                    v-if="notificacionesNoLeidas > 0"
+                    class="notification-link-button"
+                    type="button"
+                    @click="marcarTodasComoLeidas"
+                  >
+                    Marcar leídas
+                  </button>
+                </header>
+
+                <div v-if="cargandoNotificaciones" class="notification-empty">
+                  Cargando...
+                </div>
+
+                <div v-else-if="notificaciones.length === 0" class="notification-empty">
+                  No tienes notificaciones.
+                </div>
+
+                <template v-else>
+                  <button
+                    v-for="notificacion in notificaciones"
+                    :key="notificacion.id"
+                    :class="['notification-item', { unread: !notificacion.leida_en }]"
+                    type="button"
+                    @click="abrirNotificacion(notificacion)"
+                  >
+                    <span class="notification-title">{{ notificacion.titulo }}</span>
+                    <span class="notification-message">{{ notificacion.mensaje }}</span>
+                    <small>{{ formatearFechaNotificacion(notificacion.created_at) }}</small>
+                  </button>
+                </template>
+              </section>
+            </div>
+
             <!-- <button v-if="mostrarBotonNuevoRegistro" class="btn-new-record" type="button" @click="irANuevoRegistro">
               + Nuevo registro
             </button> -->
@@ -125,6 +174,12 @@ route: {{ route.name }}
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
+import {
+  listarNotificaciones,
+  marcarNotificacionLeida,
+  marcarTodasNotificacionesLeidas,
+  type BlogNotification,
+} from '../api/notificaciones'
 
 const puedeSupervisarArea = ref(false)
 
@@ -140,6 +195,11 @@ const isLoggedIn = ref(false)
 const authReady = ref(false)
 
 const permisos = ref<string[]>([])
+const notificaciones = ref<BlogNotification[]>([])
+const notificacionesNoLeidas = ref(0)
+const cargandoNotificaciones = ref(false)
+const mostrarPanelNotificaciones = ref(false)
+let intervaloNotificaciones: ReturnType<typeof window.setInterval> | null = null
 
 const existeRuta = (name: string) => {
   return router.hasRoute(name)
@@ -147,6 +207,10 @@ const existeRuta = (name: string) => {
 
 const mostrarGuardados = computed(() => {
   return isLoggedIn.value && existeRuta('employee-guardados')
+})
+
+const etiquetaNotificacionesNoLeidas = computed(() => {
+  return notificacionesNoLeidas.value > 99 ? '99+' : String(notificacionesNoLeidas.value)
 })
 
 // const puedeSupervisarArea = computed(() => {
@@ -234,12 +298,111 @@ const checkAuth = async () => {
   try {
     const response = await api.get('/me')
     aplicarUsuario(response.data)
+    await cargarNotificaciones()
+    iniciarPollingNotificaciones()
   } catch (error) {
     console.error(error)
     limpiarSesionLocal()
   } finally {
     authReady.value = true
   }
+}
+
+const cargarNotificaciones = async () => {
+  if (!isLoggedIn.value) return
+
+  cargandoNotificaciones.value = true
+
+  try {
+    const response = await listarNotificaciones(10)
+    notificaciones.value = response?.data || []
+    notificacionesNoLeidas.value = Number(response?.meta?.no_leidas ?? 0)
+  } catch (error) {
+    console.error('Error al cargar notificaciones:', error)
+  } finally {
+    cargandoNotificaciones.value = false
+  }
+}
+
+const iniciarPollingNotificaciones = () => {
+  if (intervaloNotificaciones) return
+
+  intervaloNotificaciones = window.setInterval(() => {
+    cargarNotificaciones()
+  }, 60000)
+}
+
+const detenerPollingNotificaciones = () => {
+  if (!intervaloNotificaciones) return
+
+  window.clearInterval(intervaloNotificaciones)
+  intervaloNotificaciones = null
+}
+
+const togglePanelNotificaciones = async () => {
+  mostrarPanelNotificaciones.value = !mostrarPanelNotificaciones.value
+
+  if (mostrarPanelNotificaciones.value) {
+    await cargarNotificaciones()
+  }
+}
+
+const cerrarPanelNotificaciones = () => {
+  mostrarPanelNotificaciones.value = false
+}
+
+const abrirNotificacion = async (notificacion: BlogNotification) => {
+  try {
+    if (!notificacion.leida_en) {
+      await marcarNotificacionLeida(notificacion.id)
+      notificacion.leida_en = new Date().toISOString()
+      notificacionesNoLeidas.value = Math.max(0, notificacionesNoLeidas.value - 1)
+    }
+
+    cerrarPanelNotificaciones()
+
+    const rutaSugerida = notificacion.data?.ruta_sugerida
+
+    if (rutaSugerida?.name && router.hasRoute(rutaSugerida.name)) {
+      router.push(rutaSugerida)
+      return
+    }
+
+    if (notificacion.actualizacion_id) {
+      router.push({
+        name: 'mis-registros-show',
+        params: {
+          id: notificacion.actualizacion_id,
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Error al abrir notificación:', error)
+  }
+}
+
+const marcarTodasComoLeidas = async () => {
+  try {
+    await marcarTodasNotificacionesLeidas()
+    notificaciones.value = notificaciones.value.map((notificacion) => ({
+      ...notificacion,
+      leida_en: notificacion.leida_en || new Date().toISOString(),
+    }))
+    notificacionesNoLeidas.value = 0
+  } catch (error) {
+    console.error('Error al marcar notificaciones como leídas:', error)
+  }
+}
+
+const formatearFechaNotificacion = (fecha?: string | null) => {
+  if (!fecha) return ''
+
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(fecha))
 }
 
 const irANuevoRegistro = () => {
@@ -262,6 +425,11 @@ const checkMobile = () => {
 const limpiarSesionLocal = () => {
   localStorage.removeItem('user_data')
   localStorage.removeItem('auth_token')
+
+  detenerPollingNotificaciones()
+  notificaciones.value = []
+  notificacionesNoLeidas.value = 0
+  mostrarPanelNotificaciones.value = false
 
   isLoggedIn.value = false
   isAdmin.value = false
@@ -287,10 +455,13 @@ onMounted(() => {
   checkAuth()
 
   window.addEventListener('resize', checkMobile)
+  window.addEventListener('click', cerrarPanelNotificaciones)
 })
 
 onUnmounted(() => {
+  detenerPollingNotificaciones()
   window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('click', cerrarPanelNotificaciones)
 })
 </script>
 
@@ -654,6 +825,164 @@ onUnmounted(() => {
 
 .content::-webkit-scrollbar-thumb:hover {
   background: var(--warning);
+}
+
+
+.notification-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.notification-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #025b7d;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.notification-button:hover {
+  background: rgba(7, 126, 157, 0.08);
+  border-color: rgba(7, 126, 157, 0.25);
+  transform: translateY(-1px);
+}
+
+.notification-button i {
+  font-size: 1.15rem;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 120;
+  width: min(360px, calc(100vw - 32px));
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.notification-panel-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef2f7;
+  background: #ffffff;
+}
+
+.notification-panel-header strong,
+.notification-panel-header small {
+  display: block;
+}
+
+.notification-panel-header strong {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.notification-panel-header small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.notification-link-button {
+  border: none;
+  background: transparent;
+  color: #077e9d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.notification-empty {
+  padding: 22px 16px;
+  color: #64748b;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.notification-item {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.notification-item:hover {
+  background: #f8fafc;
+}
+
+.notification-item.unread {
+  background: #eef9fc;
+}
+
+.notification-item.unread:hover {
+  background: #e3f4f8;
+}
+
+.notification-title {
+  display: block;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.notification-message {
+  display: block;
+  margin-top: 4px;
+  color: #475569;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.notification-item small {
+  display: block;
+  margin-top: 7px;
+  color: #94a3b8;
+  font-size: 0.72rem;
 }
 
 @media (max-width: 900px) {

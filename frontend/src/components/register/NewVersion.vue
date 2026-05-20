@@ -108,9 +108,9 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import api from '../../../api/api'
-import type { NewVersion } from '../../../types/newVersion'
-import type { Area } from '../../../types/areas'
+import api from '../../api/api'
+import type { NewVersion } from '../../types/newVersion'
+import type { Area } from '../../types/areas'
 import { toast } from 'vue-sonner'
 import { Modal } from 'bootstrap'
 
@@ -118,7 +118,7 @@ import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'
 import ImageTool from '@editorjs/image'
 import List from '@editorjs/list'
-import type { Category } from '../../../types/categorias'
+import type { Category } from '../../types/categorias'
 
 const tituloInput = ref<HTMLInputElement | null>(null)
 

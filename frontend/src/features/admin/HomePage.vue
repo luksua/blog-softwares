@@ -58,8 +58,8 @@
 import { Modal } from 'bootstrap'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import api from '../../api/api'
-import List from '../../components/employees/register/List.vue'
-import Store from '../../components/employees/register/NewVersion.vue'
+import List from '../../components/register/List.vue'
+import Store from '../../components/register/NewVersion.vue'
 
 const props = withDefaults(defineProps<{
   vista?: 'mis-registros' | 'supervision'
@@ -131,9 +131,7 @@ onMounted(async () => {
 }
 
 .supervision-hero h2 {
-  margin: 6px 0 10px;
-  font-size: clamp(1.7rem, 3vw, 2.6rem);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .supervision-hero p {

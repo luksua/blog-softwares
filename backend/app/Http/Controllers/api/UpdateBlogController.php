@@ -345,6 +345,7 @@ class UpdateBlogController extends Controller
             'actualizacion_resumen' => ['sometimes', 'required', 'string'],
             'actualizacion_contenido' => ['sometimes', 'required'],
             'actualizacion_categoria_id' => ['sometimes', 'required', 'integer'],
+            'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
             'actualizacion_fecha_publicacion' => ['nullable', 'date'],
         ]);
 
@@ -356,18 +357,15 @@ class UpdateBlogController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | No permitimos cambiar autor ni área desde update
+        | Campos no editables desde update
         |--------------------------------------------------------------------------
         |
-        | Si después necesitas que ADMIN pueda mover registros de área,
-        | eso debería ser una función separada.
+        | El autor siempre se conserva. El área sí se permite porque el formulario
+        | de edición la muestra y la envía como actualizacion_area_servicio_id.
         |
         */
 
-        unset(
-            $data['actualizacion_usuario_id_autor'],
-            $data['actualizacion_area_servicio_id']
-        );
+        unset($data['actualizacion_usuario_id_autor']);
 
         if ($request->hasFile('actualizacion_imagen_destacada')) {
             $request->validate([
@@ -461,6 +459,15 @@ class UpdateBlogController extends Controller
 
         $actualizacion = UpdateBlog::findOrFail($id);
 
+        $observacionRevision = trim((string) $request->input(
+            'observacion_revision',
+            $request->input('observacion', '')
+        ));
+
+        $request->merge([
+            'observacion_revision' => $observacionRevision,
+        ]);
+
         $data = $request->validate([
             'observacion_revision' => ['required', 'string', 'min:10', 'max:2000'],
         ], [
@@ -483,7 +490,7 @@ class UpdateBlogController extends Controller
 
             $actualizacion->revisionObservaciones()->create([
                 'usuario_id_supervisor' => $usuario->usuario_id,
-                'observacion' => trim($data['observacion_revision']),
+                'observacion' => $data['observacion_revision'],
                 'estado_anterior' => $estadoAnterior,
                 'estado_nuevo' => 'revision',
             ]);
@@ -673,9 +680,9 @@ class UpdateBlogController extends Controller
 
     private function esJefeArea($usuario): bool
     {
-        if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
-            return true;
-        }
+        // if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
+        //     return true;
+        // }
 
         if (method_exists($usuario, 'esJefeArea') && $usuario->esJefeArea()) {
             return true;
@@ -713,9 +720,9 @@ class UpdateBlogController extends Controller
             $areas = array_merge($areas, (array) $areasDesdeUsuario);
         }
 
-        if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
-            $areas[] = $usuario->area_servicio_id;
-        }
+        // if (in_array('blog.supervisar_area', session('tz_permisos', []), true)) {
+        //     $areas[] = $usuario->area_servicio_id;
+        // }
 
         return collect($areas)
             ->filter(fn ($areaId) => $areaId !== null && $areaId !== '')
