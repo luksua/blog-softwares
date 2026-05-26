@@ -409,9 +409,10 @@ import api from '../../api/api'
 import type { Version } from '../../types/version';
 import Edit from './EditVersion.vue'
 import { Modal } from 'bootstrap'
-import type { Notificacion } from '../../types/notificaciones'
 import {
+  listarNotificaciones,
   marcarNotificacionLeida,
+  type BlogNotification,
 } from '../../api/notificaciones'
 
 type AreaFiltro = {
@@ -490,12 +491,12 @@ const categoriasDisponibles = ref<CategoriaFiltro[]>([])
 const estadosDisponibles = ref<EstadoFiltro[]>([])
 const cargandoFiltros = ref(false)
 
-const notificaciones = ref<Notificacion[]>([])
+const notificaciones = ref<BlogNotification[]>([])
 const cargandoNotificaciones = ref(false)
 
 const notificacionesRevision = computed(() => {
   return notificaciones.value.filter((item) => {
-    return item.tipo === 'revision' && !item.leido
+    return item.tipo === 'revision' && !item.leida_en
   })
 })
 
@@ -507,7 +508,9 @@ const cargarNotificacionesRevision = async () => {
   try {
     cargandoNotificaciones.value = true
 
-    notificaciones.value = data.filter((item) => {
+    const response = await listarNotificaciones(20)
+
+    notificaciones.value = (response?.data || []).filter((item: BlogNotification) => {
       return item.tipo === 'revision'
     })
   } catch (error) {
@@ -517,11 +520,11 @@ const cargarNotificacionesRevision = async () => {
   }
 }
 
-const marcarRevisionLeida = async (notificacion: Notificacion) => {
+const marcarRevisionLeida = async (notificacion: BlogNotification) => {
   try {
     await marcarNotificacionLeida(notificacion.id)
 
-    notificacion.leido = true
+    notificacion.leida_en = new Date().toISOString()
 
     window.dispatchEvent(new Event('notificaciones-updated'))
   } catch (error) {

@@ -405,6 +405,10 @@ const formatearFechaNotificacion = (fecha?: string | null) => {
   }).format(new Date(fecha))
 }
 
+const manejarNotificacionesActualizadas = () => {
+  void cargarNotificaciones()
+}
+
 const irANuevoRegistro = () => {
   if (router.hasRoute('actualizaciones-crear')) {
     router.push({ name: 'actualizaciones-crear' })
@@ -456,12 +460,14 @@ onMounted(() => {
 
   window.addEventListener('resize', checkMobile)
   window.addEventListener('click', cerrarPanelNotificaciones)
+  window.addEventListener('notificaciones-updated', manejarNotificacionesActualizadas)
 })
 
 onUnmounted(() => {
   detenerPollingNotificaciones()
   window.removeEventListener('resize', checkMobile)
   window.removeEventListener('click', cerrarPanelNotificaciones)
+  window.removeEventListener('notificaciones-updated', manejarNotificacionesActualizadas)
 })
 </script>
 

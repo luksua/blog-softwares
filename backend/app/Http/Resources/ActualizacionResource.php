@@ -24,7 +24,10 @@ class ActualizacionResource extends JsonResource
             'actualizacion_estado' => $this->actualizacion_estado,
             'actualizacion_usuario_id_autor' => $this->actualizacion_usuario_id_autor,
 
-            'actualizacion_contenido_html' => $renderer->render($this->actualizacion_contenido),
+            'actualizacion_contenido_html' => $this->when(
+                $this->resource->wasRecentlyCreated === false && request()->routeIs('actualizaciones.show'),
+                fn() => $renderer->render($this->actualizacion_contenido)
+            ),
 
             'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
             'actualizacion_categoria_id' => $this->actualizacion_categoria_id,

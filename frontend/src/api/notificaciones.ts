@@ -4,11 +4,11 @@ export interface BlogNotification {
   id: number
   tipo: string
   titulo: string
-  mensaje?: string | null
-  data?: Record<string, any>
-  leida_en?: string | null
-  created_at?: string | null
-  actualizacion_id?: number | null
+  mensaje: string | null
+  data: Record<string, any> | null
+  leida_en: string | null
+  created_at: string
+  actualizacion_id: number | null
   actualizacion?: {
     id: number
     actualizacion_titulo?: string

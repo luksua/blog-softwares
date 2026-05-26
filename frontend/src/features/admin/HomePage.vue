@@ -72,7 +72,6 @@ const componenteLista = ref<InstanceType<typeof List> | null>(null)
 const modalNuevoRegistroRef = ref<HTMLElement | null>(null)
 
 const esVistaSupervision = computed(() => props.vista === 'supervision')
-const tituloPagina = computed(() => esVistaSupervision.value ? 'Supervisión de registros' : 'Mis registros')
 
 const avisarALaLista = () => {
   if (componenteLista.value) {

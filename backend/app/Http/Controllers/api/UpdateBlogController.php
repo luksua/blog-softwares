@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ActualizacionResource;
 use App\Models\Area;
+use App\Models\BlogNotification;
 use App\Models\Category;
 use App\Models\UpdateBlog;
 use Illuminate\Http\Request;
@@ -494,6 +495,13 @@ class UpdateBlogController extends Controller
                 'estado_anterior' => $estadoAnterior,
                 'estado_nuevo' => 'revision',
             ]);
+
+            $this->crearNotificacionRevision(
+                $actualizacion,
+                $usuario,
+                $data['observacion_revision'],
+                $estadoAnterior
+            );
         });
 
         return response()->json([
@@ -730,6 +738,39 @@ class UpdateBlogController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function crearNotificacionRevision(
+        UpdateBlog $actualizacion,
+        $usuario,
+        string $observacion,
+        string $estadoAnterior
+    ): void {
+        $autorId = (int) $actualizacion->actualizacion_usuario_id_autor;
+        $actorId = (int) $usuario->usuario_id;
+
+        if ($autorId <= 0 || $autorId === $actorId) {
+            return;
+        }
+
+        BlogNotification::create([
+            'usuario_id_destino' => $autorId,
+            'usuario_id_actor' => $actorId,
+            'actualizacion_id' => $actualizacion->id,
+            'tipo' => 'revision',
+            'titulo' => 'Registro marcado para revisión',
+            'mensaje' => $observacion,
+            'data' => [
+                'estado_anterior' => $estadoAnterior,
+                'estado_nuevo' => 'revision',
+                'ruta_sugerida' => [
+                    'name' => 'mis-registros-show',
+                    'params' => [
+                        'id' => $actualizacion->id,
+                    ],
+                ],
+            ],
+        ]);
     }
 
     private function normalizarContenido($contenido): string

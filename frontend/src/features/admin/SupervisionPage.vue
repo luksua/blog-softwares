@@ -37,28 +37,19 @@
     </div> -->
 
     <div class="supervision-content">
-      <List ref="componenteLista" vista="supervision" />
+      <List vista="supervision" />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import api from '../../api/api'
 import List from '../../components/register/List.vue'
 
-const componenteLista = ref<InstanceType<typeof List> | null>(null)
  const usuario = ref<any>(null)
  const puedeSupervisar = ref(false)
  const areasSupervisadas = ref<number[]>([])
-
- const areasTexto = computed(() => {
-   if (!areasSupervisadas.value.length) {
-   return 'Área asignada'
-  }
-
-   return areasSupervisadas.value.join(', ')
- })
 
 onMounted(async () => {
    try {
