@@ -9,7 +9,7 @@ route: {{ route.name }}
     <div v-if="isMobile && isExpanded && isAdmin" class="sidebar-overlay" @click="toggleSidebar"></div>
 
     <!-- SIDEBAR: solo admin -->
-    <aside v-if="isAdmin" :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
+    <!-- <aside v-if="isAdmin" :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
       <div class="sidebar-header">
         <div v-if="isExpanded" class="logo-full">
           Asotrauma
@@ -45,7 +45,7 @@ route: {{ route.name }}
           </router-link>
         </li>
       </ul>
-    </aside>
+    </aside> -->
 
     <div class="main">
       <!-- NAVBAR GLOBAL -->

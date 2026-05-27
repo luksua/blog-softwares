@@ -167,10 +167,10 @@
                 class="form-select" 
                 :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }"
               >
-                <option value="borrador">📝 Borrador</option>
-                <option value="revision">🔍 Revisión</option>
-                <option value="publicado">✅ Publicado</option>
-                <option value="inactivo">⛔ Inactivo</option>
+                <option value="borrador">Borrador</option>
+                <option value="revision">Revisión</option>
+                <option value="publicado">Publicado</option>
+                <option value="inactivo">Inactivo</option>
               </select>
               <div v-if="errores.estado || errores.actualizacion_estado" class="invalid-feedback">
                 {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}

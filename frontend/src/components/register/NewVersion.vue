@@ -97,7 +97,7 @@
         </select>
       </div>
       <div class="d-flex justify-content-end gap-2 mt-4">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-outline-secondary " data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i> Cancelar</button>
         <button type="submit" class="btn-primary" :disabled="enviando">
           {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
         </button>
@@ -560,4 +560,26 @@ const limpiarFormulario = () => {
   background: #fee2e2;
   border-color: #dc2626;
 }
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.btn-outline-secondary {
+  color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  color: white;
+}
+
 </style>
