@@ -21,7 +21,7 @@ class UpdateBlogController extends Controller
         $vista = $request->input('vista', 'blog');
 
         $relaciones = [
-            'areaServicio:area_servicio_id,area_servicio_nombre,area_servicio_correo',
+            'areaServicio:area_servicio_id,area_servicio_nombre',
             'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
         ];
 

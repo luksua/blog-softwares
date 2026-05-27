@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
+import api, { BACKEND_URL, INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
 
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
@@ -249,6 +249,12 @@ async function cargarAuth() {
 function enviarAIntranet() {
   localStorage.removeItem('user_data')
   localStorage.removeItem('auth_token')
+
+  // qxr: login temporal local para trabajar sin la BD de intranet actualizada.
+  if (import.meta.env.DEV) {
+    window.location.href = `${BACKEND_URL}/qxr-dev-login`
+    return
+  }
 
   if (INTRANET_ENTRY_URL) {
     window.location.href = INTRANET_ENTRY_URL

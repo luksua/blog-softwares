@@ -1,161 +1,264 @@
 <template>
   <div class="container">
+    <!-- Estado de carga -->
     <div v-if="cargando" class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Cargando...</span>
       </div>
-      <p class="mt-2">Cargando actualización...</p>
+      <p class="mt-2 text-secondary">Cargando actualización...</p>
     </div>
 
     <div v-else>
       <form @submit.prevent="guardarCambios">
-        <div v-if="modoCorreccion" class="alert alert-edit mb-3">
-          <i class="bi bi-exclamation-circle-fill"> </i><strong>Corrección pendiente.</strong>
+        <!-- Alerta de corrección -->
+        <div v-if="modoCorreccion" class="alert alert-warning mb-4">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>Corrección pendiente.</strong>
           Realiza los ajustes solicitados. Al enviar la corrección, el registro quedará publicado y se notificará al
           supervisor del área.
         </div>
 
-        <div class="col-md-12 mb-3">
-          <label class="form-label fw-bold">Título</label>
-          <input v-model="form.titulo" type="text" class="form-control" ref="inputTitulo" />
-          <div v-if="errores.titulo || errores.actualizacion_titulo" class="text-danger small mt-1">
+        <!-- Título -->
+        <div class="col-md-12 mb-4">
+          <label class="form-label fw-bold text-primary">
+            Título <span class="text-danger">*</span>
+          </label>
+          <input 
+            v-model="form.titulo" 
+            type="text" 
+            class="form-control" 
+            :class="{ 'is-invalid': errores.titulo || errores.actualizacion_titulo }"
+            ref="inputTitulo"
+            placeholder="Ingrese el título de la actualización"
+          />
+          <div v-if="errores.titulo || errores.actualizacion_titulo" class="invalid-feedback">
             {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
           </div>
         </div>
 
         <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Versión</label>
-            <input v-model="form.version" type="text" class="form-control" />
-            <div v-if="errores.version || errores.actualizacion_version" class="text-danger small mt-1">
+          <!-- Versión -->
+          <div class="col-md-6 mb-4">
+            <label class="form-label fw-bold text-primary">Versión</label>
+            <input 
+              v-model="form.version" 
+              type="text" 
+              class="form-control" 
+              :class="{ 'is-invalid': errores.version || errores.actualizacion_version }"
+              placeholder="Ej: 1.0.0"
+            />
+            <div v-if="errores.version || errores.actualizacion_version" class="invalid-feedback">
               {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
             </div>
           </div>
 
-          <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Imagen destacada (Portada)</label>
-
-            <div v-if="previewImagen || form.imagen_destacada" class="mb-2">
-              <img :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" alt="Portada actual"
-                class="img-thumbnail" style="max-height: 150px; border-radius: 8px;" />
-              <div class="form-text">
+          <!-- Imagen destacada -->
+          <div class="col-md-6 mb-4">
+            <label class="form-label fw-bold text-primary">Imagen destacada (Portada)</label>
+            
+            <div v-if="previewImagen || form.imagen_destacada" class="mb-3">
+              <div class="position-relative d-inline-block">
+                <img 
+                  :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" 
+                  alt="Portada actual"
+                  class="img-thumbnail" 
+                  style="max-height: 150px; border-radius: 8px;" 
+                />
+                <button 
+                  v-if="previewImagen || form.imagen_destacada"
+                  type="button"
+                  class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
+                  style="transform: translate(50%, -50%);"
+                  @click="eliminarImagen"
+                >
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+              <div class="form-text mt-2">
                 {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
               </div>
             </div>
 
-            <input type="file" class="form-control" accept="image/*" @change="manejarImagen" />
+            <input 
+              type="file" 
+              class="form-control" 
+              :class="{ 'is-invalid': errores.imagen_destacada }"
+              accept="image/*" 
+              @change="manejarImagen" 
+            />
+            <div v-if="errores.imagen_destacada" class="invalid-feedback">
+              {{ errores.imagen_destacada?.[0] }}
+            </div>
           </div>
         </div>
 
         <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="area" class="form-label fw-bold">Área *</label>
-            <select id="area" class="form-select" v-model="form.area_servicio_id" required>
+          <!-- Área -->
+          <div class="col-md-6 mb-4">
+            <label for="area" class="form-label fw-bold text-primary">
+              Área <span class="text-danger">*</span>
+            </label>
+            <select 
+              id="area" 
+              class="form-select" 
+              :class="{ 'is-invalid': errores.area_servicio_id || errores.actualizacion_area_servicio_id }"
+              v-model="form.area_servicio_id" 
+              required
+            >
               <option value="" disabled>Selecciona un área...</option>
               <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
                 {{ area.area_servicio_nombre }}
               </option>
             </select>
-            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id"
-              class="text-danger small mt-1">
+            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id" class="invalid-feedback">
               {{ errores.area_servicio_id?.[0] || errores.actualizacion_area_servicio_id?.[0] }}
             </div>
           </div>
 
-          <div class="col-md-6 mb-3">
-            <label for="categoria" class="form-label fw-bold">Categoría *</label>
-            <!--
-              FIXES aplicados:
-              1. v-model apunta a form.categoria_id (nombre unificado, tipo Number)
-              2. :value de cada option usa Number() para evitar mismatch string/number
-              3. Se añade :key con el mismo valor para forzar reactividad
-            -->
-            <select id="categoria" class="form-select" v-model="form.categoria_id" required>
+          <!-- Categoría -->
+          <div class="col-md-6 mb-4">
+            <label for="categoria" class="form-label fw-bold text-primary">
+              Categoría <span class="text-danger">*</span>
+            </label>
+            <select 
+              id="categoria" 
+              class="form-select" 
+              :class="{ 'is-invalid': errores.actualizacion_categoria_id }"
+              v-model="form.categoria_id" 
+              required
+            >
               <option :value="null" disabled>Selecciona una categoría...</option>
-              <option v-for="categoria in listaCategorias" :key="categoria.categoria_actualizacion_id"
-                :value="Number(categoria.categoria_actualizacion_id)">
+              <option 
+                v-for="categoria in listaCategorias" 
+                :key="categoria.categoria_actualizacion_id"
+                :value="Number(categoria.categoria_actualizacion_id)"
+              >
                 {{ categoria.categoria_actualizacion_nombre }}
               </option>
             </select>
-            <div v-if="errores.actualizacion_categoria_id" class="text-danger small mt-1">
+            <div v-if="errores.actualizacion_categoria_id" class="invalid-feedback">
               {{ errores.actualizacion_categoria_id?.[0] }}
             </div>
           </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-bold">Resumen</label>
-          <textarea v-model="form.resumen" class="form-control" rows="3"></textarea>
-          <div v-if="errores.resumen || errores.actualizacion_resumen" class="text-danger small mt-1">
+        <!-- Resumen -->
+        <div class="mb-4">
+          <label class="form-label fw-bold text-primary">Resumen</label>
+          <textarea 
+            v-model="form.resumen" 
+            class="form-control" 
+            :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen }"
+            rows="3" 
+            placeholder="Breve descripción de la actualización..."
+          ></textarea>
+          <div v-if="errores.resumen || errores.actualizacion_resumen" class="invalid-feedback">
             {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
           </div>
         </div>
 
         <div class="row">
-          <div v-if="!modoCorreccion" class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Estado</label>
-            <select v-model="form.estado" class="form-select">
-              <option value="borrador">Borrador</option>
-              <option value="revision">Revisión</option>
-              <option value="publicado">Publicado</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
-            <div v-if="errores.estado || errores.actualizacion_estado" class="text-danger small mt-1">
-              {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
-            </div>
+          <!-- Estado -->
+          <div class="col-md-6 mb-4">
+            <template v-if="!modoCorreccion">
+              <label class="form-label fw-bold text-primary">Estado</label>
+              <select 
+                v-model="form.estado" 
+                class="form-select" 
+                :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }"
+              >
+                <option value="borrador">📝 Borrador</option>
+                <option value="revision">🔍 Revisión</option>
+                <option value="publicado">✅ Publicado</option>
+                <option value="inactivo">⛔ Inactivo</option>
+              </select>
+              <div v-if="errores.estado || errores.actualizacion_estado" class="invalid-feedback">
+                {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
+              </div>
+            </template>
+
+            <template v-else>
+              <label class="form-label fw-bold text-warning">Estado de la corrección</label>
+              <div class="alert alert-warning mb-0 py-2">
+                <i class="bi bi-send-check me-2"></i>
+                Se enviará como <strong>Publicado</strong>
+              </div>
+            </template>
           </div>
 
-          <div v-else class="col-md-6 mb-3">
-            <label class="form-label fw-bold text-edit">Estado de la corrección</label>
-            <div class="alert alert-edit mb-0 py-2">
-              Se enviará como <strong>Publicado</strong>.
-            </div>
-          </div>
-
-          <div class="col-md-6 mb-3">
+          <!-- Fechas -->
+          <div class="col-md-6 mb-4">
             <template v-if="estadoParaVista !== 'publicado'">
-              <label class="form-label fw-bold">Fecha de creación</label>
-              <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
-              <div class="form-text mt-1">
+              <label class="form-label fw-bold text-secondary">Fecha de creación</label>
+              <input 
+                v-model="form.fecha_creacion" 
+                type="date" 
+                class="form-control bg-light" 
+                readonly 
+                disabled 
+              />
+              <div class="form-text text-secondary mt-1">
+                <i class="bi bi-info-circle me-1"></i>
                 Registro no publicado. Mostrando fecha de creación.
               </div>
             </template>
 
             <template v-else>
-              <label class="form-label fw-bold text-success">Fecha de publicación</label>
-              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success"
-                readonly />
-              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-                class="text-danger small mt-1">
+              <label class="form-label fw-bold text-primary">Fecha de publicación</label>
+              <input 
+                v-model="form.fecha_publicacion" 
+                type="date" 
+                class="form-control border-primary bg-light" 
+                :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
+                readonly 
+              />
+              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion" class="invalid-feedback">
                 {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
               </div>
-              <div class="form-text mt-1 text-success fw-bold">
-                <i class="bi bi-check-circle me-1"></i>
+              <div class="form-text text-primary fw-bold mt-1">
+                <i class="bi bi-check-circle-fill me-1"></i>
                 El registro se publicará con esta fecha.
               </div>
             </template>
           </div>
         </div>
 
-        <div class="mb-3">
-          <label class="form-label fw-bold">Contenido</label>
-          <div ref="editorHolder" id="editorjs" class="editor-container border p-3 bg-white"></div>
+        <!-- Contenido del editor -->
+        <div class="mb-4">
+          <label class="form-label fw-bold text-primary">Contenido</label>
+          <div ref="editorHolder" id="editorjs" class="editor-container border rounded p-3 bg-white"></div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ref="btnCerrarEdit"
-            @click="emit('cerrar')">
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+          <button 
+            type="button" 
+            class="btn btn-outline-secondary" 
+            @click="cerrarModal"
+            :disabled="guardando"
+          >
+            <i class="bi bi-x-circle me-1"></i>
             Cancelar
           </button>
 
-          <button type="submit" class="btn-primary" :disabled="guardando">
+          <button 
+            type="submit" 
+            class="btn btn-primary" 
+            :disabled="guardando || !formularioValido"
+          >
+            <span v-if="guardando" class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <i v-else :class="modoCorreccion ? 'bi bi-send-check' : 'bi bi-save'" class="me-1"></i>
             {{ textoBotonGuardar }}
           </button>
         </div>
 
-        <div v-if="mensajeOk" class="alert alert-success mt-3 mb-0">
-          {{ mensajeOk }}
-        </div>
+        <!-- Mensaje de éxito -->
+        <transition name="fade">
+          <div v-if="mensajeOk" class="alert alert-success mt-4 mb-0">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            {{ mensajeOk }}
+          </div>
+        </transition>
       </form>
     </div>
   </div>
@@ -164,14 +267,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import api from '../../api/api'
-
 import EditorJS from '@editorjs/editorjs'
 import Header from '@editorjs/header'
 import ImageTool from '@editorjs/image'
 import List from '@editorjs/list'
 
-const inputTitulo = ref<HTMLInputElement | null>(null)
-
+// Props
 const props = withDefaults(defineProps<{
   id: string | number
   modoCorreccion?: boolean
@@ -179,25 +280,28 @@ const props = withDefaults(defineProps<{
   modoCorreccion: false,
 })
 
-const emit = defineEmits(['guardado', 'cerrar'])
+// Emits
+const emit = defineEmits<{
+  (e: 'guardado'): void
+  (e: 'cerrar'): void
+}>()
 
+// Refs
+const inputTitulo = ref<HTMLInputElement | null>(null)
+const editorHolder = ref<HTMLElement | null>(null)
+const editor = shallowRef<EditorJS | null>(null)
+
+// Estado
 const cargando = ref(true)
 const guardando = ref(false)
 const mensajeOk = ref('')
 const errores = ref<Record<string, string[]>>({})
-
-const editorHolder = ref<HTMLElement | null>(null)
-const editor = shallowRef<EditorJS | null>(null)
-
 const archivoImagen = ref<File | null>(null)
 const previewImagen = ref<string | null>(null)
-
 const listaAreas = ref<any[]>([])
 const listaCategorias = ref<any[]>([])
 
-// ── Form unificado ────────────────────────────────────────────────
-// Se usa "categoria_id" como nombre interno (Number) para evitar el
-// mismatch de tipos entre lo que devuelve la API y lo que espera el select.
+// Formulario
 const form = reactive({
   titulo: '',
   version: '',
@@ -205,51 +309,69 @@ const form = reactive({
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: null as number | null,
-  categoria_id: null as number | null,   // ← nombre unificado, siempre Number
+  categoria_id: null as number | null,
   usuario_id_autor: null as number | null,
   estado: 'borrador',
   fecha_creacion: '',
   fecha_publicacion: ''
 })
 
+// Computed
 const modoCorreccion = computed(() => props.modoCorreccion)
 const estadoParaVista = computed(() => props.modoCorreccion ? 'publicado' : form.estado)
-const textoBotonGuardar = computed(() => {
-  if (props.modoCorreccion) {
-    return guardando.value ? 'Enviando corrección...' : 'Enviar corrección'
-  }
 
-  return guardando.value ? 'Guardando...' : 'Guardar cambios'
+const textoBotonGuardar = computed(() => {
+  if (guardando.value) return 'Procesando...'
+  return props.modoCorreccion ? 'Enviar corrección' : 'Guardar cambios'
 })
 
+const formularioValido = computed(() => {
+  return form.titulo.trim() !== '' && 
+         form.area_servicio_id !== null && 
+         form.categoria_id !== null
+})
+
+// Métodos
 const manejarImagen = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    archivoImagen.value = target.files[0]
-    previewImagen.value = URL.createObjectURL(target.files[0])
+    const file = target.files[0]
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    
+    if (file.size > maxSize) {
+      errores.value.imagen_destacada = ['La imagen no debe superar los 5MB']
+      return
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      errores.value.imagen_destacada = ['Solo se permiten archivos de imagen']
+      return
+    }
+    
+    archivoImagen.value = file
+    previewImagen.value = URL.createObjectURL(file)
+    delete errores.value.imagen_destacada
   } else {
     archivoImagen.value = null
     previewImagen.value = null
   }
 }
 
+const eliminarImagen = () => {
+  archivoImagen.value = null
+  previewImagen.value = null
+  form.imagen_destacada = ''
+}
+
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
-
-  if (ruta.startsWith('http')) {
-    return ruta
-  }
+  if (ruta.startsWith('http')) return ruta
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-
-  if (ruta.startsWith('/storage/')) {
-    return `${backendUrl}${ruta}`
-  }
-
-  if (ruta.startsWith('storage/')) {
-    return `${backendUrl}/${ruta}`
-  }
-
+  
+  if (ruta.startsWith('/storage/')) return `${backendUrl}${ruta}`
+  if (ruta.startsWith('storage/')) return `${backendUrl}/${ruta}`
+  
   return `${backendUrl}/storage/${ruta}`
 }
 
@@ -258,8 +380,7 @@ const formatearFechaParaInput = (fecha: any) => {
   const fechaObj = typeof fecha === 'number' && fecha < 10000000000
     ? new Date(fecha * 1000)
     : new Date(fecha)
-  if (isNaN(fechaObj.getTime())) return ''
-  return fechaObj.toISOString().split('T')[0]
+  return isNaN(fechaObj.getTime()) ? '' : fechaObj.toISOString().split('T')[0]
 }
 
 const cargarListas = async () => {
@@ -276,9 +397,9 @@ const cargarListas = async () => {
   }
 }
 
-const initEditor = (initialData: any = {}) => {
+const initEditor = async (initialData: any = {}) => {
   if (editor.value) {
-    editor.value.destroy()
+    await editor.value.destroy()
   }
 
   editor.value = new EditorJS({
@@ -310,27 +431,11 @@ const initEditor = (initialData: any = {}) => {
   })
 }
 
-watch(() => form.estado, (nuevoEstado, viejoEstado) => {
-  if (cargando.value) return
-
-  if (nuevoEstado === 'publicado') {
-    if (
-      !form.fecha_publicacion ||
-      viejoEstado === 'inactivo' ||
-      viejoEstado === 'borrador' ||
-      viejoEstado === 'revision'
-    ) {
-      const hoy = new Date();
-      const año = hoy.getFullYear();
-      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-      const dia = String(hoy.getDate()).padStart(2, '0');
-
-      form.fecha_publicacion = `${año}-${mes}-${dia}`;
-    }
-  } else if (nuevoEstado === 'inactivo' || nuevoEstado === 'borrador') {
-    form.fecha_publicacion = ''
+const cerrarModal = () => {
+  if (!guardando.value) {
+    emit('cerrar')
   }
-})
+}
 
 const enfocarTitulo = async () => {
   await nextTick()
@@ -363,7 +468,6 @@ const cargarRegistro = async () => {
       form.fecha_publicacion = new Date().toISOString().split('T')[0]
     }
 
-    // ── FIX: convertir siempre a Number para que coincida con el :value del option ──
     form.area_servicio_id = data.actualizacion_area_servicio_id
       ? Number(data.actualizacion_area_servicio_id)
       : null
@@ -373,8 +477,6 @@ const cargarRegistro = async () => {
       : null
 
     const contenidoBD = data.actualizacion_contenido
-
-    await nextTick()
 
     let editorData = {}
     if (contenidoBD) {
@@ -387,17 +489,20 @@ const cargarRegistro = async () => {
       }
     }
 
-    initEditor(editorData)
+    await nextTick()
+    await initEditor(editorData)
   } catch (error) {
     console.error('Error al cargar registro:', error)
   } finally {
     cargando.value = false
     await nextTick()
-    setTimeout(() => { inputTitulo.value?.focus() }, 100)
+    enfocarTitulo()
   }
 }
 
 const guardarCambios = async () => {
+  if (!formularioValido.value) return
+  
   guardando.value = true
   errores.value = {}
   mensajeOk.value = ''
@@ -405,39 +510,25 @@ const guardarCambios = async () => {
   let rutaImagen = form.imagen_destacada
 
   try {
+    // Guardar contenido del editor
     let contenidoFinal = null
-
     if (editor.value) {
       contenidoFinal = await editor.value.save()
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 1. Subir imagen destacada
-    |--------------------------------------------------------------------------
-    | Esta ruta debe ser POST, no PUT.
-    */
-
+    // Subir imagen destacada si hay una nueva
     if (archivoImagen.value) {
       const imgData = new FormData()
       imgData.append('imagen', archivoImagen.value)
 
       const res = await api.post('/subir-imagen-destacada', imgData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' }
       })
 
       rutaImagen = res.data.path
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 2. Actualizar registro
-    |--------------------------------------------------------------------------
-    | Esta ruta sí puede ser PUT.
-    */
-
+    // Preparar payload
     const estadoFinal = props.modoCorreccion ? 'publicado' : form.estado
     const fechaPublicacionFinal = estadoFinal === 'publicado'
       ? (form.fecha_publicacion || new Date().toISOString().split('T')[0])
@@ -459,20 +550,31 @@ const guardarCambios = async () => {
     await api.put(`/actualizaciones/${props.id}`, payload)
 
     mensajeOk.value = props.modoCorreccion
-      ? 'Corrección enviada correctamente.'
-      : 'Guardado exitosamente.'
+      ? '✓ Corrección enviada correctamente'
+      : '✓ Cambios guardados exitosamente'
+    
     emit('guardado')
+    
+    // Ocultar mensaje después de 3 segundos
+    setTimeout(() => {
+      if (mensajeOk.value) mensajeOk.value = ''
+    }, 3000)
   } catch (error: any) {
     console.error('Error al guardar:', error)
 
     if (error.response?.status === 422) {
       errores.value = error.response.data.errors || {}
+    } else {
+      mensajeOk.value = ''
+      // Mostrar error general
+      errores.value.general = ['Ocurrió un error al guardar. Por favor, intente nuevamente.']
     }
   } finally {
     guardando.value = false
   }
 }
 
+// Lifecycle hooks
 onMounted(async () => {
   await cargarListas()
   const modalEl = document.getElementById('modalEditarRegistro')
@@ -482,34 +584,181 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
+  
   if (editor.value && typeof editor.value.destroy === 'function') {
     editor.value.destroy()
   }
+  
+  // Limpiar previews de imágenes
+  if (previewImagen.value) {
+    URL.revokeObjectURL(previewImagen.value)
+  }
 })
 
+// Watchers
 watch(
   () => props.id,
-  () => { if (props.id) cargarRegistro() },
+  () => { 
+    if (props.id) cargarRegistro() 
+  },
   { immediate: true }
 )
+
+watch(() => form.estado, (nuevoEstado, viejoEstado) => {
+  if (cargando.value) return
+
+  if (nuevoEstado === 'publicado') {
+    if (!form.fecha_publicacion || ['inactivo', 'borrador', 'revision'].includes(viejoEstado || '')) {
+      const hoy = new Date()
+      form.fecha_publicacion = hoy.toISOString().split('T')[0]
+    }
+  } else if (['inactivo', 'borrador'].includes(nuevoEstado)) {
+    form.fecha_publicacion = ''
+  }
+})
 </script>
 
 <style scoped>
+/* Variables de color */
+:root {
+  --primary: #077E9D;
+  --secondary: #025B7D;
+  --warning: #FCBB1C;
+}
+
+/* Estilos base */
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-secondary {
+  color: var(--secondary) !important;
+}
+
+.text-warning {
+  color: var(--warning) !important;
+}
+
+.border-primary {
+  border-color: var(--primary) !important;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.btn-outline-secondary {
+  color: var(--secondary);
+  border-color: var(--secondary);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  color: white;
+}
+
+.alert-warning {
+  background-color: rgba(252, 187, 28, 0.1);
+  border-left: 4px solid var(--warning);
+  color: #856404;
+}
+
+/* Editor de contenido */
 :deep(.codex-editor__redactor) {
   padding-bottom: 20px !important;
+  min-height: 300px;
 }
 
 .editor-container {
-  min-height: 150px;
+  min-height: 350px;
+  transition: all 0.3s ease;
 }
 
-.alert-edit {
-  background: #fffef7;
-  border-left: 3px solid var(--warning);
+.editor-container:focus-within {
+  box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
+  border-color: var(--primary);
+}
+
+/* Animaciones */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Estilos de formulario */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+}
+
+/* Badge de estado */
+.badge-status {
+  padding: 0.35rem 0.65rem;
   border-radius: 6px;
-  margin-bottom: 16px;
-  color: #f0b216;;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: var(--transition);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Imagen thumbnail */
+.img-thumbnail {
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.img-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .d-flex {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .d-flex .btn {
+    width: 100%;
+  }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
 }
 </style>

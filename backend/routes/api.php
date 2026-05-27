@@ -7,7 +7,10 @@ use App\Http\Controllers\Api\UpdateBlogController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
 
-Route::middleware('auth:sanctum')->group(function () {
+// qxr: en local se usa un autenticador temporal para no depender de la BD de intranet.
+$authMiddleware = app()->environment('local') ? 'qxr.auth' : 'auth:sanctum';
+
+Route::middleware($authMiddleware)->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -16,6 +19,33 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/me', function (Request $request) {
+        // qxr: respuesta temporal para usuario local sin consultar la BD de intranet.
+        if (app()->environment('local') && $request->hasSession() && $request->session()->has('qxr_dev_user')) {
+            $usuario = $request->session()->get('qxr_dev_user');
+
+            return response()->json([
+                'usuario' => [
+                    ...$usuario,
+                    'area_servicio' => [
+                        'area_servicio_id' => $usuario['area_servicio_id'],
+                        'area_servicio_nombre' => $request->session()->get('area', 'Area local qxr'),
+                    ],
+                    'area' => $request->session()->get('area'),
+                    'nombre' => $request->session()->get('nombre'),
+                    'permisos' => $request->session()->get('tz_permisos', []),
+                    'jefaturas' => [],
+                    'areas_supervisadas' => [$usuario['area_servicio_id']],
+                    'tipo_usuario' => 'admin',
+                ],
+                'permisos' => $request->session()->get('tz_permisos', []),
+                'tipo_usuario' => 'admin',
+                'es_admin' => true,
+                'es_admin_area' => true,
+                'puede_supervisar_area' => true,
+                'areas_supervisadas' => [$usuario['area_servicio_id']],
+            ]);
+        }
+
         $usuario = $request->user()->loadMissing([
             'areaServicio',
             'jefaturasActivas.areaServicio',
@@ -60,6 +90,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', function (Request $request) {
         Auth::guard('web')->logout();
 
+        // qxr: limpiar usuario temporal local.
+        if ($request->hasSession()) {
+            $request->session()->forget('qxr_dev_user');
+        }
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
