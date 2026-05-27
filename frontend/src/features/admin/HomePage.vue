@@ -2,25 +2,25 @@
   <div class="pagina-principal container-fluid mt-4">
     <div class="row justify-content-center align-items-center mb-4 titulo">
       <div class="supervision-hero">
-      <div>
-        <span class="eyebrow">Panel de registros</span>
-        <h2>Registros del área</h2>
-        <p>
-          
-        </p>
-      </div>
+        <div>
+          <span class="eyebrow">Panel de registros</span>
+          <h2>Registros del área</h2>
+          <p>
 
-      <div v-if="!esVistaSupervision" class="col-lg-2 text-end">
-        <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoRegistro">
-          +<i class="bi bi-pencil-fill"></i> Nuevo Registro
-        </button>
+          </p>
+        </div>
+
+        <div v-if="!esVistaSupervision" class="col-lg-2 text-end">
+          <button type="button" class="btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoRegistro">
+            +<i class="bi bi-pencil-fill"></i> Nuevo Registro
+          </button>
+        </div>
       </div>
-    </div>
       <!-- <div class="col-lg-10">
         <h2>{{ tituloPagina }}</h2>
       </div> -->
 
-      
+
     </div>
 
     <div class="row">
@@ -29,15 +29,8 @@
       </div>
     </div>
 
-    <div
-      v-if="!esVistaSupervision"
-      class="modal fade"
-      id="modalNuevoRegistro"
-      ref="modalNuevoRegistroRef"
-      tabindex="-1"
-      aria-labelledby="modalLabel"
-      aria-hidden="true"
-    >
+    <div v-if="!esVistaSupervision" class="modal fade" id="modalNuevoRegistro" ref="modalNuevoRegistroRef" tabindex="-1"
+      aria-labelledby="modalLabel" aria-hidden="true">
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
@@ -75,7 +68,7 @@ const esVistaSupervision = computed(() => props.vista === 'supervision')
 
 const avisarALaLista = () => {
   if (componenteLista.value) {
-    ;(componenteLista.value as any).obtenerActualizaciones()
+    ; (componenteLista.value as any).obtenerActualizaciones()
   }
 }
 

@@ -9,6 +9,12 @@
 
     <div v-else>
       <form @submit.prevent="guardarCambios">
+        <div v-if="modoCorreccion" class="alert alert-edit mb-3">
+          <i class="bi bi-exclamation-circle-fill"> </i><strong>Corrección pendiente.</strong>
+          Realiza los ajustes solicitados. Al enviar la corrección, el registro quedará publicado y se notificará al
+          supervisor del área.
+        </div>
+
         <div class="col-md-12 mb-3">
           <label class="form-label fw-bold">Título</label>
           <input v-model="form.titulo" type="text" class="form-control" ref="inputTitulo" />
@@ -30,12 +36,8 @@
             <label class="form-label fw-bold">Imagen destacada (Portada)</label>
 
             <div v-if="previewImagen || form.imagen_destacada" class="mb-2">
-              <img
-                :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)"
-                alt="Portada actual"
-                class="img-thumbnail"
-                style="max-height: 150px; border-radius: 8px;"
-              />
+              <img :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" alt="Portada actual"
+                class="img-thumbnail" style="max-height: 150px; border-radius: 8px;" />
               <div class="form-text">
                 {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
               </div>
@@ -50,15 +52,12 @@
             <label for="area" class="form-label fw-bold">Área *</label>
             <select id="area" class="form-select" v-model="form.area_servicio_id" required>
               <option value="" disabled>Selecciona un área...</option>
-              <option
-                v-for="area in listaAreas"
-                :key="area.area_servicio_id"
-                :value="area.area_servicio_id"
-              >
+              <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
                 {{ area.area_servicio_nombre }}
               </option>
             </select>
-            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id" class="text-danger small mt-1">
+            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id"
+              class="text-danger small mt-1">
               {{ errores.area_servicio_id?.[0] || errores.actualizacion_area_servicio_id?.[0] }}
             </div>
           </div>
@@ -71,18 +70,10 @@
               2. :value de cada option usa Number() para evitar mismatch string/number
               3. Se añade :key con el mismo valor para forzar reactividad
             -->
-            <select
-              id="categoria"
-              class="form-select"
-              v-model="form.categoria_id"
-              required
-            >
+            <select id="categoria" class="form-select" v-model="form.categoria_id" required>
               <option :value="null" disabled>Selecciona una categoría...</option>
-              <option
-                v-for="categoria in listaCategorias"
-                :key="categoria.categoria_actualizacion_id"
-                :value="Number(categoria.categoria_actualizacion_id)"
-              >
+              <option v-for="categoria in listaCategorias" :key="categoria.categoria_actualizacion_id"
+                :value="Number(categoria.categoria_actualizacion_id)">
                 {{ categoria.categoria_actualizacion_nombre }}
               </option>
             </select>
@@ -101,7 +92,7 @@
         </div>
 
         <div class="row">
-          <div class="col-md-6 mb-3">
+          <div v-if="!modoCorreccion" class="col-md-6 mb-3">
             <label class="form-label fw-bold">Estado</label>
             <select v-model="form.estado" class="form-select">
               <option value="borrador">Borrador</option>
@@ -114,8 +105,15 @@
             </div>
           </div>
 
+          <div v-else class="col-md-6 mb-3">
+            <label class="form-label fw-bold text-edit">Estado de la corrección</label>
+            <div class="alert alert-edit mb-0 py-2">
+              Se enviará como <strong>Publicado</strong>.
+            </div>
+          </div>
+
           <div class="col-md-6 mb-3">
-            <template v-if="form.estado !== 'publicado'">
+            <template v-if="estadoParaVista !== 'publicado'">
               <label class="form-label fw-bold">Fecha de creación</label>
               <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
               <div class="form-text mt-1">
@@ -125,11 +123,10 @@
 
             <template v-else>
               <label class="form-label fw-bold text-success">Fecha de publicación</label>
-              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success" readonly />
-              <div
-                v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-                class="text-danger small mt-1"
-              >
+              <input v-model="form.fecha_publicacion" type="date" class="form-control bg-light border-success"
+                readonly />
+              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                class="text-danger small mt-1">
                 {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
               </div>
               <div class="form-text mt-1 text-success fw-bold">
@@ -146,12 +143,13 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ref="btnCerrarEdit">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" ref="btnCerrarEdit"
+            @click="emit('cerrar')">
             Cancelar
           </button>
 
           <button type="submit" class="btn-primary" :disabled="guardando">
-            {{ guardando ? 'Guardando...' : 'Guardar cambios' }}
+            {{ textoBotonGuardar }}
           </button>
         </div>
 
@@ -164,7 +162,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { computed, reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import api from '../../api/api'
 
 import EditorJS from '@editorjs/editorjs'
@@ -174,9 +172,12 @@ import List from '@editorjs/list'
 
 const inputTitulo = ref<HTMLInputElement | null>(null)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   id: string | number
-}>()
+  modoCorreccion?: boolean
+}>(), {
+  modoCorreccion: false,
+})
 
 const emit = defineEmits(['guardado', 'cerrar'])
 
@@ -209,6 +210,16 @@ const form = reactive({
   estado: 'borrador',
   fecha_creacion: '',
   fecha_publicacion: ''
+})
+
+const modoCorreccion = computed(() => props.modoCorreccion)
+const estadoParaVista = computed(() => props.modoCorreccion ? 'publicado' : form.estado)
+const textoBotonGuardar = computed(() => {
+  if (props.modoCorreccion) {
+    return guardando.value ? 'Enviando corrección...' : 'Enviar corrección'
+  }
+
+  return guardando.value ? 'Guardando...' : 'Guardar cambios'
 })
 
 const manejarImagen = (event: Event) => {
@@ -253,17 +264,15 @@ const formatearFechaParaInput = (fecha: any) => {
 
 const cargarListas = async () => {
   try {
-    const resAreas = await api.get('/area-servicio')
-    listaAreas.value = resAreas.data.data
-  } catch (error) {
-    console.error('Error al cargar áreas:', error)
-  }
+    const [resAreas, resCategorias] = await Promise.all([
+      api.get('/area-servicio'),
+      api.get('/categorias'),
+    ])
 
-  try {
-    const resCategorias = await api.get('/categorias')
-    listaCategorias.value = resCategorias.data.data
+    listaAreas.value = resAreas.data?.data || []
+    listaCategorias.value = resCategorias.data?.data || []
   } catch (error) {
-    console.error('Error al cargar categorías:', error)
+    console.error('Error al cargar catálogos:', error)
   }
 }
 
@@ -342,13 +351,17 @@ const cargarRegistro = async () => {
     const respuesta = await api.get(`/actualizaciones/${props.id}`)
     const data = respuesta.data.data
 
-    form.titulo               = data.actualizacion_titulo ?? ''
-    form.version              = data.actualizacion_version ?? ''
-    form.imagen_destacada     = data.actualizacion_imagen_destacada ?? ''
-    form.resumen              = data.actualizacion_resumen ?? ''
-    form.estado               = data.actualizacion_estado ?? 'borrador'
-    form.fecha_publicacion    = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
-    form.fecha_creacion       = formatearFechaParaInput(data.actualizacion_fecha_creacion)
+    form.titulo = data.actualizacion_titulo ?? ''
+    form.version = data.actualizacion_version ?? ''
+    form.imagen_destacada = data.actualizacion_imagen_destacada ?? ''
+    form.resumen = data.actualizacion_resumen ?? ''
+    form.estado = data.actualizacion_estado ?? 'borrador'
+    form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
+    form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion)
+
+    if (props.modoCorreccion && !form.fecha_publicacion) {
+      form.fecha_publicacion = new Date().toISOString().split('T')[0]
+    }
 
     // ── FIX: convertir siempre a Number para que coincida con el :value del option ──
     form.area_servicio_id = data.actualizacion_area_servicio_id
@@ -425,13 +438,19 @@ const guardarCambios = async () => {
     | Esta ruta sí puede ser PUT.
     */
 
+    const estadoFinal = props.modoCorreccion ? 'publicado' : form.estado
+    const fechaPublicacionFinal = estadoFinal === 'publicado'
+      ? (form.fecha_publicacion || new Date().toISOString().split('T')[0])
+      : form.fecha_publicacion
+
     const payload = {
       actualizacion_titulo: form.titulo,
       actualizacion_version: form.version,
       actualizacion_resumen: form.resumen,
       actualizacion_imagen_destacada: rutaImagen,
-      actualizacion_estado: form.estado,
-      actualizacion_fecha_publicacion: form.fecha_publicacion,
+      actualizacion_estado: estadoFinal,
+      actualizacion_fecha_publicacion: fechaPublicacionFinal,
+      actualizacion_es_correccion: props.modoCorreccion,
       actualizacion_contenido: contenidoFinal,
       actualizacion_categoria_id: form.categoria_id,
       actualizacion_area_servicio_id: form.area_servicio_id,
@@ -439,7 +458,9 @@ const guardarCambios = async () => {
 
     await api.put(`/actualizaciones/${props.id}`, payload)
 
-    mensajeOk.value = 'Guardado exitosamente.'
+    mensajeOk.value = props.modoCorreccion
+      ? 'Corrección enviada correctamente.'
+      : 'Guardado exitosamente.'
     emit('guardado')
   } catch (error: any) {
     console.error('Error al guardar:', error)
@@ -480,5 +501,15 @@ watch(
 
 .editor-container {
   min-height: 150px;
+}
+
+.alert-edit {
+  background: #fffef7;
+  border-left: 3px solid var(--warning);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  color: #f0b216;;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
 }
 </style>

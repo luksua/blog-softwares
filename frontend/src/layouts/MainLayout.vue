@@ -991,6 +991,12 @@ onUnmounted(() => {
   font-size: 0.72rem;
 }
 
+@media (max-width: 426px) {
+  .header-nav {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .header-nav {
     gap: 0.35rem;
@@ -1043,10 +1049,6 @@ onUnmounted(() => {
 
   .navbar-right {
     gap: 0.5rem;
-  }
-
-  .header-nav {
-    display: none;
   }
 
   .btn-new-record {

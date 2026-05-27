@@ -97,53 +97,35 @@
       </div>
 
 
-      <div v-if="mostrarAlertaRevision" class="alert alert-warning revision-alert">
-        <div class="d-flex justify-content-between align-items-start gap-3">
-          <div>
-            <h5 class="mb-1">
-              Tienes registros marcados para revisión
-            </h5>
-
-            <p class="mb-0">
-              Revisa las observaciones del supervisor y realiza los ajustes necesarios.
-            </p>
+      <div v-if="mostrarAlertaRevision" class="revision-alert-minimal">
+        <div class="revision-header">
+          <div class="header-info">
+            <i class="bi bi-exclamation-circle-fill"></i>
+            <span class="header-text">Revisión pendiente</span>
+            <span class="badge-minimal">{{ notificacionesRevision.length }}</span>
           </div>
-
-          <span class="badge bg-warning text-dark">
-            {{ notificacionesRevision.length }}
-          </span>
         </div>
 
-        <div class="revision-alert-list mt-3">
-          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="revision-alert-item">
-            <div>
-              <strong>{{ notificacion.titulo }}</strong>
-
-              <p v-if="notificacion.mensaje" class="mb-1">
-                {{ notificacion.mensaje }}
-              </p>
-
-              <small class="text-muted">
-                {{ new Date(notificacion.created_at).toLocaleString('es-CO') }}
-              </small>
+        <div class="revision-items">
+          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="revision-item">
+            <div class="item-content">
+              <p class="item-message">{{ notificacion.mensaje }}</p>
             </div>
 
-            <div class="d-flex gap-2">
-              <router-link v-if="notificacion.actualizacion_id" :to="{
-                name: 'mis-registros-show',
-                params: { id: notificacion.actualizacion_id }
-              }" class="btn btn-sm btn-outline-dark">
-                Ver registro
-              </router-link>
-
-              <button type="button" class="btn btn-sm btn-outline-secondary" @click="marcarRevisionLeida(notificacion)">
-                Marcar leída
+            <div class="item-actions">
+              <button v-if="notificacion.actualizacion_id" type="button" class="btn-action btn-view"
+                title="Corregir registro" @click="abrirCorreccionDesdeAlerta(notificacion)">
+                <i class="bi bi-pencil-square"></i>
               </button>
+
+              <!-- <button type="button" class="btn-action btn-read" @click="marcarRevisionLeida(notificacion)"
+                title="Ocultar aviso">
+                <i class="bi bi-x-lg"></i>
+              </button> -->
             </div>
           </div>
         </div>
       </div>
-
 
       <div class="table-container">
         <table class="base-table">
@@ -218,9 +200,12 @@
                   </template>
 
                   <template v-else>
-                    <button title="Editar" class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
-                      @click.stop="editarActualizacion(item.id)">
-                      <i class="bi bi-pencil-square"></i>
+                    <button :title="item.actualizacion_estado === 'revision' ? 'Enviar corrección' : 'Editar'"
+                      class="btn-icon" data-bs-toggle="modal" data-bs-target="#modalEditarRegistro"
+                      @click.stop="editarActualizacion(item)">
+                      <i :class="item.actualizacion_estado === 'revision'
+                        ? 'bi bi-send-check'
+                        : 'bi bi-pencil-square'"></i>
                     </button>
 
                     <div v-if="item.actualizacion_estado !== 'inactivo'">
@@ -393,8 +378,9 @@
           </div>
 
           <div class="modal-body">
-            <Edit v-if="idEditando" :key="idEditando" :id="idEditando" @guardado="actualizacionGuardada"
-              @cerrar="cerrarModalEdicion" />
+            <Edit v-if="idEditando" :key="`${idEditando}-${notificacionCorreccionActual?.id || 'normal'}`"
+              :id="idEditando" :modo-correccion="Boolean(notificacionCorreccionActual) || esCorreccionDesdeListado"
+              @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
           </div>
         </div>
       </div>
@@ -467,6 +453,7 @@ const itemARevision = ref<Version | null>(null)
 const observacionRevision = ref('')
 const errorObservacionRevision = ref('')
 const idEditando = ref<number | null>(null)
+const notificacionCorreccionActual = ref<BlogNotification | null>(null)
 
 const mostrarFiltros = ref(false) // Controla la visibilidad en móvil
 
@@ -520,18 +507,6 @@ const cargarNotificacionesRevision = async () => {
   }
 }
 
-const marcarRevisionLeida = async (notificacion: BlogNotification) => {
-  try {
-    await marcarNotificacionLeida(notificacion.id)
-
-    notificacion.leida_en = new Date().toISOString()
-
-    window.dispatchEvent(new Event('notificaciones-updated'))
-  } catch (error) {
-    console.error('Error marcando notificación como leída:', error)
-  }
-}
-
 const hayFiltrosActivos = computed(() => {
   return Boolean(
     filtros.value.busqueda ||
@@ -569,11 +544,28 @@ const cerrarModalBootstrap = () => {
 
 const cerrarModalEdicion = () => {
   idEditando.value = null
+  notificacionCorreccionActual.value = null
+  esCorreccionDesdeListado.value = false
   cerrarModalBootstrap()
 }
 
 const actualizacionGuardada = async () => {
+  if (notificacionCorreccionActual.value) {
+    try {
+      await marcarNotificacionLeida(notificacionCorreccionActual.value.id)
+      notificacionCorreccionActual.value.leida_en = new Date().toISOString()
+      window.dispatchEvent(new Event('notificaciones-updated'))
+    } catch (error) {
+      console.error('Error marcando notificación de corrección como leída:', error)
+    }
+  }
+
+  notificacionCorreccionActual.value = null
+  esCorreccionDesdeListado.value = false
+
   await obtenerActualizaciones(paginaActual.value)
+  await cargarNotificacionesRevision()
+
   cerrarModalEdicion()
 }
 
@@ -742,8 +734,29 @@ const verDetalles = (id: number) => {
   })
 }
 
-const editarActualizacion = (id: number) => {
-  idEditando.value = id
+const esCorreccionDesdeListado = ref(false)
+
+const editarActualizacion = (item: Version) => {
+  notificacionCorreccionActual.value = null
+  esCorreccionDesdeListado.value = item.actualizacion_estado === 'revision'
+  idEditando.value = item.id
+}
+
+const abrirCorreccionDesdeAlerta = async (notificacion: BlogNotification) => {
+  if (!notificacion.actualizacion_id) return
+
+  notificacionCorreccionActual.value = notificacion
+  esCorreccionDesdeListado.value = true
+  idEditando.value = Number(notificacion.actualizacion_id)
+
+  await nextTick()
+
+  const modalElement = document.getElementById('modalEditarRegistro')
+
+  if (modalElement) {
+    const modalInstance = Modal.getOrCreateInstance(modalElement)
+    modalInstance.show()
+  }
 }
 
 const confirmarEliminar = async (item: Version) => {
@@ -869,8 +882,10 @@ const marcarRevisionActualizacion = async () => {
 }
 
 onMounted(async () => {
-  await obtenerCatalogosFiltros()
-  await obtenerActualizaciones(1)
+  await Promise.all([
+    obtenerCatalogosFiltros(),
+    obtenerActualizaciones(1),
+  ])
 
   if (!esVistaSupervision.value) {
     cargarNotificacionesRevision()
@@ -1670,53 +1685,213 @@ defineExpose({
   }
 }
 
-.btn-icon-revision {
-  color: #b45309;
+/* Alerta Minimalista de Revisión */
+.revision-alert-minimal {
+  background: #fffef7;
+  border-left: 3px solid var(--warning);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 1cqmax;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: var(--transition);
 }
 
-.btn-icon-revision:hover {
-  color: #92400e;
+.revision-alert-minimal:hover {
+  box-shadow: var(--shadow-sm);
 }
 
-.revision-observacion-group {
-  margin-top: 18px;
+/* Header Compacto */
+.revision-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(252, 187, 28, 0.2);
 }
 
-.campo-obligatorio {
-  color: #dc3545;
-}
-
-.revision-observacion-error {
-  margin: 8px 0 0;
-  color: #dc3545;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.revision-alert {
-  border: 1px solid #ffe08a;
-  background: #fff8e1;
-  border-radius: 14px;
-}
-
-.revision-alert-list {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.revision-alert-item {
+.header-info {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  background: #fff;
-  border: 1px solid #f3df9b;
-  border-radius: 12px;
-  padding: 0.85rem 1rem;
+  align-items: center;
+  gap: 8px;
 }
 
-@media (max-width: 768px) {
-  .revision-alert-item {
-    flex-direction: column;
+.header-info i {
+  color: var(--warning);
+  font-size: 0.9rem;
+}
+
+.header-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #856404;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-minimal {
+  background: var(--warning);
+  color: #856404;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  line-height: 1;
+  margin-left: auto;
+}
+
+/* Lista de Items */
+.revision-items {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px;
+}
+
+.revision-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 19px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: var(--transition);
+  background: white;
+  border-radius: 16px;
+  transition: var(--transition-smooth);
+  border: 1px solid #f0e0b0;
+  position: relative;
+  border-left: 3px solid var(--warning);
+}
+
+.revision-item:last-child {
+  border-bottom: none;
+}
+
+.revision-item:hover {
+  background: rgba(252, 187, 28, 0.04);
+}
+
+/* Contenido del mensaje */
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-message {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #393e42;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Acciones con solo íconos */
+.item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-action {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+
+.btn-view {
+  background: transparent;
+  color: var(--primary);
+}
+
+.btn-view:hover {
+  background: rgba(7, 126, 157, 0.1);
+  color: var(--secondary);
+  transform: scale(1.05);
+}
+
+.btn-read {
+  background: transparent;
+  color: #6c757d;
+}
+
+.btn-read:hover {
+  background: rgba(108, 117, 125, 0.1);
+  color: #28a745;
+  transform: scale(1.05);
+}
+
+/* Sin mensaje */
+.revision-item:has(.item-message:empty) .item-message {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+.revision-item:has(.item-message:empty) .item-message::before {
+  content: 'Sin mensaje adicional';
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .revision-item {
+    flex-wrap: wrap;
+    gap: 8px;
   }
+
+  .item-content {
+    width: 100%;
+  }
+
+  .item-message {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Animación de entrada */
+.revision-alert-minimal {
+  animation: fadeInUp 0.2s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.revision-item:hover {
+  transform: translateX(4px);
+  border-color: var(--warning);
+  box-shadow: var(--shadow-sm);
+}
+
+.revision-item-indicator {
+  width: 4px;
+  background: linear-gradient(180deg, var(--warning), #ffd700);
+  border-radius: 4px;
+  transition: var(--transition-smooth);
+}
+
+.revision-item:hover .revision-item-indicator {
+  width: 6px;
 }
 </style>

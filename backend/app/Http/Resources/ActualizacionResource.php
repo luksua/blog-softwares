@@ -11,6 +11,7 @@ class ActualizacionResource extends JsonResource
     public function toArray(Request $request): array
     {
         $renderer = app(EditorJsRenderer::class);
+        $esDetalle = $request->route()?->parameter('id') !== null;
 
         return [
             'id' => $this->id,
@@ -20,17 +21,28 @@ class ActualizacionResource extends JsonResource
             'actualizacion_fecha_creacion' => $this->actualizacion_fecha_creacion,
             'actualizacion_imagen_destacada' => $this->actualizacion_imagen_destacada,
             'actualizacion_resumen' => $this->actualizacion_resumen,
-            'actualizacion_contenido' => $this->actualizacion_contenido,
             'actualizacion_estado' => $this->actualizacion_estado,
             'actualizacion_usuario_id_autor' => $this->actualizacion_usuario_id_autor,
 
+            'actualizacion_contenido' => $this->when(
+                $esDetalle,
+                fn() => $this->actualizacion_contenido
+            ),
+
             'actualizacion_contenido_html' => $this->when(
-                $this->resource->wasRecentlyCreated === false && request()->routeIs('actualizaciones.show'),
+                $esDetalle,
                 fn() => $renderer->render($this->actualizacion_contenido)
             ),
 
             'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
             'actualizacion_categoria_id' => $this->actualizacion_categoria_id,
+
+            'actualizacion_imagenes' => $this->whenLoaded('imagenes', function () {
+                return $this->imagenes->map(fn ($imagen) => [
+                    'id' => $imagen->id,
+                    'ruta_imagen' => $imagen->ruta_imagen,
+                ]);
+            }),
 
             'usuario_autor' => $this->whenLoaded('usuarioAutor', function () {
                 return [

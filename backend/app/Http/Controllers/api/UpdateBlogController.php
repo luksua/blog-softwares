@@ -7,6 +7,7 @@ use App\Http\Resources\ActualizacionResource;
 use App\Models\Area;
 use App\Models\BlogNotification;
 use App\Models\Category;
+use App\Models\JefeArea;
 use App\Models\UpdateBlog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,13 +20,38 @@ class UpdateBlogController extends Controller
         $usuario = $request->user();
         $vista = $request->input('vista', 'blog');
 
-        $query = UpdateBlog::with([
-            'areaServicio',
-            'categoria',
-            'imagenes',
-            'usuarioAutor',
-            'ultimaRevisionObservacion.supervisor',
-        ]);
+        $relaciones = [
+            'areaServicio:area_servicio_id,area_servicio_nombre,area_servicio_correo',
+            'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
+        ];
+
+        // if (in_array($vista, ['mis-registros', 'supervision', 'todos'], true)) {
+        //     $relaciones[] = 'usuarioAutor:usuario_id,usuario_usuario,usuario_login,usuario_nombre,usuario_nombre1,usuario_nombre2,usuario_apellido1,usuario_apellido2,area_servicio_id';
+        //     $relaciones[] = 'ultimaRevisionObservacion:id,actualizacion_id,usuario_id_supervisor,observacion,estado_anterior,estado_nuevo,created_at';
+        //     $relaciones[] = 'ultimaRevisionObservacion.supervisor:usuario_id,usuario_usuario,usuario_nombre,usuario_nombre1,usuario_nombre2,usuario_apellido1,usuario_apellido2';
+        // }
+
+        if (in_array($vista, ['mis-registros', 'supervision', 'todos'], true)) {
+            $relaciones[] = 'usuarioAutor:usuario_id,usuario_usuario,usuario_nombre1,usuario_nombre2,usuario_apellido1,usuario_apellido2,area_servicio_id';
+            $relaciones[] = 'ultimaRevisionObservacion:id,usuario_id_supervisor,observacion,estado_anterior,estado_nuevo,created_at';
+            $relaciones[] = 'ultimaRevisionObservacion.supervisor:usuario_id,usuario_usuario,usuario_nombre1,usuario_nombre2,usuario_apellido1,usuario_apellido2';
+        }
+
+        $query = UpdateBlog::query()
+            ->select([
+                'id',
+                'actualizacion_titulo',
+                'actualizacion_version',
+                'actualizacion_resumen',
+                'actualizacion_imagen_destacada',
+                'actualizacion_area_servicio_id',
+                'actualizacion_usuario_id_autor',
+                'actualizacion_estado',
+                'actualizacion_fecha_creacion',
+                'actualizacion_fecha_publicacion',
+                'actualizacion_categoria_id',
+            ])
+            ->with($relaciones);
 
         /*
         |--------------------------------------------------------------------------
@@ -229,12 +255,7 @@ class UpdateBlogController extends Controller
             'actualizacion_categoria_id' => ['required', 'integer'],
             'actualizacion_estado' => [
                 'nullable',
-                Rule::in([
-                    'borrador',
-                    'revision',
-                    'publicado',
-                    'inactivo',
-                ]),
+                Rule::in($this->estadosPermitidos()),
             ],
             'imagenes_quill' => ['nullable', 'string'],
         ]);
@@ -334,6 +355,7 @@ class UpdateBlogController extends Controller
         $usuario = $request->user();
 
         $actualizacion = UpdateBlog::findOrFail($id);
+        $estadoAnterior = (string) $actualizacion->actualizacion_estado;
 
         if (! $this->puedeEditar($usuario, $actualizacion)) {
             abort(403, 'No tienes permiso para editar este registro.');
@@ -347,8 +369,17 @@ class UpdateBlogController extends Controller
             'actualizacion_contenido' => ['sometimes', 'required'],
             'actualizacion_categoria_id' => ['sometimes', 'required', 'integer'],
             'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
+            'actualizacion_estado' => ['sometimes', 'required', Rule::in($this->estadosPermitidos())],
             'actualizacion_fecha_publicacion' => ['nullable', 'date'],
+            'actualizacion_es_correccion' => ['sometimes', 'boolean'],
         ]);
+
+        $correccionSolicitada = filter_var(
+            $data['actualizacion_es_correccion'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        unset($data['actualizacion_es_correccion']);
 
         if (array_key_exists('actualizacion_contenido', $data)) {
             $data['actualizacion_contenido'] = $this->normalizarContenido(
@@ -383,12 +414,31 @@ class UpdateBlogController extends Controller
                 ->store('blog/portadas', 'public');
         }
 
+        if (array_key_exists('actualizacion_estado', $data)) {
+            if (! $this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
+                abort(403, 'No tienes permiso para cambiar el estado de este registro.');
+            }
+
+            if (
+                $data['actualizacion_estado'] === 'publicado' &&
+                empty($data['actualizacion_fecha_publicacion']) &&
+                ! $actualizacion->actualizacion_fecha_publicacion
+            ) {
+                $data['actualizacion_fecha_publicacion'] = now();
+            }
+        }
+
         if (! isset($data['actualizacion_version'])) {
             $data['actualizacion_version'] =
                 (string) (((int) $actualizacion->actualizacion_version) + 1);
         }
 
         $actualizacion->update($data);
+        $actualizacion->refresh();
+
+        if ($this->debeNotificarCorreccion($estadoAnterior, $actualizacion, $correccionSolicitada)) {
+            $this->crearNotificacionCorreccion($actualizacion, $usuario, $estadoAnterior);
+        }
 
         return response()->json([
             'message' => 'Actualización editada correctamente.',
@@ -408,17 +458,18 @@ class UpdateBlogController extends Controller
     {
         $usuario = $request->user();
 
+        if (! $request->filled('actualizacion_estado') && $request->filled('estado')) {
+            $request->merge([
+                'actualizacion_estado' => $request->input('estado'),
+            ]);
+        }
+
         $actualizacion = UpdateBlog::findOrFail($id);
 
         $data = $request->validate([
             'actualizacion_estado' => [
                 'required',
-                Rule::in([
-                    'borrador',
-                    'revision',
-                    'publicado',
-                    'inactivo',
-                ]),
+                Rule::in($this->estadosPermitidos()),
             ],
         ]);
 
@@ -566,32 +617,12 @@ class UpdateBlogController extends Controller
 
     public function getStatus()
     {
-        $resultado = DB::select(
-            'SHOW COLUMNS FROM actualizaciones_blog WHERE Field = "actualizacion_estado"'
-        );
-
-        if (empty($resultado)) {
-            return response()->json([
-                'data' => [],
-            ]);
-        }
-
-        $columna = $resultado[0];
-
-        preg_match('/^enum\((.*)\)$/', $columna->Type, $matches);
-
-        $estados = [];
-
-        if (isset($matches[1])) {
-            foreach (explode(',', $matches[1]) as $value) {
-                $valorLimpio = trim($value, "'");
-
-                $estados[] = [
-                    'id' => $valorLimpio,
-                    'nombre' => ucfirst($valorLimpio),
-                ];
-            }
-        }
+        $estados = collect($this->estadosPermitidos())
+            ->map(fn (string $estado) => [
+                'id' => $estado,
+                'nombre' => ucfirst($estado),
+            ])
+            ->values();
 
         return response()->json([
             'data' => $estados,
@@ -634,6 +665,16 @@ class UpdateBlogController extends Controller
             'url' => asset('storage/' . $path),
             'path' => $path,
         ]);
+    }
+
+    private function estadosPermitidos(): array
+    {
+        return [
+            'borrador',
+            'revision',
+            'publicado',
+            'inactivo',
+        ];
     }
 
     private function puedeVer($usuario, UpdateBlog $actualizacion): bool
@@ -771,6 +812,75 @@ class UpdateBlogController extends Controller
                 ],
             ],
         ]);
+    }
+
+    private function debeNotificarCorreccion(
+        string $estadoAnterior,
+        UpdateBlog $actualizacion,
+        bool $correccionSolicitada
+    ): bool {
+        return (
+            $correccionSolicitada || $estadoAnterior === 'revision'
+        ) && $estadoAnterior === 'revision'
+            && (string) $actualizacion->actualizacion_estado === 'publicado';
+    }
+
+    private function crearNotificacionCorreccion(
+        UpdateBlog $actualizacion,
+        $usuario,
+        string $estadoAnterior
+    ): void {
+        $areaId = (int) $actualizacion->actualizacion_area_servicio_id;
+        $actorId = (int) $usuario->usuario_id;
+
+        if ($areaId <= 0) {
+            return;
+        }
+
+        $supervisorRevisionId = $actualizacion->revisionObservaciones()
+            ->value('usuario_id_supervisor');
+
+        $jefesDestino = JefeArea::activos()
+            ->where('jefe_area', $areaId)
+            ->pluck('id_usuario')
+            ->push($supervisorRevisionId)
+            ->filter(fn ($usuarioId) => (int) $usuarioId > 0)
+            ->map(fn ($usuarioId) => (int) $usuarioId)
+            ->unique()
+            ->values();
+
+        if ($jefesDestino->isEmpty()) {
+            return;
+        }
+
+        foreach ($jefesDestino as $usuarioDestinoId) {
+            if ($usuarioDestinoId === $actorId) {
+                continue;
+            }
+
+            BlogNotification::create([
+                'usuario_id_destino' => $usuarioDestinoId,
+                'usuario_id_actor' => $actorId,
+                'actualizacion_id' => $actualizacion->id,
+                'tipo' => 'correccion',
+                'titulo' => 'Registro corregido',
+                'mensaje' => sprintf(
+                    'El registro "%s" fue corregido y publicado nuevamente.',
+                    $actualizacion->actualizacion_titulo
+                ),
+                'data' => [
+                    'estado_anterior' => $estadoAnterior,
+                    'estado_nuevo' => 'publicado',
+                    'area_servicio_id' => $areaId,
+                    'ruta_sugerida' => [
+                        'name' => 'supervision-show',
+                        'params' => [
+                            'id' => $actualizacion->id,
+                        ],
+                    ],
+                ],
+            ]);
+        }
     }
 
     private function normalizarContenido($contenido): string

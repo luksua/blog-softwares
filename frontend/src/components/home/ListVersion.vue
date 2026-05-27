@@ -341,11 +341,13 @@ const irA = (id: number) => {
 const obtenerDetalle = async () => {
   cargando.value = true
   headingActivo.value = 'resumen'
+  relacionados.value = []
+
   try {
     const respuesta = await api.get(`/actualizaciones/${props.id}`)
     actualizacion.value = respuesta.data.data
     scrollAlTope()
-    await obtenerRelacionados()
+    obtenerRelacionados()
   } catch (error) {
     console.error('Error al cargar la actualización:', error)
     actualizacion.value = null

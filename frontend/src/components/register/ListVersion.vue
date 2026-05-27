@@ -55,11 +55,18 @@
         <div v-if="actualizacion.revision_observacion?.observacion" class="supervision-meta-card revision-motivo-card">
           <span class="supervision-meta-label">Motivo de revisión</span>
           <p>{{ actualizacion.revision_observacion.observacion }}</p>
+          <!-- <small v-if="actualizacion.revision_observacion?.supervisor">
+            Marcado por {{ obtenerNombrePersona(actualizacion.revision_observacion.supervisor) }}
+          </small> -->
+        </div>
+      </div>
+      <!-- <div v-if="actualizacion.revision_observacion?.observacion" class="supervision-meta-card revision-motivo-card">
+          <span class="supervision-meta-label">Motivo de revisión</span>
+          <p>{{ actualizacion.revision_observacion.observacion }}</p>
           <small v-if="actualizacion.revision_observacion?.supervisor">
             Marcado por {{ obtenerNombrePersona(actualizacion.revision_observacion.supervisor) }}
           </small>
-        </div>
-      </div>
+        </div> -->
 
       <div class="resumen-container">
         <p class="resumen-texto">
