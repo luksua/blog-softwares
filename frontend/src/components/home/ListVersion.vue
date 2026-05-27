@@ -16,7 +16,6 @@
           <span class="arrow-icon" aria-hidden="true">←</span>
           Volver
         </button>
-
         <img v-if="actualizacion.actualizacion_imagen_destacada"
           :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)"
           :alt="actualizacion.actualizacion_titulo" class="hero-image" />
