@@ -958,11 +958,11 @@ onUnmounted(() => {
 
 /* El ícono: visible por defecto → se oculta en hover */
 .icono-categoria .ico-icon {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--secondary);
   flex-shrink: 0;
   /* ancho fijo → colapsa */
-  width: 14px;
+  width: 16px;
   opacity: 1;
   transition:
     opacity 0.15s ease,
@@ -1019,7 +1019,7 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.btn-icon i { font-size: 1.2rem; color: var(--secondary); }
+.btn-icon i { font-size: 1.25rem; color: var(--secondary); }
 .btn-icon:active { transform: scale(0.9); }
 
 .btn-icon:disabled {

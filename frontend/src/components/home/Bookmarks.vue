@@ -110,6 +110,11 @@
 
             <!-- FOOTER -->
             <div class="tarjeta-pie">
+              <button class="btn-quitar" type="button" title="Quitar de guardados"
+                @click.stop="quitarGuardado(item.id)">
+                <i class="bi bi-bookmark-x-fill fs-5"></i>
+              </button>
+
               <button class="btn-enlace" @click.stop="verDetalle(item.id)">
                 Ver más <i class="bi bi-arrow-right"></i>
               </button>
@@ -566,7 +571,7 @@ onMounted(() => {
 }
 
 .sin-imagen span {
-  font-size: 32px;
+  /* font-size: 32px; */
   margin-bottom: 8px;
 }
 
@@ -1090,7 +1095,7 @@ onMounted(() => {
 /* FOOTER */
 .tarjeta-pie {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;

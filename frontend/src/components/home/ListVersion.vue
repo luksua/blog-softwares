@@ -1029,7 +1029,7 @@ watch(() => props.id, () => {
 }
 
 .sin-imagen span {
-  font-size: 32px;
+  /* font-size: 32px; */
   margin-bottom: 8px;
 }
 

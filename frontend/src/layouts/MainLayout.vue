@@ -9,7 +9,7 @@ route: {{ route.name }}
     <div v-if="isMobile && isExpanded && isLoggedIn" class="sidebar-overlay" @click="cerrarSidebarMovil"></div>
 
     <!-- SIDEBAR: solo admin -->
-    <!-- <aside v-if="isLoggedIn" :class="[
+    <aside v-if="isLoggedIn && isMobile" :class="[
       'sidebar',
       {
         expanded: isExpanded,
@@ -61,7 +61,7 @@ route: {{ route.name }}
           </router-link>
         </li>
       </ul>
-    </aside> -->
+    </aside>
 
     <div class="main">
       <!-- NAVBAR GLOBAL -->
@@ -143,11 +143,8 @@ route: {{ route.name }}
               </section>
             </div>
 
-            <!-- <button v-if="mostrarBotonNuevoRegistro" class="btn-new-record" type="button" @click="irANuevoRegistro">
-              + Nuevo registro
-            </button> -->
-
             <!-- Botón de Ayuda -->
+
             <HelpButton />
 
             <button class="btn-logout" type="button" @click="logout">
@@ -349,6 +346,7 @@ const detenerPollingNotificaciones = () => {
 }
 
 const togglePanelNotificaciones = async () => {
+
   mostrarPanelNotificaciones.value = !mostrarPanelNotificaciones.value
 
   if (mostrarPanelNotificaciones.value) {
@@ -362,24 +360,37 @@ const cerrarPanelNotificaciones = () => {
 
 const abrirNotificacion = async (notificacion: BlogNotification) => {
   try {
-    if (!notificacion.leida_en) {
-      await marcarNotificacionLeida(notificacion.id)
-      notificacion.leida_en = new Date().toISOString()
-      notificacionesNoLeidas.value = Math.max(0, notificacionesNoLeidas.value - 1)
-    }
+    const mobile = window.innerWidth <= 768
+    isMobile.value = mobile
+    isExpanded.value = !mobile
 
-    cerrarPanelNotificaciones()
+    if (!mobile) {
+      if (!notificacion.leida_en) {
+        await marcarNotificacionLeida(notificacion.id)
+        notificacion.leida_en = new Date().toISOString()
+        notificacionesNoLeidas.value = Math.max(0, notificacionesNoLeidas.value - 1)
+      }
 
-    const rutaSugerida = notificacion.data?.ruta_sugerida
+      cerrarPanelNotificaciones()
 
-    if (rutaSugerida?.name && router.hasRoute(rutaSugerida.name)) {
-      router.push(rutaSugerida)
-      return
-    }
+      const rutaSugerida = notificacion.data?.ruta_sugerida
 
-    if (notificacion.actualizacion_id) {
+      if (rutaSugerida?.name && router.hasRoute(rutaSugerida.name)) {
+        router.push(rutaSugerida)
+        return
+      }
+
+      if (notificacion.actualizacion_id) {
+        router.push({
+          name: 'mis-registros-show',
+          params: {
+            id: notificacion.actualizacion_id,
+          },
+        })
+      }
+    } else {
       router.push({
-        name: 'mis-registros-show',
+        name: 'mis-registros-',
         params: {
           id: notificacion.actualizacion_id,
         },
@@ -1028,7 +1039,7 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 425px) {
   .sidebar {
     position: fixed;
     left: -80px;
@@ -1119,12 +1130,6 @@ onUnmounted(() => {
 
   .sidebar.mobile .tooltip {
     display: none;
-  }
-
-  .mobile-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .navbar {

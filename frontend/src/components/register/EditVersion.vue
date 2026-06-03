@@ -741,10 +741,6 @@ const guardarCambios = async () => {
     }
 
     await api.put(`/actualizaciones/${props.id}`, payload)
-
-    mensajeOk.value = props.modoCorreccion
-      ? '✓ Corrección enviada correctamente'
-      : '✓ Cambios guardados exitosamente'
     
     emit('guardado')
     

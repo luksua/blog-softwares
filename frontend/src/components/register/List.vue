@@ -895,17 +895,19 @@ const getCategoriaColor = (nombre: string) => {
 
 const getCategoriaIcon = (nombre: string) => {
   const iconMap: Record<string, string> = {
-    'inicio': 'bi bi-house-fill',
-    'noticias': 'bi bi-megaphone-fill',
-    'actualizaciones': 'bi bi-arrow-repeat',
-    'documentos': 'bi bi-file-text-fill',
-    'tutoriales': 'bi bi-journal-bookmark-fill',
-    'eventos': 'bi bi-calendar-event-fill',
-    'avisos': 'bi bi-bell-fill',
-    'novedades': 'bi bi-star-fill',
-    'seguridad': 'bi bi-shield-lock-fill',
-    'capacitacion': 'bi bi-mortarboard-fill',
-    'proyectos': 'bi bi-kanban'
+    'manual de usuario': 'bi-person-lines-fill',
+    'manual tecnico': 'bi-tools',
+    'instalador': 'bi-box-arrow-down',
+    'actualizacion del sistema': 'bi-arrow-repeat',
+    'nueva funcionalidad': 'bi-stars',
+    'mejora': 'bi-arrow-up-circle-fill',
+    'correccion de errores': 'bi-bug-fill',
+    'parche de seguridad': 'bi-shield-fill-check',
+    'guia de instalacion': 'bi-journal-arrow-down',
+    'guia rapida': 'bi-lightning-charge-fill',
+    'documentacion': 'bi-file-earmark-text-fill',
+    'notas de version': 'bi-card-list',
+    'general': 'bi-info-circle-fill',
   }
   
   const lowerNombre = nombre.toLowerCase()
@@ -1795,7 +1797,7 @@ defineExpose({ obtenerActualizaciones })
   gap: 4px;
   padding: 4px 8px 4px 6px;
   border-radius: 20px;
-  font-size: 0.7rem;
+  font-size: 0.785rem;
   font-weight: 500;
   border: 1px solid;
   white-space: nowrap;
