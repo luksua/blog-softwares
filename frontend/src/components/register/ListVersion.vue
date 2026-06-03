@@ -549,7 +549,8 @@ watch(
 
 :deep(.editorjs-editor h1),
 :deep(.editorjs-editor h2),
-:deep(.editorjs-editor h3) {
+:deep(.editorjs-editor h3),
+:deep(.editorjs-editor h4) {
   margin-top: 2rem;
   margin-bottom: 1rem;
   color: #0f172a;
@@ -559,6 +560,33 @@ watch(
 :deep(.editorjs-editor ol) {
   margin-bottom: 1.2rem;
   padding-left: 2rem;
+}
+
+:deep(.editorjs-editor .editorjs-checklist) {
+  list-style: none;
+  padding-left: 0;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__item) {
+  margin-bottom: 0.45rem;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__row) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__checkbox) {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.38rem;
+  accent-color: #077e9d;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__item.is-checked .editorjs-checklist__content) {
+  color: #64748b;
+  text-decoration: line-through;
 }
 
 :deep(.editorjs-editor img) {

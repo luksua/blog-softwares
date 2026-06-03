@@ -158,7 +158,12 @@
                       {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
                     </span>
                   </div>
-                  <button class="btn-enlace" @click="irA(item.id)">Ver más ➔</button>
+                  <div class="tags-right">
+                    <button class="btn-enlace" @click.stop="irA(item.id)">
+                      Ver más
+                      <i class="bi bi-arrow-right"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -333,7 +338,7 @@ const obtenerRelacionados = async () => {
 }
 
 const irA = (id: number) => {
-  router.push({ name: 'employee-actualizaciones-show', params: { id } })
+  router.push({ name: 'actualizaciones-show', params: { id } })
   scrollAlTope()
 }
 
@@ -856,6 +861,33 @@ watch(() => props.id, () => {
   margin-bottom: 0.4rem;
 }
 
+:deep(.editorjs-editor .editorjs-checklist) {
+  list-style: none;
+  padding-left: 0;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__item) {
+  margin-bottom: 0.45rem;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__row) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__checkbox) {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.38rem;
+  accent-color: #077e9d;
+}
+
+:deep(.editorjs-editor .editorjs-checklist__item.is-checked .editorjs-checklist__content) {
+  color: #64748b;
+  text-decoration: line-through;
+}
+
 :deep(.editorjs-editor img) {
   max-width: 100%;
   height: auto;
@@ -1074,6 +1106,13 @@ watch(() => props.id, () => {
   gap: 15px;
 }
 
+.tags-right {
+  gap: 8px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .tag-gris {
   background-color: #f4f5f7;
   color: #4a5568;
@@ -1102,11 +1141,21 @@ watch(() => props.id, () => {
   padding: 6px 12px;
   border-radius: 8px;
   transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-enlace i {
+  font-size: 0.9rem;
+  transition: transform 0.3s ease;
 }
 
 .btn-enlace:hover {
   color: var(--primary);
   background: rgba(7, 126, 157, 0.08);
+}
+
+.btn-enlace:hover i {
+  transform: translateX(4px);
 }
 
 /* ── Skeletons ── */
@@ -1245,6 +1294,20 @@ watch(() => props.id, () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+
+  .tarjeta-pie {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .tags-container {
+    justify-content: center;
+  }
+
+  .tags-right {
+    justify-content: center;
   }
 }
 </style>

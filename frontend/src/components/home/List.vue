@@ -5,9 +5,7 @@
         <div>
           <span class="eyebrow">Blog</span>
           <h2>Actualizaciones</h2>
-          <p>
-
-          </p>
+          <p></p>
         </div>
       </div>
     </div>
@@ -43,7 +41,6 @@
 
       <!-- Filtros -->
       <div :class="['filtros-barra', { 'filtros-visible': mostrarFiltros }]">
-        <!-- Chips de orden rápido -->
         <div class="filtro-seccion-completa">
           <label class="filtro-label">Ordenar por</label>
           <div class="chips-grupo">
@@ -54,7 +51,6 @@
           </div>
         </div>
 
-        <!-- Búsqueda -->
         <div class="filtro-grupo filtro-busqueda">
           <label for="busqueda" class="filtro-label">Buscar</label>
           <div class="input-busqueda-wrapper">
@@ -64,19 +60,16 @@
           </div>
         </div>
 
-        <!-- Área -->
         <div class="filtro-grupo">
           <label for="area" class="filtro-label">Área / Servicio</label>
           <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
             <option value="">Todas las áreas</option>
-            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
-              :value="Number(area.area_servicio_id)">
+            <option v-for="area in areasDisponibles" :key="area.area_servicio_id" :value="Number(area.area_servicio_id)">
               {{ area.area_servicio_nombre }}
             </option>
           </select>
         </div>
 
-        <!-- Categoría -->
         <div class="filtro-grupo">
           <label for="categoria" class="filtro-label">Categoría</label>
           <select id="categoria" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
@@ -88,19 +81,16 @@
           </select>
         </div>
 
-        <!-- Fecha desde -->
         <div class="filtro-grupo">
           <label for="fechaDesde" class="filtro-label">Desde</label>
           <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
         </div>
 
-        <!-- Fecha hasta -->
         <div class="filtro-grupo">
           <label for="fechaHasta" class="filtro-label">Hasta</label>
           <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
         </div>
 
-        <!-- Limpiar -->
         <div class="filtro-acciones">
           <button class="btn-limpiar" @click="limpiarFiltros">
             <i class="bi bi-trash d-md-none"></i>
@@ -109,7 +99,6 @@
         </div>
       </div>
 
-      <!-- Sin resultados con filtros activos -->
       <div v-if="actualizaciones.length === 0 && hayFiltrosActivos" class="estado-mensaje vacio">
         <div class="empty-icon">🔎</div>
         <h3>Sin resultados</h3>
@@ -117,21 +106,29 @@
       </div>
 
       <div v-else>
-        <!-- Grid de tarjetas -->
         <div class="row lista-feed g-3 g-md-4">
           <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-sm-6 col-lg-4 col-xl-3">
             <div class="tarjeta-changelog h-100">
+
+              <!-- ── CABECERA: Imagen + overlay inferior izquierdo ── -->
               <div class="tarjeta-header">
                 <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
                   <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
                     class="imagen-destacada" loading="lazy" />
+                  <div class="imagen-overlay">
+                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                  </div>
                 </div>
                 <div v-else class="sin-imagen">
-                  <span>🖼️</span>
+                  <span class="sin-imagen-icono">🖼️</span>
                   <p>Sin imagen destacada</p>
+                  <div class="imagen-overlay">
+                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                  </div>
                 </div>
               </div>
 
+              <!-- ── CUERPO ── -->
               <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
                 <div class="metadatos-top">
                   <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
@@ -141,29 +138,38 @@
 
                 <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
                 <p class="resumen">{{ item.actualizacion_resumen }}</p>
+
+                <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
+                <div class="categorias-iconos">
+                  <div
+                    v-for="cat in obtenerCategorias(item)"
+                    :key="cat.id"
+                    class="icono-categoria"
+                  >
+                    <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
+                    <span class="ico-label">{{ cat.nombre }}</span>
+                  </div>
+                </div>
+
               </div>
 
+              <!-- ── FOOTER: solo bookmark y ver más ── -->
               <div class="tarjeta-pie">
-                <div class="tags-container">
-                  <span class="tag-gris">
-                    {{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}
-                  </span>
-                  <span class="tag-gris">
-                    {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
-                  </span>
-                </div>
-                <div class="tags-right">
-                  <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)" @click.stop="toggleBookmark(item.id)" title="Guardar">
-                    <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
-                  </button>
-
-                  <button class="btn-enlace" @click="verDetalle(item.id)">
-                    Ver más
-                    <i class="bi bi-arrow-right"></i>
-                  </button>
-                </div>
+                <button
+                  class="btn-icon"
+                  :disabled="bookmarkEnProceso(item.id)"
+                  @click.stop="toggleBookmark(item.id)"
+                  :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'"
+                >
+                  <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
+                </button>
+                <button class="btn-enlace" @click.stop="verDetalle(item.id)">
+                  Ver más
+                  <i class="bi bi-arrow-right"></i>
+                </button>
               </div>
-            </div> 
+
+            </div>
           </div>
         </div>
 
@@ -173,7 +179,6 @@
             Mostrando <strong>{{ actualizaciones.length }}</strong> de
             <strong>{{ totalRegistros }}</strong> registros
           </div>
-
           <nav v-if="totalPaginas > 1" aria-label="Navegación">
             <ul class="pagination-moderno">
               <li :class="{ disabled: paginaActual === 1 }">
@@ -204,7 +209,7 @@ import api from '../../api/api'
 import { obtenerIdsBookmarks, guardarBookmark, quitarBookmark } from '../../api/bookmarks'
 import type { Version } from '../../types/version'
 import { toast } from 'vue-sonner'
- 
+
 type AreaFiltro = {
   area_servicio_id: number | string
   area_servicio_nombre: string
@@ -217,7 +222,6 @@ type CategoriaFiltro = {
 
 const router = useRouter()
 
-// ── Estado principal ──────────────────────────────────────────────
 const actualizaciones = ref<Version[]>([])
 const cargando = ref(true)
 const error = ref('')
@@ -227,11 +231,9 @@ const paginaActual = ref(1)
 const totalPaginas = ref(1)
 const totalRegistros = ref(0)
 
-// Bookmark state
 const bookmarkedItems = ref<Set<number>>(new Set())
 const bookmarksProcesando = ref<Set<number>>(new Set())
 
-// ── Filtros ───────────────────────────────────────────────────────
 const filtros = ref({
   busqueda: '',
   fechaDesde: '',
@@ -286,7 +288,6 @@ const obtenerCatalogosFiltros = async () => {
       api.get('/area-servicio'),
       api.get('/categorias')
     ])
-
     areasDisponibles.value = areasResp.data?.data || []
     categoriasDisponibles.value = categoriasResp.data?.data || []
   } catch (err) {
@@ -302,40 +303,20 @@ const obtenerActualizaciones = async (page = 1) => {
 
   try {
     const params = new URLSearchParams()
-
     params.append('page', String(page))
     params.append('vista', 'blog')
 
-    if (filtros.value.busqueda.trim()) {
-      params.append('busqueda', filtros.value.busqueda.trim())
-    }
-
-    if (filtros.value.fechaDesde) {
-      params.append('fecha_desde', filtros.value.fechaDesde)
-    }
-
-    if (filtros.value.fechaHasta) {
-      params.append('fecha_hasta', filtros.value.fechaHasta)
-    }
-
-    if (filtros.value.areaServicioId !== '') {
-      params.append('area_servicio_id', String(filtros.value.areaServicioId))
-    }
-
-    if (filtros.value.categoriaId !== '') {
-      params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
-    }
-
-    if (filtros.value.orden) {
-      params.append('orden', filtros.value.orden)
-    }
+    if (filtros.value.busqueda.trim()) params.append('busqueda', filtros.value.busqueda.trim())
+    if (filtros.value.fechaDesde) params.append('fecha_desde', filtros.value.fechaDesde)
+    if (filtros.value.fechaHasta) params.append('fecha_hasta', filtros.value.fechaHasta)
+    if (filtros.value.areaServicioId !== '') params.append('area_servicio_id', String(filtros.value.areaServicioId))
+    if (filtros.value.categoriaId !== '') params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
+    if (filtros.value.orden) params.append('orden', filtros.value.orden)
 
     const respuesta = await api.get(`/actualizaciones?${params.toString()}`)
-
     actualizaciones.value = respuesta.data.data || []
 
     const meta = respuesta.data.meta || respuesta.data
-
     paginaActual.value = meta.current_page || 1
     totalPaginas.value = meta.last_page || 1
     totalRegistros.value = meta.total || actualizaciones.value.length
@@ -352,9 +333,7 @@ const obtenerActualizaciones = async (page = 1) => {
 }
 
 // ── Acciones ──────────────────────────────────────────────────────
-const aplicarOrden = (valor: string) => {
-  filtros.value.orden = valor
-}
+const aplicarOrden = (valor: string) => { filtros.value.orden = valor }
 
 const limpiarFiltros = () => {
   filtros.value = {
@@ -369,36 +348,23 @@ const limpiarFiltros = () => {
 
 const actualizarBookmarkProcesando = (id: number, enProceso: boolean) => {
   const siguiente = new Set(bookmarksProcesando.value)
-
-  if (enProceso) {
-    siguiente.add(id)
-  } else {
-    siguiente.delete(id)
-  }
-
+  if (enProceso) siguiente.add(id)
+  else siguiente.delete(id)
   bookmarksProcesando.value = siguiente
 }
 
-const bookmarkEnProceso = (id: number) => {
-  return bookmarksProcesando.value.has(Number(id))
-}
+const bookmarkEnProceso = (id: number) => bookmarksProcesando.value.has(Number(id))
 
 const toggleBookmark = async (id: number) => {
   const idNormalizado = Number(id)
-
-  if (!Number.isFinite(idNormalizado) || bookmarkEnProceso(idNormalizado)) {
-    return
-  }
+  if (!Number.isFinite(idNormalizado) || bookmarkEnProceso(idNormalizado)) return
 
   const estabaGuardado = bookmarkedItems.value.has(idNormalizado)
   const estadoAnterior = new Set(bookmarkedItems.value)
   const siguienteEstado = new Set(bookmarkedItems.value)
 
-  if (estabaGuardado) {
-    siguienteEstado.delete(idNormalizado)
-  } else {
-    siguienteEstado.add(idNormalizado)
-  }
+  if (estabaGuardado) siguienteEstado.delete(idNormalizado)
+  else siguienteEstado.add(idNormalizado)
 
   bookmarkedItems.value = siguienteEstado
   actualizarBookmarkProcesando(idNormalizado, true)
@@ -411,7 +377,6 @@ const toggleBookmark = async (id: number) => {
       await guardarBookmark(idNormalizado)
       toast.success('¡Registro añadido a guardados!')
     }
-
     window.dispatchEvent(new Event('bookmarks-updated'))
   } catch (err) {
     console.error('Error actualizando bookmark:', err)
@@ -422,11 +387,8 @@ const toggleBookmark = async (id: number) => {
   }
 }
 
-const isBookmarked = (id: number) => {
-  return bookmarkedItems.value.has(Number(id))
-}
+const isBookmarked = (id: number) => bookmarkedItems.value.has(Number(id))
 
-// Cargar bookmarks guardados desde BD
 const loadBookmarks = async () => {
   try {
     const ids = await obtenerIdsBookmarks()
@@ -437,25 +399,15 @@ const loadBookmarks = async () => {
   }
 }
 
-// Watch con debounce
 let filtroTimeout: ReturnType<typeof setTimeout> | null = null
 
-watch(
-  filtros,
-  () => {
-    if (filtroTimeout) clearTimeout(filtroTimeout)
-    filtroTimeout = setTimeout(() => {
-      obtenerActualizaciones(1)
-    }, 400)
-  },
-  { deep: true }
-)
+watch(filtros, () => {
+  if (filtroTimeout) clearTimeout(filtroTimeout)
+  filtroTimeout = setTimeout(() => obtenerActualizaciones(1), 400)
+}, { deep: true })
 
-// Cerrar filtros al cambiar tamaño de pantalla
 const handleResize = () => {
-  if (window.innerWidth >= 768) {
-    mostrarFiltros.value = false
-  }
+  if (window.innerWidth >= 768) mostrarFiltros.value = false
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -472,21 +424,10 @@ const cambiarPagina = (pagina: number) => {
 
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) return ''
-
-  if (ruta.startsWith('http')) {
-    return ruta
-  }
-
+  if (ruta.startsWith('http')) return ruta
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-
-  if (ruta.startsWith('/storage/')) {
-    return `${backendUrl}${ruta}`
-  }
-
-  if (ruta.startsWith('storage/')) {
-    return `${backendUrl}/${ruta}`
-  }
-
+  if (ruta.startsWith('/storage/')) return `${backendUrl}${ruta}`
+  if (ruta.startsWith('storage/')) return `${backendUrl}/${ruta}`
   return `${backendUrl}/storage/${ruta}`
 }
 
@@ -498,10 +439,67 @@ const formatearFecha = (fechaString: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
+const obtenerIconoCategoria = (nombre: string | undefined): string => {
+  if (!nombre) return 'bi-tag-fill'
+  const n = nombre.toLowerCase()
+  const mapa: Record<string, string> = {
+    'nuevo': 'bi-stars',
+    'novedad': 'bi-stars',
+    'lanzamiento': 'bi-rocket-takeoff',
+    'mejora': 'bi-arrow-up-circle-fill',
+    'actualización': 'bi-arrow-repeat',
+    'corrección': 'bi-bug-fill',
+    'bug': 'bi-bug-fill',
+    'fix': 'bi-tools',
+    'parche': 'bi-patch-check-fill',
+    'seguridad': 'bi-shield-fill-check',
+    'importante': 'bi-exclamation-triangle-fill',
+    'general': 'bi-info-circle-fill',
+    'anuncio': 'bi-megaphone-fill',
+    'evento': 'bi-calendar-event-fill',
+    'documentación': 'bi-file-earmark-text-fill',
+    'api': 'bi-code-slash',
+    'diseño': 'bi-palette-fill',
+    'ui/ux': 'bi-window-stack',
+    'rendimiento': 'bi-lightning-charge-fill',
+    'noticia': 'bi-newspaper',
+    'blog': 'bi-journal-text',
+    'comunicado': 'bi-chat-square-text-fill',
+  }
+  if (mapa[n]) return mapa[n]
+  for (const [clave, icono] of Object.entries(mapa)) {
+    if (n.includes(clave)) return icono
+  }
+  return 'bi-tag-fill'
+}
+
+
+/**
+ * Normaliza las categorías de un item, soportando:
+ * - item.categorias → array (relación hasMany)
+ * - item.categoria  → objeto único (relación belongsTo)
+ * - ninguno         → fallback "Sin categoría"
+ */
+const obtenerCategorias = (item: Version): { id: string | number; nombre: string }[] => {
+  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
+    return (item as any).categorias.map((c: any) => ({
+      id: c.categoria_actualizacion_id ?? c.id ?? Math.random(),
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }))
+  }
+  if ((item as any).categoria) {
+    const c = (item as any).categoria
+    return [{
+      id: c.categoria_actualizacion_id ?? c.id ?? 0,
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }]
+  }
+  return [{ id: 0, nombre: 'Sin categoría' }]
+}
+
 // ── Montaje ───────────────────────────────────────────────────────
 onMounted(async () => {
   window.addEventListener('resize', handleResize)
-
   await Promise.all([
     loadBookmarks(),
     obtenerCatalogosFiltros(),
@@ -532,9 +530,7 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .contenedor-lista {
-    padding: 0 24px;
-  }
+  .contenedor-lista { padding: 0 24px; }
 }
 
 /* ── Estados ──────────────────────────────────────────── */
@@ -548,21 +544,13 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .estado-mensaje {
-    padding: 60px 40px;
-  }
+  .estado-mensaje { padding: 60px 40px; }
 }
 
-.estado-mensaje.error {
-  border-top: 3px solid #ef4444;
-}
+.estado-mensaje.error  { border-top: 3px solid #ef4444; }
+.estado-mensaje.vacio  { border-top: 3px solid var(--warning); }
 
-.estado-mensaje.vacio {
-  border-top: 3px solid var(--warning);
-}
-
-.error-icon,
-.empty-icon {
+.error-icon, .empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
 }
@@ -592,9 +580,7 @@ onUnmounted(() => {
 }
 
 /* ── Botón toggle filtros ─────────────────────────────── */
-.filtros-toggle-wrapper {
-  margin-bottom: 8px;
-}
+.filtros-toggle-wrapper { margin-bottom: 8px; }
 
 .btn-toggle-filtros {
   width: 100%;
@@ -636,32 +622,21 @@ onUnmounted(() => {
   box-shadow: var(--shadow-sm);
 }
 
-.filtros-barra.filtros-visible {
-  display: grid;
-}
+.filtros-barra.filtros-visible { display: grid; }
 
 @media (min-width: 768px) {
-  .filtros-barra {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .filtros-barra { display: grid; grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (min-width: 992px) {
-  .filtros-barra {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .filtros-barra { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (min-width: 1200px) {
-  .filtros-barra {
-    grid-template-columns: repeat(6, minmax(160px, 1fr)) auto;
-  }
+  .filtros-barra { grid-template-columns: repeat(6, minmax(160px, 1fr)) auto; }
 }
 
-.filtro-seccion-completa {
-  grid-column: 1 / -1;
-}
+.filtro-seccion-completa { grid-column: 1 / -1; }
 
 .filtro-label {
   display: block;
@@ -702,12 +677,8 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
-/* Chips de orden */
-.chips-grupo {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+/* Chips */
+.chips-grupo { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .chip {
   padding: 7px 16px;
@@ -721,15 +692,10 @@ onUnmounted(() => {
   transition: var(--transition);
 }
 
-.chip:active {
-  transform: scale(0.96);
-}
+.chip:active { transform: scale(0.96); }
 
 @media (min-width: 768px) {
-  .chip:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-  }
+  .chip:hover { border-color: var(--primary); color: var(--primary); }
 }
 
 .chip.activo {
@@ -739,10 +705,7 @@ onUnmounted(() => {
 }
 
 /* Botón limpiar */
-.filtro-acciones {
-  display: flex;
-  align-items: flex-end;
-}
+.filtro-acciones { display: flex; align-items: flex-end; }
 
 .btn-limpiar {
   height: 42px;
@@ -761,36 +724,27 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.btn-limpiar:active {
-  transform: scale(0.96);
-}
+.btn-limpiar:active { transform: scale(0.96); }
 
 @media (min-width: 768px) {
-  .btn-limpiar:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-sm);
-  }
+  .btn-limpiar:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 }
 
 /* ── Tarjetas ─────────────────────────────────────────── */
-.lista-feed {
-  margin-top: 4px;
-}
+.lista-feed { margin-top: 4px; }
 
 .tarjeta-changelog {
   border: 1px solid #eaeaea;
   border-radius: 16px;
   background-color: white;
   transition: var(--transition);
-  overflow: hidden;
+  overflow: visible; /* visible para que el chip no se corte */
   display: flex;
   flex-direction: column;
   cursor: pointer;
 }
 
-.tarjeta-changelog:active {
-  transform: scale(0.98);
-}
+.tarjeta-changelog:active { transform: scale(0.98); }
 
 @media (min-width: 768px) {
   .tarjeta-changelog:hover {
@@ -799,12 +753,17 @@ onUnmounted(() => {
   }
 }
 
+/* ── CABECERA ─────────────────────────────────────────── */
 .tarjeta-header {
+  position: relative;
   padding: 0;
   display: block;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
 }
 
 .imagen-container {
+  position: relative;
   overflow: hidden;
   width: 100%;
   background: #f5f5f5;
@@ -820,12 +779,46 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .imagen-container:hover .imagen-destacada {
-    transform: scale(1.05);
-  }
+  .imagen-container:hover .imagen-destacada { transform: scale(1.05); }
+}
+
+/*
+  OVERLAY: degradado de transparente → negro
+  origen en la esquina inferior DERECHA, con label de área
+*/
+.imagen-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top left,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.15) 38%,
+    transparent 62%
+  );
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.area-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .sin-imagen {
+  position: relative;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-bottom: 1px solid #e1e7f0;
   color: #9ca3af;
@@ -838,16 +831,14 @@ onUnmounted(() => {
   text-align: center;
 }
 
-.sin-imagen span {
+.sin-imagen-icono {
   font-size: 32px;
   margin-bottom: 8px;
 }
 
-.sin-imagen p {
-  margin: 0;
-  font-size: 0.85rem;
-}
+.sin-imagen p { margin: 0; font-size: 0.85rem; }
 
+/* ── CUERPO ──────────────────────────────────────────── */
 .tarjeta-cuerpo {
   padding: 14px 16px;
   flex-grow: 1;
@@ -863,16 +854,9 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.separador {
-  color: #a0aec0;
-  font-weight: 300;
-}
+.separador { color: #a0aec0; font-weight: 300; }
 
-.fecha {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
-}
+.fecha { font-size: 0.85rem; color: #888; font-weight: 500; }
 
 .version-number {
   display: inline-block;
@@ -911,7 +895,7 @@ onUnmounted(() => {
   font-size: 0.9rem;
   color: #555;
   line-height: 1.5;
-  margin: 0;
+  margin: 0 0 10px 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -920,47 +904,97 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .resumen {
-    -webkit-line-clamp: 2;
-  }
+  .resumen { -webkit-line-clamp: 2; }
 }
 
-.tarjeta-pie {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  border-top: 1px solid #f0f2f5;
-  margin-top: auto;
-}
-
-.tags-container {
+/* ── ICONOS DE CATEGORÍA → texto al hover ─────────────── */
+.categorias-iconos {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 8px;
 }
 
-.tag-gris {
-  background-color: #f4f5f7;
-  color: #4a5568;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
-  transition: var(--transition);
+.icono-categoria {
+  /* Dimensiones base: cuadrado del tamaño del ícono */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  border-radius: 8px;
+  background: #f4f5f7;
+  border: 1px solid transparent;
+  overflow: hidden;
+  cursor: default;
+  /* Animar width/max-width y colores */
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.22s ease,
+    border-color 0.22s ease,
+    padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 7px;
+}
+
+/* Al hover: expande horizontalmente para mostrar el texto */
+.icono-categoria:hover {
+  max-width: 200px;
+  background: rgba(7, 126, 157, 0.10);
+  border-color: rgba(7, 126, 157, 0.25);
+  padding: 0 10px;
+}
+
+/* El ícono: visible por defecto → se oculta en hover */
+.icono-categoria .ico-icon {
+  font-size: 14px;
+  color: var(--secondary);
+  flex-shrink: 0;
+  /* ancho fijo → colapsa */
+  width: 14px;
+  opacity: 1;
+  transition:
+    opacity 0.15s ease,
+    width 0.22s ease,
+    margin 0.22s ease;
+}
+
+.icono-categoria:hover .ico-icon {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+}
+
+/* El texto: oculto por defecto → aparece en hover */
+.icono-categoria .ico-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
   white-space: nowrap;
+  /* colapsa cuando no hay hover */
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease 0.08s;
 }
 
-@media (min-width: 768px) {
-  .tag-gris {
-    font-size: 0.75rem;
-    padding: 5px 12px;
-  }
+.icono-categoria:hover .ico-label {
+  max-width: 180px;
+  opacity: 1;
+}
 
-  .tag-gris:hover {
-    background-color: var(--primary);
-    color: white;
-  }
+/* ── FOOTER ──────────────────────────────────────────── */
+.tarjeta-pie {
+  display: flex;
+  justify-content:space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #f0f2f5;
+  margin-top: auto;
 }
 
 .btn-icon {
@@ -975,23 +1009,17 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.btn-icon i {
-  font-size: 1.2rem;
-  color: var(--secondary);
-}
+.btn-icon i { font-size: 1.2rem; color: var(--secondary); }
+.btn-icon:active { transform: scale(0.9); }
 
-.btn-icon:active {
-  transform: scale(0.9);
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (min-width: 768px) {
-  .btn-icon:hover {
-    background: rgba(7, 126, 157, 0.1);
-  }
-
-  .btn-icon:hover i {
-    color: var(--primary);
-  }
+  .btn-icon:hover:not(:disabled) { background: rgba(7, 126, 157, 0.1); }
+  .btn-icon:hover:not(:disabled) i { color: var(--primary); }
 }
 
 .btn-enlace {
@@ -1009,45 +1037,12 @@ onUnmounted(() => {
   transition: var(--transition);
 }
 
-.btn-enlace i {
-  font-size: 0.9rem;
-  transition: transform 0.3s ease;
-}
-
-.btn-enlace:active {
-  transform: scale(0.95);
-}
+.btn-enlace i { font-size: 0.9rem; transition: transform 0.3s ease; }
+.btn-enlace:active { transform: scale(0.95); }
 
 @media (min-width: 768px) {
-  .btn-enlace:hover {
-    color: var(--primary);
-    background: rgba(7, 126, 157, 0.08);
-  }
-
-  .btn-enlace:hover i {
-    transform: translateX(4px);
-  }
-}
-
-.tags-right {
-  gap: 8px;
-  display: flex;
-  align-items: center;
-}
-
-@media (max-width: 480px) {
-  .tarjeta-pie {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tags-container {
-    justify-content: center;
-  }
-
-  .tags-right {
-    justify-content: center;
-  }
+  .btn-enlace:hover { color: var(--primary); background: rgba(7, 126, 157, 0.08); }
+  .btn-enlace:hover i { transform: translateX(4px); }
 }
 
 /* ── Paginación ───────────────────────────────────────── */
@@ -1062,21 +1057,13 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .paginacion-container {
-    flex-direction: row;
-  }
+  .paginacion-container { flex-direction: row; }
 }
 
-.info-paginacion {
-  color: #6b7280;
-  font-size: 0.85rem;
-  text-align: center;
-}
+.info-paginacion { color: #6b7280; font-size: 0.85rem; text-align: center; }
 
 @media (min-width: 768px) {
-  .info-paginacion {
-    font-size: 0.88rem;
-  }
+  .info-paginacion { font-size: 0.88rem; }
 }
 
 .pagination-moderno {
@@ -1090,9 +1077,7 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .pagination-moderno {
-    gap: 6px;
-  }
+  .pagination-moderno { gap: 6px; }
 }
 
 .pagination-moderno li a {
@@ -1113,10 +1098,7 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .pagination-moderno li a {
-    min-width: 36px;
-    height: 36px;
-  }
+  .pagination-moderno li a { min-width: 36px; height: 36px; }
 }
 
 .pagination-moderno li.active a {
@@ -1134,14 +1116,8 @@ onUnmounted(() => {
   }
 }
 
-.pagination-moderno li.disabled a {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.pagination-moderno li a:active {
-  transform: scale(0.95);
-}
+.pagination-moderno li.disabled a { opacity: 0.5; cursor: not-allowed; }
+.pagination-moderno li a:active { transform: scale(0.95); }
 
 /* ── Inputs ───────────────────────────────────────────── */
 .input-busqueda-wrapper {
@@ -1158,40 +1134,17 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.filtro-input {
-  padding-left: 34px;
-}
+.filtro-busqueda .filtro-input { padding-left: 34px; }
 
 /* Animaciones */
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.filtros-barra.filtros-visible {
-  animation: slideDown 0.3s ease;
-}
+.filtros-barra.filtros-visible { animation: slideDown 0.3s ease; }
 
-/* Cabecera */
-.cabecera h2 {
-  font-size: 1.5rem;
-  margin: 0;
-}
-
-@media (min-width: 768px) {
-  .cabecera h2 {
-    font-size: 1.75rem;
-  }
-}
-
-
+/* ── Hero ─────────────────────────────────────────────── */
 .supervision-hero {
   display: flex;
   justify-content: space-between;
@@ -1208,9 +1161,7 @@ onUnmounted(() => {
   box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
 }
 
-.supervision-hero h2 {
-  font-weight: 700;
-}
+.supervision-hero h2 { font-weight: 700; }
 
 .supervision-hero p {
   max-width: 760px;
@@ -1230,5 +1181,4 @@ onUnmounted(() => {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-
 </style>

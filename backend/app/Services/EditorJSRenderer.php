@@ -42,6 +42,12 @@ class EditorJsRenderer
                     $html .= $this->renderList($items, $style);
                     break;
 
+                case 'checklist':
+                    $items = $blockData['items'] ?? [];
+
+                    $html .= $this->renderChecklist($items);
+                    break;
+
                 case 'quote':
                     $text = $this->safeText($blockData['text'] ?? '');
                     $caption = $this->safeText($blockData['caption'] ?? '');
@@ -79,6 +85,10 @@ class EditorJsRenderer
 
     private function renderList(array $items, string $style = 'unordered'): string
     {
+        if ($style === 'checklist') {
+            return $this->renderChecklist($items);
+        }
+
         $tag = $style === 'ordered' ? 'ol' : 'ul';
 
         if (empty($items)) {
@@ -109,6 +119,46 @@ class EditorJsRenderer
         }
 
         $html .= "</{$tag}>";
+
+        return $html;
+    }
+
+    private function renderChecklist(array $items): string
+    {
+        if (empty($items)) {
+            return '';
+        }
+
+        $html = '<ul class="editorjs-checklist">';
+
+        foreach ($items as $item) {
+            if (is_string($item)) {
+                $content = $this->safeText($item);
+                $checked = false;
+                $children = [];
+            } else {
+                $content = $this->safeText($item['content'] ?? $item['text'] ?? '');
+                $checked = (bool) ($item['meta']['checked'] ?? $item['checked'] ?? false);
+                $children = $item['items'] ?? [];
+            }
+
+            $checkedAttribute = $checked ? ' checked' : '';
+            $checkedClass = $checked ? ' is-checked' : '';
+
+            $html .= "<li class=\"editorjs-checklist__item{$checkedClass}\">";
+            $html .= "<span class=\"editorjs-checklist__row\">";
+            $html .= "<input class=\"editorjs-checklist__checkbox\" type=\"checkbox\" disabled{$checkedAttribute}>";
+            $html .= "<span class=\"editorjs-checklist__content\">{$content}</span>";
+            $html .= '</span>';
+
+            if (is_array($children) && !empty($children)) {
+                $html .= $this->renderChecklist($children);
+            }
+
+            $html .= '</li>';
+        }
+
+        $html .= '</ul>';
 
         return $html;
     }

@@ -307,7 +307,16 @@ onMounted(async () => {
       programarAutosave()
     },
     tools: {
-      header: Header,
+      header: {
+        class: Header as any,
+        inlineToolbar: true,
+        config: {
+          placeholder: 'Escribe un subtítulo',
+          levels: [2, 3, 4],
+          defaultLevel: 2,
+        },
+        shortcut: 'CMD+SHIFT+H',
+      },
       list: List,
       image: {
         class: ImageTool,

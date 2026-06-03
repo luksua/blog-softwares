@@ -139,7 +139,7 @@ route: {{ route.name }}
             </button> -->
 
             <button class="btn-logout" type="button" @click="logout">
-              Cerrar sesión
+              <i class="bi bi-door-open"></i><i class="bi bi-arrow-right"></i>
             </button>
           </template>
         </div>

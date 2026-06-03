@@ -96,37 +96,6 @@
         <p>No se encontraron actualizaciones con los filtros aplicados.</p>
       </div>
 
-
-      <div v-if="mostrarAlertaRevision" class="revision-alert-minimal">
-        <div class="revision-header">
-          <div class="header-info">
-            <i class="bi bi-exclamation-circle-fill"></i>
-            <span class="header-text">Revisión pendiente</span>
-            <span class="badge-minimal">{{ notificacionesRevision.length }}</span>
-          </div>
-        </div>
-
-        <div class="revision-items">
-          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="revision-item">
-            <div class="item-content">
-              <p class="item-message">{{ notificacion.mensaje }}</p>
-            </div>
-
-            <div class="item-actions">
-              <button v-if="notificacion.actualizacion_id" type="button" class="btn-action btn-view"
-                title="Corregir registro" @click="abrirCorreccionDesdeAlerta(notificacion)">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-
-              <!-- <button type="button" class="btn-action btn-read" @click="marcarRevisionLeida(notificacion)"
-                title="Ocultar aviso">
-                <i class="bi bi-x-lg"></i>
-              </button> -->
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="table-container">
         <table class="base-table">
           <thead>
@@ -195,7 +164,6 @@
                     <button v-if="item.actualizacion_estado !== 'revision'" title="Marcar como revisión"
                       class="btn-icon btn-icon-revision" @click.stop="confirmarRevision(item)">
                       <i class="bi bi-clipboard-check"></i>
-                      <!-- <span class="accion-texto d-none d-xl-inline">Revisión</span> -->
                     </button>
                   </template>
 
@@ -251,7 +219,7 @@
       </div>
     </div>
 
-    <!-- Modales (sin cambios) -->
+    <!-- ─── Modales ─── -->
     <div class="modal fade" id="modalEliminarRegistro" tabindex="-1" aria-labelledby="modalEliminarLabel"
       aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -262,22 +230,13 @@
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-
           <div class="modal-body">
             <p>Al desactivar, ya no aparecerá en las búsquedas activas ni se podrá leer en la página.</p>
-            <strong class="modal-item-title">
-              {{ itemAEliminar?.actualizacion_titulo }}
-            </strong>
+            <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
           </div>
-
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-
-            <button type="button" class="btn btn-danger" @click="inactivarActualizacion">
-              Aceptar
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" @click="inactivarActualizacion">Aceptar</button>
           </div>
         </div>
       </div>
@@ -288,31 +247,16 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalDesarchivarLabel">
-              ¿Deseas activar este registro?
-            </h5>
+            <h5 class="modal-title" id="modalDesarchivarLabel">¿Deseas activar este registro?</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-
           <div class="modal-body">
-            <p>
-              Al activar el registro, se actualizará el estado del registro a
-              <strong>Publicado</strong>
-            </p>
-
-            <strong class="modal-item-title">
-              {{ itemAEliminar?.actualizacion_titulo }}
-            </strong>
+            <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
+            <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
           </div>
-
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-
-            <button type="button" class="btn btn-primary" @click="activarActualizacion">
-              Activar
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" @click="activarActualizacion">Activar</button>
           </div>
         </div>
       </div>
@@ -323,46 +267,28 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="modalRevisionLabel">
-              ¿Deseas marcar este registro como revisión?
-            </h5>
+            <h5 class="modal-title" id="modalRevisionLabel">¿Deseas marcar este registro como revisión?</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-
           <div class="modal-body">
             <p>El registro quedará marcado con el estado <strong>Revisión</strong>.</p>
-
-            <strong class="modal-item-title">
-              {{ itemARevision?.actualizacion_titulo }}
-            </strong>
-
+            <strong class="modal-item-title">{{ itemARevision?.actualizacion_titulo }}</strong>
             <div class="revision-observacion-group">
               <label for="observacionRevision" class="form-label">
                 Motivo de revisión <span class="campo-obligatorio">*</span>
               </label>
-
               <textarea id="observacionRevision" v-model.trim="observacionRevision" class="form-control" rows="4"
                 maxlength="2000"
                 placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."></textarea>
-
-              <small class="form-text text-muted">
-                Este mensaje quedará guardado como soporte de la revisión.
-              </small>
-
+              <small class="form-text text-muted">Este mensaje quedará guardado como soporte de la revisión.</small>
               <p v-if="errorObservacionRevision" class="revision-observacion-error">
                 {{ errorObservacionRevision }}
               </p>
             </div>
           </div>
-
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-
-            <button type="button" class="btn btn-warning" @click="marcarRevisionActualizacion">
-              Marcar revisión
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-warning" @click="marcarRevisionActualizacion">Marcar revisión</button>
           </div>
         </div>
       </div>
@@ -376,7 +302,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
               @click="cerrarModalEdicion"></button>
           </div>
-
           <div class="modal-body">
             <Edit v-if="idEditando" :key="`${idEditando}-${notificacionCorreccionActual?.id || 'normal'}`"
               :id="idEditando" :modo-correccion="Boolean(notificacionCorreccionActual) || esCorreccionDesdeListado"
@@ -385,11 +310,86 @@
         </div>
       </div>
     </div>
+
+    <!-- ─── Offcanvas: Revisiones pendientes (solo mis-registros) ─── -->
+    <Teleport to="body">
+      <template v-if="mostrarAlertaRevision">
+        <!-- Overlay -->
+        <div
+          :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]"
+          @click="offcanvasAbierto = false"
+        />
+
+        <!-- Botón flotante -->
+        <button
+          class="fab-revision"
+          :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
+          @click="offcanvasAbierto = true"
+          aria-label="Ver revisiones pendientes"
+          title="Revisiones pendientes"
+        >
+          <i class="bi bi-clipboard-check"></i>
+          <span class="fab-badge">{{ notificacionesRevision.length }}</span>
+        </button>
+
+        <!-- Panel offcanvas -->
+        <aside
+          :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Revisiones pendientes"
+        >
+          <div class="oc-header">
+            <div class="oc-header-left">
+              <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
+              <span class="oc-title">Revisión pendiente</span>
+              <span class="oc-count">{{ notificacionesRevision.length }}</span>
+            </div>
+            <button class="oc-close" @click="offcanvasAbierto = false" aria-label="Cerrar panel de revisiones">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <div class="oc-body">
+            <div
+              v-for="notificacion in notificacionesRevision"
+              :key="notificacion.id"
+              class="oc-item"
+            >
+              <div class="oc-item-inner">
+                <div class="oc-item-icon-wrap">
+                  <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
+                </div>
+                <div class="oc-item-content">
+                  <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
+                  <button
+                    v-if="notificacion.actualizacion_id"
+                    type="button"
+                    class="oc-item-btn"
+                    @click="handleCorreccionDesdeOffcanvas(notificacion)"
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                    Corregir registro
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="oc-footer">
+            <p class="oc-footer-note">
+              <i class="bi bi-lock-fill" style="font-size: 0.7rem;"></i>
+              Solo tú ves estas notificaciones
+            </p>
+          </div>
+        </aside>
+      </template>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api/api'
 import type { Version } from '../../types/version';
@@ -455,7 +455,10 @@ const errorObservacionRevision = ref('')
 const idEditando = ref<number | null>(null)
 const notificacionCorreccionActual = ref<BlogNotification | null>(null)
 
-const mostrarFiltros = ref(false) // Controla la visibilidad en móvil
+const mostrarFiltros = ref(false)
+
+// ── Offcanvas state ──────────────────────────────────────────
+const offcanvasAbierto = ref(false)
 
 const filtros = ref<{
   busqueda: string
@@ -491,12 +494,17 @@ const mostrarAlertaRevision = computed(() => {
   return !esVistaSupervision.value && notificacionesRevision.value.length > 0
 })
 
+// Cierra el offcanvas con Escape
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && offcanvasAbierto.value) {
+    offcanvasAbierto.value = false
+  }
+}
+
 const cargarNotificacionesRevision = async () => {
   try {
     cargandoNotificaciones.value = true
-
     const response = await listarNotificaciones(20)
-
     notificaciones.value = (response?.data || []).filter((item: BlogNotification) => {
       return item.tipo === 'revision'
     })
@@ -571,14 +579,12 @@ const actualizacionGuardada = async () => {
 
 const obtenerCatalogosFiltros = async () => {
   cargandoFiltros.value = true
-
   try {
     const [areasResp, categoriasResp, estadosResp] = await Promise.all([
       api.get(ENDPOINT_AREAS),
       api.get(ENDPOINT_CATEGORIAS),
       api.get(ENDPOINT_STATUS)
     ])
-
     areasDisponibles.value = areasResp.data?.data || []
     categoriasDisponibles.value = categoriasResp.data?.data || []
     estadosDisponibles.value = estadosResp.data?.data || []
@@ -595,40 +601,21 @@ const obtenerActualizaciones = async (page = 1) => {
 
   try {
     const params = new URLSearchParams()
-
     params.append('page', String(page))
     params.append('vista', props.vista)
 
-    if (filtros.value.busqueda.trim()) {
-      params.append('busqueda', filtros.value.busqueda.trim())
-    }
-
-    if (filtros.value.fechaDesde) {
-      params.append('fecha_desde', filtros.value.fechaDesde)
-    }
-
-    if (filtros.value.fechaHasta) {
-      params.append('fecha_hasta', filtros.value.fechaHasta)
-    }
-
-    if (filtros.value.estado) {
-      params.append('estado', filtros.value.estado)
-    }
-
-    if (filtros.value.areaServicioId !== '') {
-      params.append('area_servicio_id', String(filtros.value.areaServicioId))
-    }
-
-    if (filtros.value.categoriaId !== '') {
-      params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
-    }
+    if (filtros.value.busqueda.trim()) params.append('busqueda', filtros.value.busqueda.trim())
+    if (filtros.value.fechaDesde) params.append('fecha_desde', filtros.value.fechaDesde)
+    if (filtros.value.fechaHasta) params.append('fecha_hasta', filtros.value.fechaHasta)
+    if (filtros.value.estado) params.append('estado', filtros.value.estado)
+    if (filtros.value.areaServicioId !== '') params.append('area_servicio_id', String(filtros.value.areaServicioId))
+    if (filtros.value.categoriaId !== '') params.append('actualizacion_categoria_id', String(filtros.value.categoriaId))
 
     const respuesta = await api.get(`/actualizaciones?${params.toString()}`)
 
     actualizaciones.value = respuesta.data.data || []
 
     const meta = respuesta.data.meta || respuesta.data
-
     paginaActual.value = meta.current_page || 1
     totalPaginas.value = meta.last_page || 1
     totalRegistros.value = meta.total || actualizaciones.value.length
@@ -637,10 +624,7 @@ const obtenerActualizaciones = async (page = 1) => {
     error.value = 'No se pudo conectar con el servidor para obtener los datos.'
   } finally {
     cargando.value = false
-
-    if (window.innerWidth < 768) {
-      mostrarFiltros.value = false
-    }
+    if (window.innerWidth < 768) mostrarFiltros.value = false
   }
 }
 
@@ -657,25 +641,17 @@ const limpiarFiltros = () => {
 
 const formatearFecha = (fechaString: string) => {
   if (!fechaString) return 'Sin fecha'
-
-  const opciones: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit'
-  }
-
+  const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: '2-digit' }
   const fechaStr = new Date(fechaString).toLocaleDateString('es-ES', opciones)
   return fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
 }
 
 const mapearClaseEstado = (estado: string) => {
   const estadoMin = (estado || '').toLowerCase()
-
   if (estadoMin === 'publicado') return 'estado-green'
   if (estadoMin === 'borrador') return 'estado-yellow'
-  if (estadoMin === 'revision') return 'estado-red'
+  if (estadoMin === 'revision') return 'estado-blue'
   if (estadoMin === 'inactivo') return 'estado-dark-gray'
-
   return 'estado-gray'
 }
 
@@ -685,39 +661,19 @@ watch(
   filtros,
   () => {
     if (filtroTimeout) clearTimeout(filtroTimeout)
-
-    filtroTimeout = setTimeout(() => {
-      obtenerActualizaciones(1)
-    }, 400)
+    filtroTimeout = setTimeout(() => { obtenerActualizaciones(1) }, 400)
   },
   { deep: true }
 )
 
-const obtenerNombreArea = (item: Version) => {
-  return item.area_servicio?.area_servicio_nombre || 'Sin área'
-}
-
-const obtenerNombreCategoria = (item: Version) => {
-  return item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
-}
+const obtenerNombreArea = (item: Version) => item.area_servicio?.area_servicio_nombre || 'Sin área'
+const obtenerNombreCategoria = (item: Version) => item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
 
 const obtenerNombreAutor = (item: any) => {
   const autor = item.usuario_autor || item.autor || item.usuario
-
-  if (!autor) {
-    return 'Empleado del área'
-  }
-
-  const nombres = [
-    autor.usuario_nombre1,
-    autor.usuario_nombre2,
-    autor.usuario_apellido1,
-    autor.usuario_apellido2,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .trim()
-
+  if (!autor) return 'Empleado del área'
+  const nombres = [autor.usuario_nombre1, autor.usuario_nombre2, autor.usuario_apellido1, autor.usuario_apellido2]
+    .filter(Boolean).join(' ').trim()
   return nombres || autor.usuario_nombre || autor.usuario_usuario || autor.usuario_login || 'Empleado del área'
 }
 
@@ -742,6 +698,13 @@ const editarActualizacion = (item: Version) => {
   idEditando.value = item.id
 }
 
+// Abre la corrección desde el offcanvas (cierra el panel primero)
+const handleCorreccionDesdeOffcanvas = async (notificacion: BlogNotification) => {
+  offcanvasAbierto.value = false
+  await nextTick()
+  abrirCorreccionDesdeAlerta(notificacion)
+}
+
 const abrirCorreccionDesdeAlerta = async (notificacion: BlogNotification) => {
   if (!notificacion.actualizacion_id) return
 
@@ -752,7 +715,6 @@ const abrirCorreccionDesdeAlerta = async (notificacion: BlogNotification) => {
   await nextTick()
 
   const modalElement = document.getElementById('modalEditarRegistro')
-
   if (modalElement) {
     const modalInstance = Modal.getOrCreateInstance(modalElement)
     modalInstance.show()
@@ -761,45 +723,29 @@ const abrirCorreccionDesdeAlerta = async (notificacion: BlogNotification) => {
 
 const confirmarEliminar = async (item: Version) => {
   itemAEliminar.value = item
-
   await nextTick()
-
   const modalElement = document.getElementById('modalEliminarRegistro')
-  if (modalElement) {
-    const modalInstance = Modal.getOrCreateInstance(modalElement)
-    modalInstance.show()
-  }
+  if (modalElement) Modal.getOrCreateInstance(modalElement).show()
 }
 
 const confirmarActivar = async (item: Version) => {
   itemAEliminar.value = item
-
   await nextTick()
-
   const modalElement = document.getElementById('modalDesarchivarRegistro')
-  if (modalElement) {
-    const modalInstance = Modal.getOrCreateInstance(modalElement)
-    modalInstance.show()
-  }
+  if (modalElement) Modal.getOrCreateInstance(modalElement).show()
 }
 
 const confirmarRevision = async (item: Version) => {
   itemARevision.value = item
   observacionRevision.value = ''
   errorObservacionRevision.value = ''
-
   await nextTick()
-
   const modalElement = document.getElementById('modalRevisionRegistro')
-  if (modalElement) {
-    const modalInstance = Modal.getOrCreateInstance(modalElement)
-    modalInstance.show()
-  }
+  if (modalElement) Modal.getOrCreateInstance(modalElement).show()
 }
 
 const limpiarFondoModal = () => {
-  const backdrops = document.querySelectorAll('.modal-backdrop')
-  backdrops.forEach(backdrop => backdrop.remove())
+  document.querySelectorAll('.modal-backdrop').forEach(b => b.remove())
   document.body.classList.remove('modal-open')
   document.body.style.overflow = ''
   document.body.style.paddingRight = ''
@@ -807,16 +753,12 @@ const limpiarFondoModal = () => {
 
 const inactivarActualizacion = async () => {
   if (!itemAEliminar.value) return
-
   const modalElement = document.getElementById('modalEliminarRegistro')
   const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
-
   try {
     await api.post(`/actualizaciones/${itemAEliminar.value.id}/inactivar`)
-
     itemAEliminar.value = null
     await obtenerActualizaciones(paginaActual.value)
-
     if (modalInstance) modalInstance.hide()
     limpiarFondoModal()
   } catch (err) {
@@ -828,16 +770,12 @@ const inactivarActualizacion = async () => {
 
 const activarActualizacion = async () => {
   if (!itemAEliminar.value) return
-
   const modalElement = document.getElementById('modalDesarchivarRegistro')
   const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
-
   try {
     await api.post(`/actualizaciones/${itemAEliminar.value.id}/activar`)
-
     itemAEliminar.value = null
     await obtenerActualizaciones(paginaActual.value)
-
     if (modalInstance) modalInstance.hide()
     limpiarFondoModal()
   } catch (err) {
@@ -850,27 +788,19 @@ const activarActualizacion = async () => {
 
 const marcarRevisionActualizacion = async () => {
   if (!itemARevision.value) return
-
   const motivo = observacionRevision.value.trim()
-
   if (motivo.length < 10) {
     errorObservacionRevision.value = 'Escribe un motivo de al menos 10 caracteres.'
     return
   }
-
   const modalElement = document.getElementById('modalRevisionRegistro')
   const modalInstance = modalElement ? Modal.getInstance(modalElement) || new Modal(modalElement) : null
-
   try {
-    await api.post(`/actualizaciones/${itemARevision.value.id}/revision`, {
-      observacion: motivo,
-    })
-
+    await api.post(`/actualizaciones/${itemARevision.value.id}/revision`, { observacion: motivo })
     itemARevision.value = null
     observacionRevision.value = ''
     errorObservacionRevision.value = ''
     await obtenerActualizaciones(paginaActual.value)
-
     if (modalInstance) modalInstance.hide()
     limpiarFondoModal()
   } catch (err) {
@@ -890,11 +820,15 @@ onMounted(async () => {
   if (!esVistaSupervision.value) {
     cargarNotificacionesRevision()
   }
+
+  window.addEventListener('keydown', onKeydown)
 })
 
-defineExpose({
-  obtenerActualizaciones
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
 })
+
+defineExpose({ obtenerActualizaciones })
 </script>
 
 <style scoped>
@@ -909,6 +843,7 @@ defineExpose({
   --transition-smooth: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
+/* ─── Layout ─────────────────────────────────────────────────── */
 .contenedor-lista-tabla {
   width: 100%;
   max-width: 1400px;
@@ -917,45 +852,12 @@ defineExpose({
 }
 
 @media (min-width: 768px) {
-  .contenedor-lista-tabla {
-    padding: 0 24px;
-  }
+  .contenedor-lista-tabla { padding: 0 24px; }
 }
 
-.modo-supervision {
-  max-width: 1500px;
-}
+.modo-supervision { max-width: 1500px; }
 
-
-
-.col-autor,
-.cell-autor {
-  min-width: 170px;
-}
-
-.autor-texto {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.autor-texto::before {
-  font-size: 0.9rem;
-}
-
-.btn-icon-revision {
-  width: auto;
-  padding: 8px 11px;
-  gap: 6px;
-}
-
-.accion-texto {
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
+/* ─── Estado vacío / error ───────────────────────────────────── */
 .estado-mensaje {
   text-align: center;
   padding: 60px 40px;
@@ -965,19 +867,10 @@ defineExpose({
   color: #6b7280;
 }
 
-.estado-mensaje.error {
-  border-top: 3px solid #ef4444;
-}
+.estado-mensaje.error  { border-top: 3px solid #ef4444; }
+.estado-mensaje.vacio  { border-top: 3px solid var(--warning); }
 
-.estado-mensaje.vacio {
-  border-top: 3px solid var(--warning);
-}
-
-.error-icon,
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
+.error-icon, .empty-icon { font-size: 48px; margin-bottom: 16px; }
 
 .btn-retry {
   margin-top: 20px;
@@ -990,19 +883,11 @@ defineExpose({
   font-weight: 500;
   transition: var(--transition);
 }
+.btn-retry:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
-.btn-retry:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
+/* ─── Filtros ────────────────────────────────────────────────── */
+.tabla-con-filtros { display: flex; flex-direction: column; gap: 16px; }
 
-.tabla-con-filtros {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Filtros Responsive */
 .filtros-barra {
   background: white;
   border: 1px solid #e1e7f0;
@@ -1026,10 +911,7 @@ defineExpose({
   justify-content: center;
   gap: 8px;
 }
-
-.btn-toggle-filtros:hover {
-  background: #f0f2f5;
-}
+.btn-toggle-filtros:hover { background: #f0f2f5; }
 
 .filtros-contenido {
   display: grid;
@@ -1040,38 +922,18 @@ defineExpose({
 }
 
 @media (min-width: 768px) {
-  .filtros-contenido {
-    grid-template-columns: repeat(2, 1fr);
-    margin-top: 0;
-  }
-
-  .btn-toggle-filtros {
-    display: none;
-  }
+  .filtros-contenido { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
+  .btn-toggle-filtros { display: none; }
 }
+@media (min-width: 1024px) { .filtros-contenido { grid-template-columns: repeat(3, 1fr); } }
 
-@media (min-width: 1024px) {
-  .filtros-contenido {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.filtros-visible {
-  display: grid;
-}
+.filtros-visible { display: grid; }
 
 @media (max-width: 767px) {
-  .filtros-contenido:not(.filtros-visible) {
-    display: none;
-  }
+  .filtros-contenido:not(.filtros-visible) { display: none; }
 }
 
-.filtro-grupo {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+.filtro-grupo { display: flex; flex-direction: column; gap: 8px; }
 .filtro-grupo label {
   font-size: 0.82rem;
   font-weight: 700;
@@ -1091,51 +953,26 @@ defineExpose({
   background: #fff;
   transition: var(--transition);
 }
+.filtro-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12); }
+.filtro-input:disabled { background: #f9fafb; opacity: 0.7; cursor: not-allowed; }
 
-.filtro-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
-}
-
-.filtro-input:disabled {
-  background: #f9fafb;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.filtro-acciones {
-  display: flex;
-  gap: 10px;
-  align-items: end;
-}
-
-@media (min-width: 1200px) {
-  .filtro-acciones {
-    grid-column: auto;
-  }
-}
+.filtro-acciones { display: flex; gap: 10px; align-items: end; }
 
 .btn-limpiar {
   height: 42px;
   padding: 0 16px;
   border-radius: 12px;
-  border: none;
+  border: 1px solid #e1e7f0;
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
   white-space: nowrap;
   background: #f3f4f6;
   color: #374151;
-  border: 1px solid #e1e7f0;
 }
+.btn-limpiar:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 
-.btn-limpiar:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Tabla Responsive */
+/* ─── Tabla ──────────────────────────────────────────────────── */
 .table-container {
   background: white;
   border-radius: 16px;
@@ -1144,10 +981,7 @@ defineExpose({
   box-shadow: var(--shadow-md);
   transition: var(--transition);
 }
-
-.table-container:hover {
-  box-shadow: var(--shadow-lg);
-}
+.table-container:hover { box-shadow: var(--shadow-lg); }
 
 .base-table {
   width: 100%;
@@ -1155,16 +989,11 @@ defineExpose({
   min-width: 600px;
 }
 
-@media (max-width: 768px) {
-  .base-table {
-    min-width: 100%;
-  }
-}
+@media (max-width: 768px) { .base-table { min-width: 100%; } }
 
 .base-table thead tr {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
 }
-
 .base-table th {
   padding: 15px 20px;
   color: white;
@@ -1179,33 +1008,22 @@ defineExpose({
   border-bottom: 1px solid #e1e7f0;
   transition: var(--transition-smooth);
 }
-
 .base-table tbody tr:hover {
   background-color: rgba(0, 0, 0, 0.04);
   transform: translateX(5px) scale(1.01);
   box-shadow: -4px 0 0 var(--primary);
   cursor: pointer;
 }
-
-.base-table tbody tr:hover td {
-  color: #1a202c;
-}
-
-.base-table tbody tr:hover .titulo-texto {
-  color: var(--primary);
-}
-
+.base-table tbody tr:hover td            { color: #1a202c; }
+.base-table tbody tr:hover .titulo-texto { color: var(--primary); }
 .base-table tbody tr:hover .version-badge {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-color: transparent;
   transform: scale(1.05);
 }
-
 .base-table tbody tr:hover .badge-estado,
-.base-table tbody tr:hover .btn-icon {
-  transform: scale(1.05);
-}
+.base-table tbody tr:hover .btn-icon { transform: scale(1.05); }
 
 .base-table td {
   padding: 12px 20px;
@@ -1215,12 +1033,9 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-/* Responsive: Convertir tabla en tarjetas en móvil */
+/* Tarjetas en móvil */
 @media (max-width: 768px) {
-  .base-table thead {
-    display: none;
-  }
-
+  .base-table thead { display: none; }
   .base-table tbody tr {
     display: block;
     margin-bottom: 16px;
@@ -1228,11 +1043,7 @@ defineExpose({
     box-shadow: var(--shadow-sm);
     border: 1px solid #e1e7f0;
   }
-
-  .base-table tbody tr:hover {
-    transform: translateX(4px) scale(1.02);
-  }
-
+  .base-table tbody tr:hover { transform: translateX(4px) scale(1.02); }
   .base-table td {
     display: flex;
     justify-content: space-between;
@@ -1242,11 +1053,7 @@ defineExpose({
     border-bottom: 1px solid #f0f2f5;
     text-align: right;
   }
-
-  .base-table td:last-child {
-    border-bottom: none;
-  }
-
+  .base-table td:last-child  { border-bottom: none; }
   .base-table td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -1255,22 +1062,12 @@ defineExpose({
     text-align: left;
     min-width: 100px;
   }
-
-  .icon-group {
-    justify-content: flex-end;
-  }
+  .icon-group { justify-content: flex-end; }
 }
 
-.titulo-texto {
-  font-weight: 600;
-  color: #1a202c;
-  transition: var(--transition-smooth);
-}
-
-.area-texto {
-  color: #4b5563;
-  font-weight: 500;
-}
+/* Celdas */
+.titulo-texto { font-weight: 600; color: #1a202c; transition: var(--transition-smooth); }
+.area-texto   { color: #4b5563; font-weight: 500; }
 
 .version-badge {
   display: inline-block;
@@ -1284,13 +1081,8 @@ defineExpose({
   transition: var(--transition-smooth);
 }
 
-.fecha-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fecha-label {
+.fecha-info   { display: flex; flex-direction: column; gap: 4px; }
+.fecha-label  {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1298,20 +1090,8 @@ defineExpose({
   letter-spacing: 0.5px;
   transition: var(--transition-smooth);
 }
-
-.fecha-publicado,
-.fecha-creado {
-  font-size: 0.85rem;
-  transition: var(--transition-smooth);
-}
-
-.fecha-publicado {
-  color: var(--primary);
-}
-
-.fecha-creado {
-  color: #9ca3af;
-}
+.fecha-publicado { font-size: 0.85rem; color: var(--primary); transition: var(--transition-smooth); }
+.fecha-creado    { font-size: 0.85rem; color: #9ca3af;        transition: var(--transition-smooth); }
 
 .badge-estado {
   display: inline-block;
@@ -1322,37 +1102,13 @@ defineExpose({
   text-transform: capitalize;
   transition: var(--transition-smooth);
 }
+.estado-green     { background-color: #e6f7e9; color: #2e7d32; }
+.estado-yellow    { background-color: #fef8e3; color: #f9a825; }
+.estado-blue       { background-color: #eaf4fd; color: #2f84d3; }
+.estado-dark-gray { background-color: #e5e7eb; color: #374151; }
+.estado-gray      { background-color: #f2f4f7; color: #5f6671; }
 
-.estado-green {
-  background-color: #e6f7e9;
-  color: #2e7d32;
-}
-
-.estado-yellow {
-  background-color: #fef8e3;
-  color: #f9a825;
-}
-
-.estado-red {
-  background-color: #fdeaea;
-  color: #d32f2f;
-}
-
-.estado-dark-gray {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-.estado-gray {
-  background-color: #f2f4f7;
-  color: #5f6671;
-}
-
-.icon-group {
-  display: flex;
-  gap: 15px;
-  justify-content: flex-end;
-}
+.icon-group { display: flex; gap: 15px; justify-content: flex-end; }
 
 .btn-icon {
   background: none;
@@ -1363,11 +1119,20 @@ defineExpose({
   cursor: pointer;
   transition: var(--transition-smooth);
 }
+.btn-icon:hover { color: #4b5563; }
 
-.btn-icon:hover {
-  color: #4b5563;
+.col-autor, .cell-autor { min-width: 170px; }
+.autor-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: #1f2937;
 }
+.btn-icon-revision { width: auto; padding: 8px 11px; gap: 6px; }
+.accion-texto { font-size: 0.78rem; font-weight: 700; }
 
+/* ─── Footer tabla ───────────────────────────────────────────── */
 .table-footer {
   padding: 16px 24px;
   background: white;
@@ -1379,22 +1144,10 @@ defineExpose({
   gap: 16px;
 }
 
-@media (max-width: 768px) {
-  .table-footer {
-    flex-direction: column;
-    text-align: center;
-  }
-}
+@media (max-width: 768px) { .table-footer { flex-direction: column; text-align: center; } }
 
-.info-registros {
-  font-size: 0.85rem;
-  color: #6b7280;
-}
-
-.total-registros {
-  color: var(--primary);
-  font-weight: 500;
-}
+.info-registros  { font-size: 0.85rem; color: #6b7280; }
+.total-registros { color: var(--primary); font-weight: 500; }
 
 .pagination-moderno {
   display: flex;
@@ -1405,11 +1158,7 @@ defineExpose({
   flex-wrap: wrap;
   justify-content: center;
 }
-
-.pagination-moderno li {
-  display: inline-block;
-}
-
+.pagination-moderno li { display: inline-block; }
 .pagination-moderno li a {
   display: flex;
   align-items: center;
@@ -1425,31 +1174,21 @@ defineExpose({
   transition: var(--transition);
   border: 1px solid #e1e7f0;
 }
-
 .pagination-moderno li.active a {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
-
 .pagination-moderno li:not(.disabled):not(.active) a:hover {
   background: #f0f2f5;
   transform: translateY(-2px);
   border-color: var(--primary);
 }
+.pagination-moderno li.disabled a { opacity: 0.5; cursor: not-allowed; }
 
-.pagination-moderno li.disabled a {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.input-busqueda-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
+/* ─── Input búsqueda con ícono ───────────────────────────────── */
+.input-busqueda-wrapper { position: relative; display: flex; align-items: center; }
 .icono-busqueda {
   position: absolute;
   left: 12px;
@@ -1457,27 +1196,16 @@ defineExpose({
   font-size: 0.95rem;
   pointer-events: none;
 }
+.filtro-busqueda .filtro-input { padding-left: 34px; }
 
-.filtro-input {
-  padding-left: 30px;
-}
-
-/* Modales responsive */
-.modal-content {
-  margin: 16px;
-}
-
-@media (min-width: 768px) {
-  .modal-content {
-    margin: 0;
-  }
-}
+/* ─── Modales ────────────────────────────────────────────────── */
+.modal-content { margin: 16px; }
+@media (min-width: 768px) { .modal-content { margin: 0; } }
 
 .modal-header {
   border-bottom: none;
   border-top: 3px solid var(--warning);
 }
-
 .modal-item-title {
   display: block;
   color: var(--primary);
@@ -1488,7 +1216,6 @@ defineExpose({
   border-radius: 10px;
   text-align: center;
 }
-
 .modal-footer {
   padding: 16px 24px;
   border-top: 1px solid #e1e7f0;
@@ -1498,139 +1225,13 @@ defineExpose({
   flex-wrap: wrap;
 }
 
-/* Mejora de filtros solo en pantallas grandes */
+.revision-observacion-group { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.campo-obligatorio { color: #ef4444; }
+.revision-observacion-error { color: #ef4444; font-size: 0.85rem; margin: 0; }
+
+/* ─── Filtros desktop ────────────────────────────────────────── */
 @media (min-width: 1200px) {
-  .filtros-barra {
-    padding: 22px 24px;
-    border-radius: 20px;
-  }
-
-  .filtros-contenido {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 14px 16px;
-    align-items: end;
-    margin-top: 0;
-  }
-
-  .filtro-busqueda {
-    grid-column: span 3;
-  }
-
-  .filtro-grupo:nth-child(2),
-  .filtro-grupo:nth-child(3) {
-    grid-column: span 2;
-  }
-
-  .filtro-grupo:nth-child(4) {
-    grid-column: span 2;
-  }
-
-  .filtro-grupo:nth-child(5),
-  .filtro-grupo:nth-child(6) {
-    grid-column: span 2;
-  }
-
-  .filtro-acciones {
-    grid-column: span 1;
-    display: flex;
-    align-items: end;
-    justify-content: flex-end;
-  }
-
-  .btn-limpiar {
-    width: 100%;
-    min-width: 92px;
-  }
-
-  .filtro-input {
-    height: 44px;
-  }
-
-  .filtro-grupo label {
-    min-height: 16px;
-    margin-bottom: 2px;
-  }
-}
-
-@media (min-width: 1400px) {
-  .filtros-contenido {
-    grid-template-columns: repeat(14, minmax(0, 1fr));
-  }
-
-  .filtro-busqueda {
-    grid-column: span 4;
-  }
-
-  .filtro-grupo:nth-child(2),
-  .filtro-grupo:nth-child(3) {
-    grid-column: span 2;
-  }
-
-  .filtro-grupo:nth-child(4) {
-    grid-column: span 2;
-  }
-
-  .filtro-grupo:nth-child(5),
-  .filtro-grupo:nth-child(6) {
-    grid-column: span 2;
-  }
-
-  .filtro-acciones {
-    grid-column: span 2;
-  }
-}
-
-/* Mejora desktop: categoría más amplia y botón limpiar compacto */
-@media (min-width: 1200px) {
-  .filtros-contenido {
-    display: grid;
-    grid-template-columns: repeat(18, minmax(0, 1fr));
-    gap: 14px 16px;
-    align-items: end;
-    margin-top: 0;
-  }
-
-  .filtro-busqueda {
-    grid-column: span 3;
-  }
-
-  .filtro-grupo:nth-child(2) {
-    grid-column: span 3;
-  }
-
-  .filtro-grupo:nth-child(3) {
-    grid-column: span 3;
-  }
-
-  .filtro-grupo:nth-child(4) {
-    grid-column: span 2;
-  }
-
-  .filtro-grupo:nth-child(5) {
-    grid-column: span 3;
-  }
-
-  .filtro-grupo:nth-child(6) {
-    grid-column: span 3;
-  }
-
-  .filtro-acciones {
-    grid-column: span 1;
-    display: flex;
-    align-items: end;
-    justify-content: flex-end;
-  }
-
-  .btn-limpiar {
-    width: auto;
-    min-width: 76px;
-    padding: 0 12px;
-  }
-}
-
-/* Desktop: filtros con categoría amplia y botón limpiar compacto con separación */
-@media (min-width: 1200px) {
+  .filtros-barra { padding: 22px 24px; border-radius: 20px; }
   .filtros-contenido {
     display: grid;
     grid-template-columns: repeat(20, minmax(0, 1fr));
@@ -1638,37 +1239,12 @@ defineExpose({
     align-items: end;
     margin-top: 0;
   }
-
-  .filtro-busqueda {
-    grid-column: span 3;
-  }
-
-  /* Fecha desde */
-  .filtro-grupo:nth-child(2) {
-    grid-column: span 3;
-  }
-
-  /* Fecha hasta */
-  .filtro-grupo:nth-child(3) {
-    grid-column: span 3;
-  }
-
-  /* Estado */
-  .filtro-grupo:nth-child(4) {
-    grid-column: span 2;
-  }
-
-  /* Área */
-  .filtro-grupo:nth-child(5) {
-    grid-column: span 3;
-  }
-
-  /* Categoría */
-  .filtro-grupo:nth-child(6) {
-    grid-column: span 4;
-  }
-
-  /* Botón limpiar */
+  .filtro-busqueda        { grid-column: span 3; }
+  .filtro-grupo:nth-child(2) { grid-column: span 3; }
+  .filtro-grupo:nth-child(3) { grid-column: span 3; }
+  .filtro-grupo:nth-child(4) { grid-column: span 2; }
+  .filtro-grupo:nth-child(5) { grid-column: span 3; }
+  .filtro-grupo:nth-child(6) { grid-column: span 4; }
   .filtro-acciones {
     grid-column: span 2;
     display: flex;
@@ -1676,222 +1252,301 @@ defineExpose({
     justify-content: flex-start;
     padding-left: 6px;
   }
-
-  .btn-limpiar {
-    width: auto;
-    min-width: 76px;
-    height: 44px;
-    padding: 0 12px;
-  }
+  .filtro-input { height: 44px; }
+  .filtro-grupo label { min-height: 16px; margin-bottom: 2px; }
+  .btn-limpiar { width: auto; min-width: 76px; height: 44px; padding: 0 12px; }
 }
 
-/* Alerta Minimalista de Revisión */
-.revision-alert-minimal {
+/* ════════════════════════════════════════════════════════════════
+   OFFCANVAS — Revisiones pendientes
+   Estilos con :global() porque el Teleport renderiza fuera del
+   scope del componente.
+   ════════════════════════════════════════════════════════════════ */
+</style>
+
+<!-- Estilos globales para los elementos renderizados con Teleport -->
+<style>
+/* Overlay */
+.oc-overlay {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 1040;
+  pointer-events: none;
+  transition: background 0.25s ease;
+}
+.oc-overlay--open {
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: all;
+}
+
+/* Botón flotante */
+.fab-revision {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1050;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #077E9D 0%, #025B7D 100%);
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.fab-revision:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 8px 28px rgba(7, 126, 157, 0.5);
+}
+.fab-revision:active {
+  transform: scale(0.97);
+}
+
+.fab-revision .bi {
+  line-height: 1;
+  display: block;
+}
+
+/* Badge del FAB */
+.fab-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #FCBB1C;
+  color: #7a5a00;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  line-height: 1;
+}
+
+/* Animación de pulso en el FAB cuando está cerrado */
+.fab-revision--pulsing {
+  animation: fab-pulse 2.5s infinite;
+}
+
+@keyframes fab-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4); }
+  50%       { box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4), 0 0 0 8px rgba(7, 126, 157, 0.12); }
+}
+
+/* Panel offcanvas */
+.oc-revision {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 390px;
+  max-width: calc(100vw - 40px);
+  height: 100%;
+  background: #ffffff;
+  z-index: 1055;
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -6px 0 32px rgba(0, 0, 0, 0.14);
+}
+.oc-revision--open {
+  transform: translateX(0);
+}
+
+/* Header */
+.oc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border-bottom: 1px solid #e1e7f0;
   background: #fffef7;
-  border-left: 3px solid var(--warning);
-  border-radius: 6px;
-  margin-bottom: 16px;
-  font-size: 1cqmax;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  transition: var(--transition);
+  border-left: 4px solid #FCBB1C;
+  flex-shrink: 0;
 }
-
-.revision-alert-minimal:hover {
-  box-shadow: var(--shadow-sm);
-}
-
-/* Header Compacto */
-.revision-header {
-  padding: 8px 12px;
-  border-bottom: 1px solid rgba(252, 187, 28, 0.2);
-}
-
-.header-info {
+.oc-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
-.header-info i {
-  color: var(--warning);
-  font-size: 0.9rem;
+.oc-header-icon {
+  color: #FCBB1C;
+  font-size: 1rem;
+  line-height: 1;
 }
-
-.header-text {
-  font-size: 0.95rem;
-  font-weight: 600;
+.oc-title {
+  font-size: 0.88rem;
+  font-weight: 700;
   color: #856404;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.05em;
 }
-
-.badge-minimal {
-  background: var(--warning);
-  color: #856404;
-  font-size: 0.65rem;
+.oc-count {
+  background: #FCBB1C;
+  color: #7a5a00;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 10px;
-  line-height: 1;
-  margin-left: auto;
-}
-
-/* Lista de Items */
-.revision-items {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 15px;
-}
-
-.revision-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 19px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #f0f0f0;
-  transition: var(--transition);
-  background: white;
-  border-radius: 16px;
-  transition: var(--transition-smooth);
-  border: 1px solid #f0e0b0;
-  position: relative;
-  border-left: 3px solid var(--warning);
-}
-
-.revision-item:last-child {
-  border-bottom: none;
-}
-
-.revision-item:hover {
-  background: rgba(252, 187, 28, 0.04);
-}
-
-/* Contenido del mensaje */
-.item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.item-message {
-  margin: 0;
-  font-size: 0.92rem;
-  color: #393e42;
   line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
-
-/* Acciones con solo íconos */
-.item-actions {
+.oc-close {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e1e7f0;
+  background: #f9fafb;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
   display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.btn-action {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: var(--transition);
-  text-decoration: none;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.oc-close:hover {
+  background: #f3f4f6;
+  color: #374151;
 }
 
-.btn-view {
-  background: transparent;
-  color: var(--primary);
+/* Cuerpo desplazable */
+.oc-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+.oc-body::-webkit-scrollbar       { width: 4px; }
+.oc-body::-webkit-scrollbar-track { background: #f9fafb; }
+.oc-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 
-.btn-view:hover {
-  background: rgba(7, 126, 157, 0.1);
-  color: var(--secondary);
-  transform: scale(1.05);
+/* Item de revisión */
+.oc-item {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #f0e0b0;
+  border-left: 3px solid #FCBB1C;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
-.btn-read {
-  background: transparent;
-  color: #6c757d;
-}
-
-.btn-read:hover {
-  background: rgba(108, 117, 125, 0.1);
-  color: #28a745;
-  transform: scale(1.05);
-}
-
-/* Sin mensaje */
-.revision-item:has(.item-message:empty) .item-message {
-  color: #adb5bd;
-  font-style: italic;
-}
-
-.revision-item:has(.item-message:empty) .item-message::before {
-  content: 'Sin mensaje adicional';
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .revision-item {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .item-content {
-    width: 100%;
-  }
-
-  .item-message {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
-
-  .item-actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
-
-/* Animación de entrada */
-.revision-alert-minimal {
-  animation: fadeInUp 0.2s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.revision-item:hover {
+.oc-item:hover {
   transform: translateX(4px);
-  border-color: var(--warning);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
 }
 
-.revision-item-indicator {
-  width: 4px;
-  background: linear-gradient(180deg, var(--warning), #ffd700);
-  border-radius: 4px;
-  transition: var(--transition-smooth);
+.oc-item-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
 }
 
-.revision-item:hover .revision-item-indicator {
-  width: 6px;
+.oc-item-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fef8e3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.oc-item-icon {
+  color: #f59e0b;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.oc-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.oc-item-msg {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #374151;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.oc-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #077E9D;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+  text-align: left;
+}
+.oc-item-btn:hover {
+  color: #025B7D;
+  text-decoration: underline;
+}
+.oc-item-btn .bi {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+/* Footer */
+.oc-footer {
+  padding: 10px 18px;
+  border-top: 1px solid #e1e7f0;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.oc-footer-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Animación de entrada del panel */
+.oc-revision--open {
+  animation: slideInRight 0.32s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+/* Responsive: en móvil ocupa casi todo el ancho */
+@media (max-width: 480px) {
+  .oc-revision {
+    width: 100%;
+    max-width: 100%;
+  }
+  .fab-revision {
+    bottom: 20px;
+    right: 20px;
+  }
 }
 </style>
