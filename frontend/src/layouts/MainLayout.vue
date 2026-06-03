@@ -147,6 +147,9 @@ route: {{ route.name }}
               + Nuevo registro
             </button> -->
 
+            <!-- Botón de Ayuda -->
+            <HelpButton />
+
             <button class="btn-logout" type="button" @click="logout">
               <i class="bi bi-door-open"></i><i class="bi bi-arrow-right"></i>
             </button>
@@ -183,6 +186,7 @@ route: {{ route.name }}
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
+import HelpButton from '../components/HelpButton.vue'
 import {
   listarNotificaciones,
   marcarNotificacionLeida,

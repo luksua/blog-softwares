@@ -14,7 +14,7 @@ return new class extends Migration
 
             // IMPORTANTE:
             // Debe tener el mismo tipo que actualizaciones_blog.id
-            $table->integer('actualizacion_id');
+           $table->unsignedBigInteger('actualizacion_id');
 
             // Esta sí queda BIGINT porque act_categorias.categoria_actualizacion_id viene de $table->id()
             $table->unsignedBigInteger('categoria_actualizacion_id');

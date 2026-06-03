@@ -68,97 +68,97 @@
       </div>
 
       <div class="grid-guardados">
-        <div class="row lista-feed g-3 g-md-4">
-          <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-sm-6 col-lg-4 col-xl-3">
 
-            <article v-for="item in actualizaciones" :key="item.id" class="tarjeta-header">
-              <div class="tarjeta-header">
-                <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                  <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
-                    class="imagen-destacada" loading="lazy" />
-                  <div class="imagen-overlay">
-                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
-                  </div>
-                </div>
-                <div v-else class="sin-imagen">
-                  <span class="sin-imagen-icono">🖼️</span>
-                  <p>Sin imagen destacada</p>
-                  <div class="imagen-overlay">
-                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
-                  </div>
+        <!-- reemplaza el <article v-for="item in actualizaciones"...> completo -->
+        <div v-for="item in actualizaciones" :key="item.id">
+          <div class="tarjeta-changelog h-100">
+
+            <!-- CABECERA -->
+            <div class="tarjeta-header">
+              <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
+                <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                  class="imagen-destacada" loading="lazy" />
+                <div class="imagen-overlay">
+                  <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
                 </div>
               </div>
-
-              <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
-                <div class="metadatos-top">
-                  <span>{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
-                  <span class="separador">|</span>
-                  <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
-                </div>
-
-                <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
-                <p class="resumen">{{ item.actualizacion_resumen }}</p>
-
-                <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
-                <div class="categorias-iconos">
-                  <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
-                    <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
-                    <span class="ico-label">{{ cat.nombre }}</span>
-                  </div>
+              <div v-else class="sin-imagen">
+                <span class="sin-imagen-icono">🖼️</span>
+                <p>Sin imagen destacada</p>
+                <div class="imagen-overlay">
+                  <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
                 </div>
               </div>
+            </div>
 
-              <div class="tarjeta-pie">
-                <button class="btn-enlace" @click.stop="verDetalle(item.id)">
-                  Ver más
-                  <i class="bi bi-arrow-right"></i>
-                </button>
+            <!-- CUERPO -->
+            <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
+              <div class="metadatos-top">
+                <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                <span class="separador">|</span>
+                <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
               </div>
-            </article>
-          </div>
+              <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
+              <p class="resumen">{{ item.actualizacion_resumen }}</p>
+              <div class="categorias-iconos">
+                <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
+                  <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
+                  <span class="ico-label">{{ cat.nombre }}</span>
+                </div>
+              </div>
+            </div>
 
-          <div v-if="guardadosNoEncontrados > 0" class="alerta-info">
-            {{ guardadosNoEncontrados }}
-            {{ guardadosNoEncontrados === 1 ? 'guardado no pudo cargarse' : 'guardados no pudieron cargarse' }}.
-            Puede que ya no estén disponibles.
+            <!-- FOOTER -->
+            <div class="tarjeta-pie">
+              <button class="btn-enlace" @click.stop="verDetalle(item.id)">
+                Ver más <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+
           </div>
         </div>
 
-        <div class="modal fade" id="modalLimpiarGuardados" tabindex="-1" aria-labelledby="modalLimpiarGuardadosLabel"
-          aria-hidden="true">
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="modalLimpiarGuardadosLabel">
-                  ¿Deseas limpiar todos tus guardados?
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
+        <div v-if="guardadosNoEncontrados > 0" class="alerta-info">
+          {{ guardadosNoEncontrados }}
+          {{ guardadosNoEncontrados === 1 ? 'guardado no pudo cargarse' : 'guardados no pudieron cargarse' }}.
+          Puede que ya no estén disponibles.
+        </div>
+      </div>
 
-              <div class="modal-body">
-                <p>
-                  Al aceptar, se eliminarán todas las actualizaciones guardadas de tu cuenta.
-                </p>
-                <strong class="modal-item-title">
-                  Esta acción no eliminará las publicaciones originales.
-                </strong>
-              </div>
+      <div class="modal fade" id="modalLimpiarGuardados" tabindex="-1" aria-labelledby="modalLimpiarGuardadosLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modalLimpiarGuardadosLabel">
+                ¿Deseas limpiar todos tus guardados?
+              </h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
 
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                  Cancelar
-                </button>
+            <div class="modal-body">
+              <p>
+                Al aceptar, se eliminarán todas las actualizaciones guardadas de tu cuenta.
+              </p>
+              <strong class="modal-item-title">
+                Esta acción no eliminará las publicaciones originales.
+              </strong>
+            </div>
 
-                <button type="button" class="btn btn-danger" :disabled="limpiandoGuardados" @click="limpiarGuardados">
-                  {{ limpiandoGuardados ? 'Limpiando...' : 'Aceptar' }}
-                </button>
-              </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                Cancelar
+              </button>
+
+              <button type="button" class="btn btn-danger" :disabled="limpiandoGuardados" @click="limpiarGuardados">
+                {{ limpiandoGuardados ? 'Limpiando...' : 'Aceptar' }}
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -857,5 +857,267 @@ onMounted(() => {
   .supervision-resumen {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Tarjetas ─────────────────────────────────────────── */
+.lista-feed { margin-top: 4px; }
+
+.tarjeta-changelog {
+  border: 1px solid #eaeaea;
+  border-radius: 16px;
+  background-color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.tarjeta-changelog:active { transform: scale(0.98); }
+
+@media (min-width: 768px) {
+  .tarjeta-changelog:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+  }
+}
+
+/* CABECERA */
+.tarjeta-header {
+  position: relative;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.imagen-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  background: #f5f5f5;
+}
+
+.imagen-destacada {
+  width: 100%;
+  aspect-ratio: 22/9;
+  object-fit: cover;
+  display: block;
+  object-position: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 768px) {
+  .imagen-container:hover .imagen-destacada { transform: scale(1.05); }
+}
+
+.imagen-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top left,
+    rgba(0,0,0,0.78) 0%,
+    rgba(0,0,0,0.15) 38%,
+    transparent 62%
+  );
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.area-label {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.sin-imagen {
+  position: relative;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e1e7f0;
+  color: #9ca3af;
+  width: 100%;
+  aspect-ratio: 22/9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.sin-imagen-icono { font-size: 32px; margin-bottom: 8px; }
+.sin-imagen p { margin: 0; font-size: 0.85rem; }
+
+/* CUERPO */
+.tarjeta-cuerpo {
+  padding: 14px 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.metadatos-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.separador { color: #a0aec0; font-weight: 300; }
+.fecha { font-size: 0.85rem; color: #888; font-weight: 500; }
+
+.version-number {
+  display: inline-block;
+  padding: 3px 10px;
+  background: white;
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #e1e7f0;
+}
+
+.titulo-version {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .titulo-version {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 1;
+  }
+}
+
+.resumen {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 10px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .resumen { -webkit-line-clamp: 2; }
+}
+
+/* Iconos de categoría */
+.categorias-iconos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.icono-categoria {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  border-radius: 8px;
+  background: #f4f5f7;
+  border: 1px solid transparent;
+  overflow: hidden;
+  cursor: default;
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.22s ease,
+    border-color 0.22s ease,
+    padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 7px;
+}
+
+.icono-categoria:hover {
+  max-width: 200px;
+  background: rgba(7, 126, 157, 0.10);
+  border-color: rgba(7, 126, 157, 0.25);
+  padding: 0 10px;
+}
+
+.icono-categoria .ico-icon {
+  font-size: 14px;
+  color: var(--secondary);
+  flex-shrink: 0;
+  width: 14px;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.22s ease, margin 0.22s ease;
+}
+
+.icono-categoria:hover .ico-icon { opacity: 0; width: 0; margin: 0; }
+
+.icono-categoria .ico-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease 0.08s;
+}
+
+.icono-categoria:hover .ico-label { max-width: 180px; opacity: 1; }
+
+/* FOOTER */
+.tarjeta-pie {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #f0f2f5;
+  margin-top: auto;
+}
+
+.btn-enlace {
+  background: none;
+  border: none;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-enlace i { font-size: 0.9rem; transition: transform 0.3s ease; }
+.btn-enlace:active { transform: scale(0.95); }
+
+@media (min-width: 768px) {
+  .btn-enlace:hover { color: var(--primary); background: rgba(7, 126, 157, 0.08); }
+  .btn-enlace:hover i { transform: translateX(4px); }
 }
 </style>
