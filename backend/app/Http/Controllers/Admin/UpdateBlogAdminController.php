@@ -16,6 +16,8 @@ class UpdateBlogAdminController extends Controller
     public function store(Request $request)
     {
         // 1. Validación de los datos
+        $this->prepararCategoriaIds($request);
+
         $datosValidados = $request->validate([
             'actualizacion_titulo'            => 'required|string|max:255',
             'actualizacion_version'           => 'required|string|max:255',
@@ -25,7 +27,8 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
 
             'actualizacion_area_servicio_id'  => 'required|integer',
-            'actualizacion_categoria_id'  => 'required|integer',
+            'actualizacion_categoria_ids' => 'required|array|min:1|max:3',
+            'actualizacion_categoria_ids.*' => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
             'actualizacion_usuario_id_autor'  => 'required|integer',
             'actualizacion_estado'            => 'required|in:borrador,revision,publicado,inactivo',
             'imagenes_quill'                  => 'nullable|string', // Mantenido si aún guardas trackers manuales
@@ -36,8 +39,10 @@ class UpdateBlogAdminController extends Controller
 
             // 2. Preparamos los datos base (excluyendo los campos conflictivos temporalmente)
             $datosParaGuardar = collect($datosValidados)
-                ->except(['actualizacion_imagen_destacada', 'imagenes_quill'])
+                ->except(['actualizacion_imagen_destacada', 'imagenes_quill', 'actualizacion_categoria_ids'])
                 ->toArray();
+
+            $datosParaGuardar['actualizacion_categoria_id'] = $datosValidados['actualizacion_categoria_ids'][0];
 
             // ✅ CAMBIO 2: Si viene una imagen física, la guardamos en el disco
             if ($request->hasFile('actualizacion_imagen_destacada')) {
@@ -51,6 +56,7 @@ class UpdateBlogAdminController extends Controller
 
             // 3. Crear el registro principal en 'actualizaciones_blog'
             $actualizacion = UpdateBlog::create($datosParaGuardar);
+            $this->sincronizarCategorias($actualizacion, $datosValidados['actualizacion_categoria_ids']);
 
             // 4. (Opcional) GUARDAR LAS RUTAS DE LAS IMÁGENES EXTRA
             // Nota: Con Editor.js las imágenes ya se suben por otro endpoint, 
@@ -71,7 +77,7 @@ class UpdateBlogAdminController extends Controller
 
             return response()->json([
                 'message' => 'Registro guardado con éxito',
-                'data' => $actualizacion->load('imagenes')
+                'data' => $actualizacion->load(['imagenes', 'categoria', 'categorias'])
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -85,7 +91,7 @@ class UpdateBlogAdminController extends Controller
 
     public function index(Request $request)
     {
-        $query = UpdateBlog::with(['areaServicio', 'imagenes', 'categoria'])
+        $query = UpdateBlog::with(['areaServicio', 'imagenes', 'categoria', 'categorias'])
             ->orderByDesc('id');
 
         if ($request->filled('busqueda')) {
@@ -108,6 +114,17 @@ class UpdateBlogAdminController extends Controller
             $query->where('actualizacion_area_servicio_id', (int) $request->area_servicio_id);
         }
 
+        if ($request->filled('actualizacion_categoria_id')) {
+            $categoriaId = (int) $request->actualizacion_categoria_id;
+
+            $query->where(function ($q) use ($categoriaId) {
+                $q->where('actualizacion_categoria_id', $categoriaId)
+                    ->orWhereHas('categorias', function ($subQuery) use ($categoriaId) {
+                        $subQuery->where('act_categorias.categoria_actualizacion_id', $categoriaId);
+                    });
+            });
+        }
+
         $actualizaciones = $query->paginate(10);
 
         return response()->json($actualizaciones);
@@ -127,6 +144,8 @@ class UpdateBlogAdminController extends Controller
     public function getCategorias()
     {
         $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
+            ->where('categoria_actualizacion_activa', true)
+            ->orderBy('categoria_actualizacion_orden', 'asc')
             ->orderBy('categoria_actualizacion_nombre', 'asc')
             ->get();
 
@@ -215,7 +234,7 @@ class UpdateBlogAdminController extends Controller
     public function show($id)
     {
         // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
-        $actualizacion = UpdateBlog::with('imagenes')->findOrFail($id);
+        $actualizacion = UpdateBlog::with(['imagenes', 'categoria', 'categorias'])->findOrFail($id);
 
         return new ActualizacionResource($actualizacion);
     }
@@ -251,6 +270,8 @@ class UpdateBlogAdminController extends Controller
         $actualizacion = UpdateBlog::findOrFail($id);
 
         // Agregamos categoria_id y area_servicio_id a las reglas
+        $this->prepararCategoriaIds($request);
+
         $data = $request->validate([
             'actualizacion_titulo'            => 'sometimes|required|string|max:255',
             'actualizacion_version'           => 'sometimes|required|string|max:50',
@@ -260,16 +281,81 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_fecha_publicacion' => 'nullable|date',
             'actualizacion_fecha_creacion'    => 'nullable|date',
             'actualizacion_contenido'         => 'sometimes|required|array',
-            'actualizacion_categoria_id'      => 'sometimes|required|integer',
+            'actualizacion_categoria_ids'     => 'sometimes|required|array|min:1|max:3',
+            'actualizacion_categoria_ids.*'   => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
             'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
         ]);
 
+        $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
+        unset($data['actualizacion_categoria_ids']);
+
+        if (is_array($categoriaIds) && count($categoriaIds) > 0) {
+            $data['actualizacion_categoria_id'] = $categoriaIds[0];
+        }
+
         $actualizacion->update($data);
+
+        if (is_array($categoriaIds)) {
+            $this->sincronizarCategorias($actualizacion, $categoriaIds);
+        }
 
         return response()->json([
             'message' => 'Actualización editada correctamente',
-            'data' => $actualizacion->fresh()
+            'data' => $actualizacion->fresh(['imagenes', 'categoria', 'categorias'])
         ]);
+    }
+
+
+    private function prepararCategoriaIds(Request $request): void
+    {
+        $ids = $request->input('actualizacion_categoria_ids');
+
+        if (is_string($ids)) {
+            $decoded = json_decode($ids, true);
+            $ids = is_array($decoded) ? $decoded : explode(',', $ids);
+        }
+
+        if ($ids === null && $request->filled('actualizacion_categoria_id')) {
+            $ids = [$request->input('actualizacion_categoria_id')];
+        }
+
+        if (! is_array($ids)) {
+            return;
+        }
+
+        $ids = collect($ids)
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(3)
+            ->values()
+            ->all();
+
+        $request->merge([
+            'actualizacion_categoria_ids' => $ids,
+            'actualizacion_categoria_id' => $ids[0] ?? null,
+        ]);
+    }
+
+    private function sincronizarCategorias(UpdateBlog $actualizacion, array $categoriaIds): void
+    {
+        $categoriaIds = collect($categoriaIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(3)
+            ->values()
+            ->all();
+
+        $actualizacion->categorias()->sync($categoriaIds);
+
+        $primeraCategoriaId = $categoriaIds[0] ?? null;
+
+        if ((int) $actualizacion->actualizacion_categoria_id !== (int) $primeraCategoriaId) {
+            $actualizacion->actualizacion_categoria_id = $primeraCategoriaId;
+            $actualizacion->save();
+        }
     }
 
     // public function subirImagenQuill(Request $request)

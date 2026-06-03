@@ -13,6 +13,28 @@ class ActualizacionResource extends JsonResource
         $renderer = app(EditorJsRenderer::class);
         $esDetalle = $request->route()?->parameter('id') !== null;
 
+        $categorias = $this->whenLoaded('categorias', function () {
+            return $this->categorias->map(fn ($categoria) => [
+                'categoria_actualizacion_id' => $categoria?->categoria_actualizacion_id,
+                'categoria_actualizacion_nombre' => $categoria?->categoria_actualizacion_nombre,
+            ])->values();
+        });
+
+        $categoriaPrincipal = null;
+
+        if ($this->relationLoaded('categorias') && $this->categorias->isNotEmpty()) {
+            $primeraCategoria = $this->categorias->first();
+            $categoriaPrincipal = [
+                'categoria_actualizacion_id' => $primeraCategoria?->categoria_actualizacion_id,
+                'categoria_actualizacion_nombre' => $primeraCategoria?->categoria_actualizacion_nombre,
+            ];
+        } elseif ($this->relationLoaded('categoria') && $this->categoria) {
+            $categoriaPrincipal = [
+                'categoria_actualizacion_id' => $this->categoria?->categoria_actualizacion_id,
+                'categoria_actualizacion_nombre' => $this->categoria?->categoria_actualizacion_nombre,
+            ];
+        }
+
         return [
             'id' => $this->id,
             'actualizacion_version' => $this->actualizacion_version,
@@ -36,6 +58,12 @@ class ActualizacionResource extends JsonResource
 
             'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
             'actualizacion_categoria_id' => $this->actualizacion_categoria_id,
+            'actualizacion_categoria_ids' => $this->whenLoaded('categorias', function () {
+                return $this->categorias
+                    ->pluck('categoria_actualizacion_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values();
+            }),
 
             'actualizacion_imagenes' => $this->whenLoaded('imagenes', function () {
                 return $this->imagenes->map(fn ($imagen) => [
@@ -85,12 +113,8 @@ class ActualizacionResource extends JsonResource
                 ];
             }),
 
-            'categoria' => $this->whenLoaded('categoria', function () {
-                return [
-                    'categoria_actualizacion_id' => $this->categoria?->categoria_actualizacion_id,
-                    'categoria_actualizacion_nombre' => $this->categoria?->categoria_actualizacion_nombre,
-                ];
-            }),
+            'categoria' => $categoriaPrincipal,
+            'categorias' => $categorias,
         ];
     }
 }

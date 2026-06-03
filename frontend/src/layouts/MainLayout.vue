@@ -6,10 +6,17 @@ route: {{ route.name }}
 </pre> -->
   <div class="layout">
     <!-- Overlay móvil para sidebar admin -->
-    <div v-if="isMobile && isExpanded && isAdmin" class="sidebar-overlay" @click="toggleSidebar"></div>
+    <div v-if="isMobile && isExpanded && isLoggedIn" class="sidebar-overlay" @click="cerrarSidebarMovil"></div>
 
     <!-- SIDEBAR: solo admin -->
-    <!-- <aside v-if="isAdmin" :class="['sidebar', { expanded: isExpanded, collapsed: !isExpanded }]">
+    <!-- <aside v-if="isLoggedIn" :class="[
+      'sidebar',
+      {
+        expanded: isExpanded,
+        collapsed: !isExpanded,
+        mobile: isMobile
+      }
+    ]">
       <div class="sidebar-header">
         <div v-if="isExpanded" class="logo-full">
           Asotrauma
@@ -22,26 +29,35 @@ route: {{ route.name }}
 
       <ul class="nav-menu">
         <li>
-          <router-link :to="{ name: 'inicio' }" class="nav-item" active-class="active">
-            <i class="nav-icon">🏠</i>
+          <router-link :to="{ name: 'inicio' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+            <i class="bi bi-house-door-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Blog</span>
             <div v-if="!isExpanded" class="tooltip">Blog</div>
           </router-link>
         </li>
 
         <li>
-          <router-link :to="{ name: 'mis-registros' }" class="nav-item" active-class="active">
-            <i class="nav-icon">📝</i>
+          <router-link :to="{ name: 'mis-registros' }" class="nav-item" active-class="active"
+            @click="cerrarSidebarMovil">
+            <i class="bi bi-journal-text nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Mis registros</span>
             <div v-if="!isExpanded" class="tooltip">Mis registros</div>
           </router-link>
         </li>
 
         <li v-if="mostrarSupervision">
-          <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active">
-            <i class="nav-icon">👥</i>
+          <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+            <i class="bi bi-people-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Supervisión</span>
             <div v-if="!isExpanded" class="tooltip">Supervisión</div>
+          </router-link>
+        </li>
+
+        <li v-if="mostrarGuardados">
+          <router-link v-if="mostrarGuardados" :to="{ name: 'employee-guardados' }" class="nav-item"
+            active-class="active" @click="cerrarSidebarMovil">
+            <i class="bi bi-bookmark-fill nav-icon"></i>
+            <span v-show="isExpanded" class="nav-text">Guardados</span>
           </router-link>
         </li>
       </ul>
@@ -51,7 +67,7 @@ route: {{ route.name }}
       <!-- NAVBAR GLOBAL -->
       <header class="navbar">
         <div class="navbar-left">
-          <button v-if="isAdmin" class="mobile-toggle" type="button" @click="toggleSidebar">
+          <button v-if="isLoggedIn && isMobile" class="mobile-toggle" type="button" @click="abrirSidebarMovil">
             ☰
           </button>
 
@@ -86,7 +102,8 @@ route: {{ route.name }}
             </nav>
 
             <div class="notification-wrapper" @click.stop>
-              <button class="notification-button" type="button" title="Notificaciones" @click="togglePanelNotificaciones">
+              <button class="notification-button" type="button" title="Notificaciones"
+                @click="togglePanelNotificaciones">
                 <i class="bi bi-bell"></i>
                 <span v-if="notificacionesNoLeidas > 0" class="notification-badge">
                   {{ etiquetaNotificacionesNoLeidas }}
@@ -100,12 +117,8 @@ route: {{ route.name }}
                     <small>{{ notificacionesNoLeidas }} sin leer</small>
                   </div>
 
-                  <button
-                    v-if="notificacionesNoLeidas > 0"
-                    class="notification-link-button"
-                    type="button"
-                    @click="marcarTodasComoLeidas"
-                  >
+                  <button v-if="notificacionesNoLeidas > 0" class="notification-link-button" type="button"
+                    @click="marcarTodasComoLeidas">
                     Marcar leídas
                   </button>
                 </header>
@@ -119,13 +132,9 @@ route: {{ route.name }}
                 </div>
 
                 <template v-else>
-                  <button
-                    v-for="notificacion in notificaciones"
-                    :key="notificacion.id"
-                    :class="['notification-item', { unread: !notificacion.leida_en }]"
-                    type="button"
-                    @click="abrirNotificacion(notificacion)"
-                  >
+                  <button v-for="notificacion in notificaciones" :key="notificacion.id"
+                    :class="['notification-item', { unread: !notificacion.leida_en }]" type="button"
+                    @click="abrirNotificacion(notificacion)">
                     <span class="notification-title">{{ notificacion.titulo }}</span>
                     <span class="notification-message">{{ notificacion.mensaje }}</span>
                     <small>{{ formatearFechaNotificacion(notificacion.created_at) }}</small>
@@ -155,18 +164,18 @@ route: {{ route.name }}
         </div>
       </main>
 
-      <footer class="footer">
+      <!-- <footer class="footer">
         <div class="footer-content">
           <span>© 2026 - Sistema de Versiones</span>
         </div>
-      </footer>
+      </footer> -->
     </div>
 
     <!-- Botón flotante móvil -->
-    <button v-if="mostrarBotonNuevoRegistro" class="fab-new-record" type="button" aria-label="Crear nuevo registro"
+    <!-- <button v-if="mostrarBotonNuevoRegistro" class="fab-new-record" type="button" aria-label="Crear nuevo registro"
       @click="irANuevoRegistro">
       +
-    </button>
+    </button> -->
   </div>
 </template>
 
@@ -231,10 +240,6 @@ const estaEnFormularioRegistro = computed(() => {
     'editar-actualizacion',
     'admin-actualizaciones-edit',
   ].includes(String(route.name))
-})
-
-const mostrarBotonNuevoRegistro = computed(() => {
-  return isLoggedIn.value && !estaEnFormularioRegistro.value
 })
 
 const normalizarPermisos = (valor: unknown): string[] => {
@@ -409,21 +414,33 @@ const manejarNotificacionesActualizadas = () => {
   void cargarNotificaciones()
 }
 
-const irANuevoRegistro = () => {
-  if (router.hasRoute('actualizaciones-crear')) {
-    router.push({ name: 'actualizaciones-crear' })
-    return
-  }
+// const irANuevoRegistro = () => {
+//   if (router.hasRoute('actualizaciones-crear')) {
+//     router.push({ name: 'actualizaciones-crear' })
+//     return
+//   }
 
-  router.push({ name: 'mis-registros' })
-}
+//   router.push({ name: 'mis-registros' })
+// }
+
 const toggleSidebar = () => {
   isExpanded.value = !isExpanded.value
 }
 
+const abrirSidebarMovil = () => {
+  isExpanded.value = true
+}
+
+const cerrarSidebarMovil = () => {
+  if (isMobile.value) {
+    isExpanded.value = false
+  }
+}
+
 const checkMobile = () => {
-  isMobile.value = window.innerWidth <= 768
-  isExpanded.value = !isMobile.value
+  const mobile = window.innerWidth <= 768
+  isMobile.value = mobile
+  isExpanded.value = !mobile
 }
 
 const limpiarSesionLocal = () => {
@@ -481,8 +498,24 @@ onUnmounted(() => {
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
-.bi-bookmark-fill {
+.nav-icon-link {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  justify-content: center;
+  border: 1px solid #dbe3ee;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.nav-icon-link:hover {
+  background: rgba(7, 126, 157, 0.08);
+  border-color: rgba(7, 126, 157, 0.25);
+}
+
+.nav-icon-link .bi-bookmark-fill {
   color: #025b7d;
+  font-size: 1.1rem;
 }
 
 .layout {
@@ -793,29 +826,6 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
-.fab-new-record {
-  display: none;
-  position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
-  width: 58px;
-  height: 58px;
-  border-radius: 999px;
-  border: none;
-  background: var(--secondary);
-  color: white;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1;
-  z-index: 1000;
-  box-shadow: 0 12px 28px rgba(7, 126, 157, 0.35);
-  cursor: pointer;
-}
-
-.fab-new-record:active {
-  transform: scale(0.96);
-}
-
 .content::-webkit-scrollbar {
   width: 8px;
 }
@@ -1077,11 +1087,81 @@ onUnmounted(() => {
     justify-content: center;
     text-align: center;
   }
+}
 
-  .fab-new-record {
-    display: flex;
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -280px;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 100;
+    transition: left 0.25s ease;
+  }
+
+  .sidebar.expanded {
+    left: 0;
+    width: 280px;
+  }
+
+  .sidebar.collapsed {
+    left: -280px;
+  }
+
+  .sidebar.mobile .sidebar-header {
+    justify-content: space-between;
+  }
+
+  .sidebar.mobile .tooltip {
+    display: none;
+  }
+
+  .mobile-toggle {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .navbar {
+    height: 64px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .logo {
+    height: 38px;
+  }
+
+  .navbar-right {
+    gap: 0.5rem;
+  }
+
+  .btn-new-record {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .content-card {
+    padding: 16px;
+    min-height: calc(100vh - 160px);
+  }
+
+  .footer {
+    padding: 12px 16px;
+  }
+
+  .footer-content {
+    justify-content: center;
+    text-align: center;
   }
 }
 </style>

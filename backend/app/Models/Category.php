@@ -3,18 +3,29 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Category extends Model
 {
-    // nombre de la tabla en la bd
     protected $table = 'act_categorias';
 
-    // llave primaria
     protected $primaryKey = 'categoria_actualizacion_id';
 
-    // campos bd
     protected $fillable = [
-        'categoria_nombre',
-        'categoria_estado',
+        'categoria_actualizacion_nombre',
+        'categoria_actualizacion_activa',
+        'categoria_actualizacion_orden',
     ];
+
+    public function actualizaciones()
+    {
+        return $this->belongsToMany(
+            UpdateBlog::class,
+            'actualizaciones_blog_categorias',
+            'categoria_actualizacion_id',
+            'actualizacion_id',
+            'categoria_actualizacion_id',
+            'id'
+        )->withTimestamps('created_at', 'updated_at');
+    }
 }

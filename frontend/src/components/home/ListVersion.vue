@@ -44,7 +44,7 @@
                 </span>
 
                 <span class="tag-gris">
-                  {{ actualizacion.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
+                  {{ obtenerNombreCategorias(actualizacion) }}
                 </span>
               </div>
             </div>
@@ -155,7 +155,7 @@
                     </span>
 
                     <span class="tag-gris">
-                      {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
+                      {{ obtenerNombreCategorias(item) }}
                     </span>
                   </div>
                   <div class="tags-right">
@@ -335,6 +335,18 @@ const obtenerRelacionados = async () => {
   } finally {
     cargandoRelacionados.value = false
   }
+}
+
+
+const obtenerNombreCategorias = (item: any): string => {
+  if (Array.isArray(item?.categorias) && item.categorias.length > 0) {
+    return item.categorias
+      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return item?.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
 }
 
 const irA = (id: number) => {

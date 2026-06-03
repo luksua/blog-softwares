@@ -7,9 +7,13 @@ export interface Version {
   actualizacion_estado: string;
   actualizacion_fecha_publicacion: string;
   actualizacion_fecha_creacion: string;
-  actualizacion_imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
+  actualizacion_area_servicio_id?: number | string | null;
+  actualizacion_categoria_id?: number | string | null;
+  actualizacion_categoria_ids?: number[];
+  actualizacion_imagenes: ImagenGaleria[];
   area_servicio: AreaServicio;
-  categoria: Category;
+  categoria?: Category | null;
+  categorias?: Category[];
 }
 
 export interface ImagenGaleria {
@@ -19,10 +23,12 @@ export interface ImagenGaleria {
 
 export interface AreaServicio {
   id?: number;
+  area_servicio_id?: number | string;
   area_servicio_nombre: string;
 }
 
 export interface Category {
   id?: number;
+  categoria_actualizacion_id?: number | string;
   categoria_actualizacion_nombre: string;
 }

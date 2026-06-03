@@ -23,6 +23,7 @@ class UpdateBlogController extends Controller
         $relaciones = [
             'areaServicio:area_servicio_id,area_servicio_nombre',
             'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
+            'categorias:categoria_actualizacion_id,categoria_actualizacion_nombre',
         ];
 
         // if (in_array($vista, ['mis-registros', 'supervision', 'todos'], true)) {
@@ -187,10 +188,17 @@ class UpdateBlogController extends Controller
         }
 
         if ($request->filled('actualizacion_categoria_id')) {
-            $query->where(
-                'actualizacion_categoria_id',
-                (int) $request->input('actualizacion_categoria_id')
-            );
+            $categoriaId = (int) $request->input('actualizacion_categoria_id');
+
+            $query->where(function ($q) use ($categoriaId) {
+                $q->where('actualizacion_categoria_id', $categoriaId)
+                    ->orWhereHas('categorias', function ($subQuery) use ($categoriaId) {
+                        $subQuery->where(
+                            'act_categorias.categoria_actualizacion_id',
+                            $categoriaId
+                        );
+                    });
+            });
         }
 
         if ($request->filled('fecha_desde')) {
@@ -230,6 +238,7 @@ class UpdateBlogController extends Controller
         $actualizacion = UpdateBlog::with([
             'areaServicio',
             'categoria',
+            'categorias',
             'imagenes',
             'usuarioAutor',
             'ultimaRevisionObservacion.supervisor',
@@ -246,13 +255,21 @@ class UpdateBlogController extends Controller
     {
         $usuario = $request->user();
 
+        $this->prepararCategoriaIds($request);
+
         $datosValidados = $request->validate([
             'actualizacion_titulo' => ['required', 'string', 'max:255'],
             'actualizacion_version' => ['nullable', 'string', 'max:50'],
             'actualizacion_contenido' => ['required'],
             'actualizacion_resumen' => ['required', 'string'],
             'actualizacion_imagen_destacada' => ['nullable'],
-            'actualizacion_categoria_id' => ['required', 'integer'],
+            'actualizacion_categoria_ids' => ['required', 'array', 'min:1', 'max:3'],
+            'actualizacion_categoria_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('act_categorias', 'categoria_actualizacion_id'),
+            ],
             'actualizacion_estado' => [
                 'nullable',
                 Rule::in($this->estadosPermitidos()),
@@ -272,7 +289,7 @@ class UpdateBlogController extends Controller
                     $datosValidados['actualizacion_contenido']
                 ),
                 'actualizacion_resumen' => $datosValidados['actualizacion_resumen'],
-                'actualizacion_categoria_id' => $datosValidados['actualizacion_categoria_id'],
+                'actualizacion_categoria_id' => $datosValidados['actualizacion_categoria_ids'][0],
 
                 /*
                 |--------------------------------------------------------------------------
@@ -313,6 +330,7 @@ class UpdateBlogController extends Controller
             }
 
             $actualizacion = UpdateBlog::create($datosParaGuardar);
+            $this->sincronizarCategorias($actualizacion, $datosValidados['actualizacion_categoria_ids']);
 
             if ($request->filled('imagenes_quill')) {
                 $rutasImagenes = json_decode($request->input('imagenes_quill'), true);
@@ -334,6 +352,7 @@ class UpdateBlogController extends Controller
                     $actualizacion->fresh([
                         'areaServicio',
                         'categoria',
+                        'categorias',
                         'imagenes',
                         'usuarioAutor',
                         'ultimaRevisionObservacion.supervisor',
@@ -361,13 +380,21 @@ class UpdateBlogController extends Controller
             abort(403, 'No tienes permiso para editar este registro.');
         }
 
+        $this->prepararCategoriaIds($request);
+
         $data = $request->validate([
             'actualizacion_titulo' => ['sometimes', 'required', 'string', 'max:255'],
             'actualizacion_version' => ['sometimes', 'nullable', 'string', 'max:50'],
             'actualizacion_imagen_destacada' => ['sometimes', 'nullable'],
             'actualizacion_resumen' => ['sometimes', 'required', 'string'],
             'actualizacion_contenido' => ['sometimes', 'required'],
-            'actualizacion_categoria_id' => ['sometimes', 'required', 'integer'],
+            'actualizacion_categoria_ids' => ['sometimes', 'required', 'array', 'min:1', 'max:3'],
+            'actualizacion_categoria_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('act_categorias', 'categoria_actualizacion_id'),
+            ],
             'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
             'actualizacion_estado' => ['sometimes', 'required', Rule::in($this->estadosPermitidos())],
             'actualizacion_fecha_publicacion' => ['nullable', 'date'],
@@ -380,6 +407,13 @@ class UpdateBlogController extends Controller
         );
 
         unset($data['actualizacion_es_correccion']);
+
+        $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
+        unset($data['actualizacion_categoria_ids']);
+
+        if (is_array($categoriaIds) && count($categoriaIds) > 0) {
+            $data['actualizacion_categoria_id'] = $categoriaIds[0];
+        }
 
         if (array_key_exists('actualizacion_contenido', $data)) {
             $data['actualizacion_contenido'] = $this->normalizarContenido(
@@ -434,6 +468,11 @@ class UpdateBlogController extends Controller
         }
 
         $actualizacion->update($data);
+
+        if (is_array($categoriaIds)) {
+            $this->sincronizarCategorias($actualizacion, $categoriaIds);
+        }
+
         $actualizacion->refresh();
 
         if ($this->debeNotificarCorreccion($estadoAnterior, $actualizacion, $correccionSolicitada)) {
@@ -446,6 +485,7 @@ class UpdateBlogController extends Controller
                 $actualizacion->fresh([
                     'areaServicio',
                     'categoria',
+                    'categorias',
                     'imagenes',
                     'usuarioAutor',
                     'ultimaRevisionObservacion.supervisor',
@@ -497,6 +537,7 @@ class UpdateBlogController extends Controller
                 $actualizacion->fresh([
                     'areaServicio',
                     'categoria',
+                    'categorias',
                     'imagenes',
                     'usuarioAutor',
                     'ultimaRevisionObservacion.supervisor',
@@ -561,6 +602,7 @@ class UpdateBlogController extends Controller
                 $actualizacion->fresh([
                     'areaServicio',
                     'categoria',
+                    'categorias',
                     'imagenes',
                     'usuarioAutor',
                     'ultimaRevisionObservacion.supervisor',
@@ -607,6 +649,8 @@ class UpdateBlogController extends Controller
             'categoria_actualizacion_id',
             'categoria_actualizacion_nombre'
         )
+            ->where('categoria_actualizacion_activa', true)
+            ->orderBy('categoria_actualizacion_orden', 'asc')
             ->orderBy('categoria_actualizacion_nombre', 'asc')
             ->get();
 
@@ -880,6 +924,59 @@ class UpdateBlogController extends Controller
                     ],
                 ],
             ]);
+        }
+    }
+
+
+    private function prepararCategoriaIds(Request $request): void
+    {
+        $ids = $request->input('actualizacion_categoria_ids');
+
+        if (is_string($ids)) {
+            $decoded = json_decode($ids, true);
+            $ids = is_array($decoded) ? $decoded : explode(',', $ids);
+        }
+
+        if ($ids === null && $request->filled('actualizacion_categoria_id')) {
+            $ids = [$request->input('actualizacion_categoria_id')];
+        }
+
+        if (! is_array($ids)) {
+            return;
+        }
+
+        $ids = collect($ids)
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(3)
+            ->values()
+            ->all();
+
+        $request->merge([
+            'actualizacion_categoria_ids' => $ids,
+            'actualizacion_categoria_id' => $ids[0] ?? null,
+        ]);
+    }
+
+    private function sincronizarCategorias(UpdateBlog $actualizacion, array $categoriaIds): void
+    {
+        $categoriaIds = collect($categoriaIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->take(3)
+            ->values()
+            ->all();
+
+        $actualizacion->categorias()->sync($categoriaIds);
+
+        $primeraCategoriaId = $categoriaIds[0] ?? null;
+
+        if ((int) $actualizacion->actualizacion_categoria_id !== (int) $primeraCategoriaId) {
+            $actualizacion->actualizacion_categoria_id = $primeraCategoriaId;
+            $actualizacion->save();
         }
     }
 

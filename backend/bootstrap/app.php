@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureUsuarioGrupo;
-use App\Http\Middleware\QxrDevUser;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,8 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'usuario.grupo' => EnsureUsuarioGrupo::class,
-            // qxr: autenticador temporal local para evitar depender de auth:sanctum + BD intranet.
-            'qxr.auth' => QxrDevUser::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

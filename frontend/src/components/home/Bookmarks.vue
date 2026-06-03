@@ -19,7 +19,7 @@
       </div>
       <p>Cargando guardados...</p>
     </div>
-    
+
     <div v-else-if="error" class="estado-mensaje error">
       <div class="estado-icono">⚠️</div>
       <h3>No se pudieron cargar tus guardados</h3>
@@ -68,96 +68,97 @@
       </div>
 
       <div class="grid-guardados">
-        <article v-for="item in actualizaciones" :key="item.id" class="tarjeta-guardado">
-          <div class="tarjeta-imagen" @click="verDetalle(item.id)">
-            <img v-if="item.actualizacion_imagen_destacada" :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
-              :alt="item.actualizacion_titulo" loading="lazy" />
+        <div class="row lista-feed g-3 g-md-4">
+          <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-sm-6 col-lg-4 col-xl-3">
 
-            <div v-else class="sin-imagen">
-              <span>🖼️</span>
-              <p>Sin imagen destacada</p>
+            <article v-for="item in actualizaciones" :key="item.id" class="tarjeta-header">
+              <div class="tarjeta-header">
+                <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
+                  <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                    class="imagen-destacada" loading="lazy" />
+                  <div class="imagen-overlay">
+                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                  </div>
+                </div>
+                <div v-else class="sin-imagen">
+                  <span class="sin-imagen-icono">🖼️</span>
+                  <p>Sin imagen destacada</p>
+                  <div class="imagen-overlay">
+                    <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
+                <div class="metadatos-top">
+                  <span>{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                  <span class="separador">|</span>
+                  <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+                </div>
+
+                <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
+                <p class="resumen">{{ item.actualizacion_resumen }}</p>
+
+                <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
+                <div class="categorias-iconos">
+                  <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
+                    <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
+                    <span class="ico-label">{{ cat.nombre }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tarjeta-pie">
+                <button class="btn-enlace" @click.stop="verDetalle(item.id)">
+                  Ver más
+                  <i class="bi bi-arrow-right"></i>
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <div v-if="guardadosNoEncontrados > 0" class="alerta-info">
+            {{ guardadosNoEncontrados }}
+            {{ guardadosNoEncontrados === 1 ? 'guardado no pudo cargarse' : 'guardados no pudieron cargarse' }}.
+            Puede que ya no estén disponibles.
+          </div>
+        </div>
+
+        <div class="modal fade" id="modalLimpiarGuardados" tabindex="-1" aria-labelledby="modalLimpiarGuardadosLabel"
+          aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modalLimpiarGuardadosLabel">
+                  ¿Deseas limpiar todos tus guardados?
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+
+              <div class="modal-body">
+                <p>
+                  Al aceptar, se eliminarán todas las actualizaciones guardadas de tu cuenta.
+                </p>
+                <strong class="modal-item-title">
+                  Esta acción no eliminará las publicaciones originales.
+                </strong>
+              </div>
+
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
+
+                <button type="button" class="btn btn-danger" :disabled="limpiandoGuardados" @click="limpiarGuardados">
+                  {{ limpiandoGuardados ? 'Limpiando...' : 'Aceptar' }}
+                </button>
+              </div>
             </div>
-          </div>
-
-          <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
-            <div class="metadatos">
-              <span>{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
-              <span>v{{ item.actualizacion_version || '0.0' }}</span>
-            </div>
-
-            <h3>{{ item.actualizacion_titulo }}</h3>
-
-            <p>
-              {{ item.actualizacion_resumen || 'Sin resumen disponible.' }}
-            </p>
-          </div>
-
-          <div class="tarjeta-footer">
-            <div class="tags">
-              <span>
-                {{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}
-              </span>
-
-              <span>
-                {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
-              </span>
-            </div>
-
-            <div class="acciones">
-              <button class="btn-quitar" type="button" title="Quitar de guardados"
-                @click.stop="quitarGuardado(item.id)">
-                <i class="bi bi-bookmark-x-fill fs-5"></i>
-              </button>
-
-              <button class="btn-ver" type="button" @click.stop="verDetalle(item.id)">
-                Ver más
-                <i class="bi bi-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <div v-if="guardadosNoEncontrados > 0" class="alerta-info">
-        {{ guardadosNoEncontrados }}
-        {{ guardadosNoEncontrados === 1 ? 'guardado no pudo cargarse' : 'guardados no pudieron cargarse' }}.
-        Puede que ya no estén disponibles.
-      </div>
-    </div>
-
-    <div class="modal fade" id="modalLimpiarGuardados" tabindex="-1" aria-labelledby="modalLimpiarGuardadosLabel"
-      aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalLimpiarGuardadosLabel">
-              ¿Deseas limpiar todos tus guardados?
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-
-          <div class="modal-body">
-            <p>
-              Al aceptar, se eliminarán todas las actualizaciones guardadas de tu cuenta.
-            </p>
-            <strong class="modal-item-title">
-              Esta acción no eliminará las publicaciones originales.
-            </strong>
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Cancelar
-            </button>
-
-            <button type="button" class="btn btn-danger" :disabled="limpiandoGuardados" @click="limpiarGuardados">
-              {{ limpiandoGuardados ? 'Limpiando...' : 'Aceptar' }}
-            </button>
           </div>
         </div>
       </div>
     </div>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -306,6 +307,18 @@ const verDetalle = (id: number) => {
   router.push(`/employee/actualizaciones/${id}`)
 }
 
+
+const obtenerNombreCategorias = (item: Version): string => {
+  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
+    return (item as any).categorias
+      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return item.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
+}
+
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) {
     return ''
@@ -347,6 +360,77 @@ const formatearFecha = (fechaString: string) => {
 
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
+
+
+const normalizarTexto = (texto: string): string =>
+  texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+const obtenerIconoCategoria = (nombre: string | undefined): string => {
+  if (!nombre) return 'bi-tag-fill'
+
+  const n = normalizarTexto(nombre)
+
+  const mapa: Record<string, string> = {
+    'manual de usuario': 'bi-person-lines-fill',
+    'manual tecnico': 'bi-tools',
+    'instalador': 'bi-box-arrow-down',
+    'actualizacion del sistema': 'bi-arrow-repeat',
+    'nueva funcionalidad': 'bi-stars',
+    'mejora': 'bi-arrow-up-circle-fill',
+    'correccion de errores': 'bi-bug-fill',
+    'parche de seguridad': 'bi-shield-fill-check',
+    'guia de instalacion': 'bi-journal-arrow-down',
+    'guia rapida': 'bi-lightning-charge-fill',
+    'documentacion': 'bi-file-earmark-text-fill',
+    'notas de version': 'bi-card-list',
+    'general': 'bi-info-circle-fill',
+  }
+
+  if (mapa[n]) return mapa[n]
+
+  // Fallback por coincidencias parciales
+  if (n.includes('manual')) return 'bi-journal-text'
+  if (n.includes('instal')) return 'bi-box-arrow-down'
+  if (n.includes('actualizacion')) return 'bi-arrow-repeat'
+  if (n.includes('funcionalidad')) return 'bi-stars'
+  if (n.includes('mejora')) return 'bi-arrow-up-circle-fill'
+  if (n.includes('correccion') || n.includes('error')) return 'bi-bug-fill'
+  if (n.includes('seguridad') || n.includes('parche')) return 'bi-shield-fill-check'
+  if (n.includes('guia')) return 'bi-journal-bookmark-fill'
+  if (n.includes('documentacion')) return 'bi-file-earmark-text-fill'
+  if (n.includes('version')) return 'bi-card-list'
+  if (n.includes('general')) return 'bi-info-circle-fill'
+
+  return 'bi-tag-fill'
+}
+
+/**
+ * Normaliza las categorías de un item, soportando:
+ * - item.categorias → array (relación hasMany)
+ * - item.categoria  → objeto único (relación belongsTo)
+ * - ninguno         → fallback "Sin categoría"
+ */
+const obtenerCategorias = (item: Version): { id: string | number; nombre: string }[] => {
+  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
+    return (item as any).categorias.map((c: any) => ({
+      id: c.categoria_actualizacion_id ?? c.id ?? Math.random(),
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }))
+  }
+  if ((item as any).categoria) {
+    const c = (item as any).categoria
+    return [{
+      id: c.categoria_actualizacion_id ?? c.id ?? 0,
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }]
+  }
+  return [{ id: 0, nombre: 'Sin categoría' }]
+}
+
 
 onMounted(() => {
   obtenerGuardados()
@@ -609,7 +693,7 @@ onMounted(() => {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: #fff7ed;
+  background: #fef2f2;
   color: #a70000;
   border: 1px solid #ff9898;
 }

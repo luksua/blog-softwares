@@ -4,16 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class UpdateBlog extends Model
 {
-    // nombre de la tabla en la bd
     protected $table = 'actualizaciones_blog';
 
     const UPDATED_AT = null;
-
     const CREATED_AT = 'actualizacion_fecha_creacion';
 
     protected $primaryKey = 'id';
@@ -27,13 +26,11 @@ class UpdateBlog extends Model
         'actualizacion_area_servicio_id',
         'actualizacion_usuario_id_autor',
         'actualizacion_estado',
-        // 'actualizacion_fecha_creacion',
-        // 'actualizacion_fecha_actualizacion',
         'actualizacion_fecha_publicacion',
-        'actualizacion_categoria_id'
+        'actualizacion_categoria_id', // compatibilidad: primera categoría seleccionada
     ];
 
-    public function imagenes()
+    public function imagenes(): HasMany
     {
         return $this->hasMany(PhotoUpdate::class, 'actualizacion_id');
     }
@@ -60,13 +57,35 @@ class UpdateBlog extends Model
         return $this->hasMany(Bookmark::class, 'actualizacion_id', 'id');
     }
 
-    public function areaServicio()
+    public function areaServicio(): BelongsTo
     {
         return $this->belongsTo(Area::class, 'actualizacion_area_servicio_id');
     }
 
-        public function categoria()
+    /**
+     * Categoría principal/legacy. Se conserva para no romper pantallas existentes.
+     */
+    public function categoria(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'actualizacion_categoria_id');
+        return $this->belongsTo(
+            Category::class,
+            'actualizacion_categoria_id',
+            'categoria_actualizacion_id'
+        );
+    }
+
+    /**
+     * Un registro puede tener de 1 a 3 categorías.
+     */
+    public function categorias()
+    {
+        return $this->belongsToMany(
+            Category::class,
+            'actualizaciones_blog_categorias',
+            'actualizacion_id',
+            'categoria_actualizacion_id',
+            'id',
+            'categoria_actualizacion_id'
+        )->withTimestamps('created_at', 'updated_at');
     }
 }

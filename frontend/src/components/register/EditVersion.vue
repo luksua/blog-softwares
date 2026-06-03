@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="edit-version-container">
     <!-- Estado de carga -->
     <div v-if="cargando" class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
@@ -19,7 +19,7 @@
         </div>
 
         <!-- Título -->
-        <div class="col-md-12 mb-4">
+        <div class="form-group mb-4">
           <label class="form-label fw-bold text-primary">
             Título <span class="text-danger">*</span>
           </label>
@@ -38,7 +38,7 @@
 
         <div class="row">
           <!-- Versión -->
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-sm-6 mb-4">
             <label class="form-label fw-bold text-primary">Versión</label>
             <input 
               v-model="form.version" 
@@ -53,7 +53,7 @@
           </div>
 
           <!-- Imagen destacada -->
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-sm-6 mb-4">
             <label class="form-label fw-bold text-primary">Imagen destacada (Portada)</label>
             
             <div v-if="previewImagen || form.imagen_destacada" class="mb-3">
@@ -94,7 +94,7 @@
 
         <div class="row">
           <!-- Área -->
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-md-6 mb-4">
             <label for="area" class="form-label fw-bold text-primary">
               Área <span class="text-danger">*</span>
             </label>
@@ -115,35 +115,108 @@
             </div>
           </div>
 
-          <!-- Categoría -->
-          <div class="col-md-6 mb-4">
-            <label for="categoria" class="form-label fw-bold text-primary">
-              Categoría <span class="text-danger">*</span>
+          <!-- Categorías - Select Moderno Responsive -->
+          <div class="col-12 col-md-6 mb-4">
+            <label class="form-label fw-bold text-primary">
+              Categorías <span class="text-danger">*</span>
+              <small class="text-muted">(máximo 3)</small>
             </label>
-            <select 
-              id="categoria" 
-              class="form-select" 
-              :class="{ 'is-invalid': errores.actualizacion_categoria_id }"
-              v-model="form.categoria_id" 
-              required
-            >
-              <option :value="null" disabled>Selecciona una categoría...</option>
-              <option 
-                v-for="categoria in listaCategorias" 
-                :key="categoria.categoria_actualizacion_id"
-                :value="Number(categoria.categoria_actualizacion_id)"
-              >
-                {{ categoria.categoria_actualizacion_nombre }}
-              </option>
-            </select>
-            <div v-if="errores.actualizacion_categoria_id" class="invalid-feedback">
-              {{ errores.actualizacion_categoria_id?.[0] }}
+
+            <!-- Select moderno -->
+            <div class="categoria-select-wrapper" :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }">
+              <div class="categoria-select-trigger" @click="toggleSelect">
+                <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
+                  <i class="bi bi-tag"></i>
+                  <span>Selecciona hasta 3 categorías</span>
+                </div>
+                <div class="select-selected" v-else>
+                  <div class="selected-tags">
+                    <span v-for="cat in categoriasSeleccionadas.slice(0, 2)" :key="cat.id" class="selected-tag">
+                      {{ cat.nombre }}
+                    </span>
+                    <span v-if="categoriasSeleccionadas.length > 2" class="selected-more">
+                      +{{ categoriasSeleccionadas.length - 2 }}
+                    </span>
+                  </div>
+                </div>
+                <i class="bi" :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </div>
+
+              <!-- Dropdown de opciones -->
+              <div v-if="selectAbierto" class="categoria-select-dropdown">
+                <div class="dropdown-search" v-if="listaCategorias.length > 5">
+                  <i class="bi bi-search"></i>
+                  <input 
+                    type="text" 
+                    v-model="busquedaCategoria" 
+                    placeholder="Buscar categoría..."
+                    @click.stop
+                  />
+                </div>
+                <div class="dropdown-options">
+                  <button
+                    type="button"
+                    v-for="categoria in categoriasFiltradas"
+                    :key="categoria.categoria_actualizacion_id"
+                    class="dropdown-option"
+                    :class="{
+                      selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
+                      disabled: !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3
+                    }"
+                    @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
+                    :disabled="!categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3"
+                  >
+                    <span class="option-name">{{ categoria.categoria_actualizacion_nombre }}</span>
+                    <span class="option-check">
+                      <i v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))" class="bi bi-check-lg"></i>
+                    </span>
+                  </button>
+                  <div v-if="categoriasFiltradas.length === 0" class="dropdown-empty">
+                    No se encontraron categorías
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Etiquetas de seleccionadas debajo -->
+            <!-- <div v-if="categoriasSeleccionadas.length > 0" class="categorias-seleccionadas">
+              <span class="seleccionadas-label">Seleccionadas:</span>
+              <div class="seleccionadas-labels">
+                <span
+                  v-for="categoria in categoriasSeleccionadas"
+                  :key="categoria.id"
+                  class="label-categoria"
+                  :style="{ backgroundColor: getCategoriaColor(categoria.nombre) + '15', borderColor: getCategoriaColor(categoria.nombre) }"
+                >
+                  <i :class="getCategoriaIcon(categoria.nombre)" :style="{ color: getCategoriaColor(categoria.nombre) }"></i>
+                  {{ categoria.nombre }}
+                  <button
+                    type="button"
+                    class="label-remove"
+                    @click="toggleCategoria(categoria.id)"
+                  >
+                    <i class="bi bi-x"></i>
+                  </button>
+                </span>
+              </div>
+            </div> -->
+
+            <!-- Contador -->
+            <div class="categoria-counter">
+              <span class="counter-text">{{ categoriasSeleccionadas.length }}/3 categorías</span>
+              <span v-if="categoriasSeleccionadas.length >= 3" class="counter-warning">
+                <i class="bi bi-exclamation-triangle-fill"></i> Límite alcanzado
+              </span>
+            </div>
+
+            <div v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id" class="invalid-feedback d-block">
+              {{ errores.actualizacion_categoria_ids?.[0] || errores.actualizacion_categoria_id?.[0] }}
             </div>
           </div>
         </div>
 
         <!-- Resumen -->
-        <div class="mb-4">
+        <div class="form-group mb-4">
           <label class="form-label fw-bold text-primary">Resumen</label>
           <textarea 
             v-model="form.resumen" 
@@ -159,7 +232,7 @@
 
         <div class="row">
           <!-- Estado -->
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-md-6 mb-4">
             <template v-if="!modoCorreccion">
               <label class="form-label fw-bold text-primary">Estado</label>
               <select 
@@ -187,7 +260,7 @@
           </div>
 
           <!-- Fechas -->
-          <div class="col-md-6 mb-4">
+          <div class="col-12 col-md-6 mb-4">
             <template v-if="estadoParaVista !== 'publicado'">
               <label class="form-label fw-bold text-secondary">Fecha de creación</label>
               <input 
@@ -224,13 +297,13 @@
         </div>
 
         <!-- Contenido del editor -->
-        <div class="mb-4">
+        <div class="form-group mb-4">
           <label class="form-label fw-bold text-primary">Contenido</label>
           <div ref="editorHolder" id="editorjs" class="editor-container border rounded p-3 bg-white"></div>
         </div>
 
         <!-- Botones de acción -->
-        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+        <div class="form-actions">
           <button 
             type="button" 
             class="btn btn-outline-secondary" 
@@ -301,6 +374,10 @@ const previewImagen = ref<string | null>(null)
 const listaAreas = ref<any[]>([])
 const listaCategorias = ref<any[]>([])
 
+// Estado del select de categorías
+const selectAbierto = ref(false)
+const busquedaCategoria = ref('')
+
 // Formulario
 const form = reactive({
   titulo: '',
@@ -309,7 +386,7 @@ const form = reactive({
   resumen: '',
   imagen_destacada: '',
   area_servicio_id: null as number | null,
-  categoria_id: null as number | null,
+  categoria_ids: [] as number[],
   usuario_id_autor: null as number | null,
   estado: 'borrador',
   fecha_creacion: '',
@@ -325,10 +402,117 @@ const textoBotonGuardar = computed(() => {
   return props.modoCorreccion ? 'Enviar corrección' : 'Guardar cambios'
 })
 
+// Categorías seleccionadas con detalles
+const categoriasSeleccionadas = computed(() => {
+  return form.categoria_ids
+    .map(id => {
+      const categoria = listaCategorias.value.find(c => Number(c.categoria_actualizacion_id) === id)
+      return categoria ? {
+        id: Number(categoria.categoria_actualizacion_id),
+        nombre: categoria.categoria_actualizacion_nombre
+      } : null
+    })
+    .filter(c => c !== null)
+})
+
+// Categorías filtradas por búsqueda
+const categoriasFiltradas = computed(() => {
+  if (!busquedaCategoria.value) return listaCategorias.value
+  const busqueda = busquedaCategoria.value.toLowerCase()
+  return listaCategorias.value.filter(cat => 
+    cat.categoria_actualizacion_nombre.toLowerCase().includes(busqueda)
+  )
+})
+
+const normalizarCategoriaIds = (valor: any): number[] => {
+  const ids = Array.isArray(valor) ? valor : (valor ? [valor] : [])
+  return ids
+    .map((id) => Number(id))
+    .filter((id, index, array) => Number.isFinite(id) && id > 0 && array.indexOf(id) === index)
+    .slice(0, 3)
+}
+
+const categoriaSeleccionada = (categoriaId: number) => {
+  return form.categoria_ids.includes(categoriaId)
+}
+
+const toggleCategoria = (categoriaId: number) => {
+  const index = form.categoria_ids.indexOf(categoriaId)
+  
+  if (index > -1) {
+    form.categoria_ids.splice(index, 1)
+  } else {
+    if (form.categoria_ids.length < 3) {
+      form.categoria_ids.push(categoriaId)
+    }
+  }
+}
+
+const toggleSelect = () => {
+  selectAbierto.value = !selectAbierto.value
+  if (!selectAbierto.value) {
+    busquedaCategoria.value = ''
+  }
+}
+
+// Función para asignar colores según la categoría
+const getCategoriaColor = (nombre: string) => {
+  const colorMap: Record<string, string> = {
+    'inicio': '#077E9D',
+    'noticias': '#FCBB1C',
+    'actualizaciones': '#025B7D',
+    'documentos': '#4F46E5',
+    'tutoriales': '#10B981',
+    'eventos': '#F59E0B',
+    'avisos': '#EF4444',
+    'novedades': '#8B5CF6'
+  }
+  
+  const lowerNombre = nombre.toLowerCase()
+  for (const [key, color] of Object.entries(colorMap)) {
+    if (lowerNombre.includes(key)) {
+      return color
+    }
+  }
+  return '#077E9D'
+}
+
+// Función para asignar iconos según la categoría
+const getCategoriaIcon = (nombre: string) => {
+  const iconMap: Record<string, string> = {
+    'inicio': 'bi bi-house-fill',
+    'noticias': 'bi bi-megaphone-fill',
+    'actualizaciones': 'bi bi-arrow-repeat',
+    'documentos': 'bi bi-file-text-fill',
+    'tutoriales': 'bi bi-journal-bookmark-fill',
+    'eventos': 'bi bi-calendar-event-fill',
+    'avisos': 'bi bi-bell-fill',
+    'novedades': 'bi bi-star-fill'
+  }
+  
+  const lowerNombre = nombre.toLowerCase()
+  for (const [key, icon] of Object.entries(iconMap)) {
+    if (lowerNombre.includes(key)) {
+      return icon
+    }
+  }
+  return 'bi bi-tag-fill'
+}
+
+// Cerrar select al hacer click fuera
+const cerrarSelectAlClickFuera = (event: MouseEvent) => {
+  const wrapper = document.querySelector('.categoria-select-wrapper')
+  if (wrapper && !wrapper.contains(event.target as Node)) {
+    selectAbierto.value = false
+    busquedaCategoria.value = ''
+  }
+}
+
 const formularioValido = computed(() => {
   return form.titulo.trim() !== '' && 
          form.area_servicio_id !== null && 
-         form.categoria_id !== null
+         form.categoria_ids.length > 0 &&
+         form.categoria_ids.length <= 3
 })
 
 // Métodos
@@ -480,9 +664,9 @@ const cargarRegistro = async () => {
       ? Number(data.actualizacion_area_servicio_id)
       : null
 
-    form.categoria_id = data.actualizacion_categoria_id
-      ? Number(data.actualizacion_categoria_id)
-      : null
+    form.categoria_ids = normalizarCategoriaIds(
+      data.actualizacion_categoria_ids || data.actualizacion_categoria_id
+    )
 
     const contenidoBD = data.actualizacion_contenido
 
@@ -551,7 +735,8 @@ const guardarCambios = async () => {
       actualizacion_fecha_publicacion: fechaPublicacionFinal,
       actualizacion_es_correccion: props.modoCorreccion,
       actualizacion_contenido: contenidoFinal,
-      actualizacion_categoria_id: form.categoria_id,
+      actualizacion_categoria_id: form.categoria_ids[0],
+      actualizacion_categoria_ids: form.categoria_ids,
       actualizacion_area_servicio_id: form.area_servicio_id,
     }
 
@@ -574,7 +759,6 @@ const guardarCambios = async () => {
       errores.value = error.response.data.errors || {}
     } else {
       mensajeOk.value = ''
-      // Mostrar error general
       errores.value.general = ['Ocurrió un error al guardar. Por favor, intente nuevamente.']
     }
   } finally {
@@ -587,11 +771,13 @@ onMounted(async () => {
   await cargarListas()
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
+  document.addEventListener('click', cerrarSelectAlClickFuera)
 })
 
 onBeforeUnmount(() => {
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
+  document.removeEventListener('click', cerrarSelectAlClickFuera)
   
   if (editor.value && typeof editor.value.destroy === 'function') {
     editor.value.destroy()
@@ -634,6 +820,13 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   --warning: #FCBB1C;
 }
 
+/* Contenedor principal responsive */
+.edit-version-container {
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+}
+
 /* Estilos base */
 .text-primary {
   color: var(--primary) !important;
@@ -654,28 +847,335 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 .btn-primary {
   background-color: var(--primary);
   border-color: var(--primary);
+  transition: all 0.2s ease;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
 }
 
 .btn-outline-secondary {
   color: var(--secondary);
   border-color: var(--secondary);
+  transition: all 0.2s ease;
 }
 
-.btn-outline-secondary:hover {
+.btn-outline-secondary:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
   color: white;
+  transform: translateY(-1px);
 }
 
 .alert-warning {
   background-color: rgba(252, 187, 28, 0.1);
   border-left: 4px solid var(--warning);
   color: #856404;
+}
+
+/* Formulario */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
+}
+
+/* Select de categorías moderno responsive */
+.categoria-select-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.categoria-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 42px;
+  width: 100%;
+}
+
+.categoria-select-trigger:hover {
+  border-color: var(--primary);
+}
+
+.categoria-select-wrapper.open .categoria-select-trigger {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
+}
+
+.select-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.select-placeholder i {
+  font-size: 0.9rem;
+}
+
+.select-selected {
+  flex: 1;
+  min-width: 0;
+}
+
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.selected-tag {
+  background: rgba(7, 126, 157, 0.1);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.selected-more {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.categoria-select-trigger .bi-chevron-down,
+.categoria-select-trigger .bi-chevron-up {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+/* Dropdown */
+.categoria-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdown-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dropdown-search i {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.dropdown-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 6px 0;
+  background: transparent;
+}
+
+.dropdown-search input::placeholder {
+  color: #cbd5e1;
+}
+
+.dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-option:hover:not(.disabled) {
+  background: #f8fafc;
+}
+
+.dropdown-option.selected {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+.dropdown-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option-name {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.dropdown-option.selected .option-name {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.option-check i {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.dropdown-empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* Scrollbar personalizada */
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Etiquetas de seleccionadas */
+.categorias-seleccionadas {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 0;
+}
+
+.seleccionadas-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.seleccionadas-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.label-categoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px 3px 8px;
+  background: #f1f5f9;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #334155;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.label-categoria:hover {
+  background: #e2e8f0;
+}
+
+.label-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.label-remove i {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.label-remove:hover i {
+  color: #ef4444;
+}
+
+/* Contador */
+.categoria-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.counter-text {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.counter-warning {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--warning);
+  background: rgba(252, 187, 28, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 /* Editor de contenido */
@@ -694,6 +1194,16 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   border-color: var(--primary);
 }
 
+/* Botones de acción responsive */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
 /* Animaciones */
 .fade-enter-active,
 .fade-leave-active {
@@ -703,25 +1213,6 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-/* Estilos de formulario */
-.form-control:focus,
-.form-select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
-}
-
-.form-label {
-  margin-bottom: 0.5rem;
-}
-
-/* Badge de estado */
-.badge-status {
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
 }
 
 /* Imagen thumbnail */
@@ -734,39 +1225,239 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   transform: scale(1.05);
 }
 
-/* Responsive */
+/* ============================================
+   MEDIA QUERIES RESPONSIVE
+   ============================================ */
+
+/* Tablets y móviles grandes (768px - 1024px) */
+@media (max-width: 1024px) {
+  .form-actions {
+    gap: 10px;
+  }
+  
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Tablets pequeñas (576px - 768px) */
 @media (max-width: 768px) {
-  .container {
-    padding: 0.5rem;
+  .form-group {
+    margin-bottom: 1rem;
   }
   
-  .d-flex {
+  .form-label {
+    font-size: 0.85rem;
+  }
+  
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+  
+  .categoria-select-trigger {
+    padding: 8px 12px;
+    min-height: 40px;
+  }
+  
+  .selected-tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  
+  .dropdown-option {
+    padding: 8px 12px;
+  }
+  
+  .option-name {
+    font-size: 0.8rem;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .editor-container {
+    min-height: 280px;
+  }
+}
+
+/* Móviles (menos de 576px) */
+@media (max-width: 576px) {
+  .edit-version-container {
+    padding: 0;
+  }
+  
+  .form-label {
+    font-size: 0.8rem;
+  }
+  
+  .form-control,
+  .form-select {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+  }
+  
+  .categoria-select-trigger {
+    padding: 8px 10px;
+    min-height: 38px;
+  }
+  
+  .select-placeholder {
+    font-size: 0.75rem;
+  }
+  
+  .select-placeholder i {
+    font-size: 0.8rem;
+  }
+  
+  .selected-tag {
+    font-size: 0.6rem;
+    padding: 2px 5px;
+  }
+  
+  .selected-more {
+    font-size: 0.6rem;
+    padding: 2px 5px;
+  }
+  
+  .categorias-seleccionadas {
     flex-direction: column;
-    gap: 0.5rem !important;
+    align-items: flex-start;
   }
   
-  .d-flex .btn {
+  .seleccionadas-labels {
     width: 100%;
   }
+  
+  .label-categoria {
+    width: calc(100% - 8px);
+    justify-content: space-between;
+  }
+  
+  .categoria-counter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  
+  .counter-warning {
+    align-self: flex-start;
+  }
+  
+  .dropdown-option {
+    padding: 8px 10px;
+  }
+  
+  .option-name {
+    font-size: 0.75rem;
+  }
+  
+  .editor-container {
+    min-height: 250px;
+  }
+  
+  .alert {
+    font-size: 0.85rem;
+    padding: 10px 12px;
+  }
+  
+  .alert i {
+    font-size: 0.9rem;
+  }
 }
 
-/* Scrollbar personalizada */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Móviles muy pequeños (menos de 375px) */
+@media (max-width: 375px) {
+  .form-label {
+    font-size: 0.75rem;
+  }
+  
+  .form-control,
+  .form-select {
+    font-size: 0.8rem;
+    padding: 6px 8px;
+  }
+  
+  .categoria-select-trigger {
+    padding: 6px 8px;
+  }
+  
+  .select-placeholder {
+    font-size: 0.7rem;
+    gap: 6px;
+  }
+  
+  .select-placeholder i {
+    font-size: 0.75rem;
+  }
+  
+  .selected-tag {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+  }
+  
+  .selected-more {
+    font-size: 0.7rem;
+    padding: 1px 4px;
+  }
+  
+  .dropdown-option {
+    padding: 6px 8px;
+  }
+  
+  .option-name {
+    font-size: 0.7rem;
+  }
+  
+  .option-check i {
+    font-size: 0.8rem;
+  }
+  
+  .label-categoria {
+    font-size: 0.65rem;
+    padding: 2px 5px 2px 6px;
+  }
+  
+  .counter-text,
+  .counter-warning {
+    font-size: 0.65rem;
+  }
+  
+  .btn {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+  
+  .editor-container {
+    min-height: 220px;
+  }
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+/* Soporte para pantallas con orientación horizontal en móviles */
+@media (max-width: 768px) and (orientation: landscape) {
+  .editor-container {
+    min-height: 200px;
+  }
+  
+  .dropdown-options {
+    max-height: 150px;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 10px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary);
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #0999be;
+    --secondary: #0370a0;
+  }
 }
 </style>

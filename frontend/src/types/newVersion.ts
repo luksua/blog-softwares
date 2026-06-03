@@ -1,4 +1,3 @@
-
 export interface NewVersion {
   id?: number | null;
   titulo: string;
@@ -7,10 +6,11 @@ export interface NewVersion {
   resumen: string;
   imagen_destacada: string;
   area_servicio_id: number | null;
-  actualizacion_categoria_id: number | null;
+  actualizacion_categoria_id?: number | null;
+  actualizacion_categoria_ids: number[];
   usuario_id_autor: number | null;
   estado: string;
   fecha_creacion: string;
   fecha_publicacion: string;
-  imagenes_quill?: string[]; 
+  imagenes_quill?: string[];
 }

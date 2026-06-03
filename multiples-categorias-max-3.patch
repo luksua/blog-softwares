@@ -1,0 +1,1146 @@
+diff --git a/backend/app/Http/Controllers/Admin/UpdateBlogAdminController.php b/backend/app/Http/Controllers/Admin/UpdateBlogAdminController.php
+index 17c33ea..96bb594 100644
+--- a/backend/app/Http/Controllers/Admin/UpdateBlogAdminController.php
++++ b/backend/app/Http/Controllers/Admin/UpdateBlogAdminController.php
+@@ -16,6 +16,8 @@ class UpdateBlogAdminController extends Controller
+     public function store(Request $request)
+     {
+         // 1. Validación de los datos
++        $this->prepararCategoriaIds($request);
++
+         $datosValidados = $request->validate([
+             'actualizacion_titulo'            => 'required|string|max:255',
+             'actualizacion_version'           => 'required|string|max:255',
+@@ -25,7 +27,8 @@ public function store(Request $request)
+             'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
+ 
+             'actualizacion_area_servicio_id'  => 'required|integer',
+-            'actualizacion_categoria_id'  => 'required|integer',
++            'actualizacion_categoria_ids' => 'required|array|min:1|max:3',
++            'actualizacion_categoria_ids.*' => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
+             'actualizacion_usuario_id_autor'  => 'required|integer',
+             'actualizacion_estado'            => 'required|in:borrador,revision,publicado,inactivo',
+             'imagenes_quill'                  => 'nullable|string', // Mantenido si aún guardas trackers manuales
+@@ -36,9 +39,11 @@ public function store(Request $request)
+ 
+             // 2. Preparamos los datos base (excluyendo los campos conflictivos temporalmente)
+             $datosParaGuardar = collect($datosValidados)
+-                ->except(['actualizacion_imagen_destacada', 'imagenes_quill'])
++                ->except(['actualizacion_imagen_destacada', 'imagenes_quill', 'actualizacion_categoria_ids'])
+                 ->toArray();
+ 
++            $datosParaGuardar['actualizacion_categoria_id'] = $datosValidados['actualizacion_categoria_ids'][0];
++
+             // ✅ CAMBIO 2: Si viene una imagen física, la guardamos en el disco
+             if ($request->hasFile('actualizacion_imagen_destacada')) {
+                 // Esto guarda el archivo en 'storage/app/public/blog/portadas'
+@@ -51,6 +56,7 @@ public function store(Request $request)
+ 
+             // 3. Crear el registro principal en 'actualizaciones_blog'
+             $actualizacion = UpdateBlog::create($datosParaGuardar);
++            $this->sincronizarCategorias($actualizacion, $datosValidados['actualizacion_categoria_ids']);
+ 
+             // 4. (Opcional) GUARDAR LAS RUTAS DE LAS IMÁGENES EXTRA
+             // Nota: Con Editor.js las imágenes ya se suben por otro endpoint, 
+@@ -71,7 +77,7 @@ public function store(Request $request)
+ 
+             return response()->json([
+                 'message' => 'Registro guardado con éxito',
+-                'data' => $actualizacion->load('imagenes')
++                'data' => $actualizacion->load(['imagenes', 'categoria', 'categorias'])
+             ], 201);
+         } catch (\Exception $e) {
+             DB::rollBack();
+@@ -85,7 +91,7 @@ public function store(Request $request)
+ 
+     public function index(Request $request)
+     {
+-        $query = UpdateBlog::with(['areaServicio', 'imagenes', 'categoria'])
++        $query = UpdateBlog::with(['areaServicio', 'imagenes', 'categoria', 'categorias'])
+             ->orderByDesc('id');
+ 
+         if ($request->filled('busqueda')) {
+@@ -108,6 +114,17 @@ public function index(Request $request)
+             $query->where('actualizacion_area_servicio_id', (int) $request->area_servicio_id);
+         }
+ 
++        if ($request->filled('actualizacion_categoria_id')) {
++            $categoriaId = (int) $request->actualizacion_categoria_id;
++
++            $query->where(function ($q) use ($categoriaId) {
++                $q->where('actualizacion_categoria_id', $categoriaId)
++                    ->orWhereHas('categorias', function ($subQuery) use ($categoriaId) {
++                        $subQuery->where('act_categorias.categoria_actualizacion_id', $categoriaId);
++                    });
++            });
++        }
++
+         $actualizaciones = $query->paginate(10);
+ 
+         return response()->json($actualizaciones);
+@@ -127,6 +144,8 @@ public function getAreas()
+     public function getCategorias()
+     {
+         $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
++            ->where('categoria_actualizacion_activa', true)
++            ->orderBy('categoria_actualizacion_orden', 'asc')
+             ->orderBy('categoria_actualizacion_nombre', 'asc')
+             ->get();
+ 
+@@ -215,7 +234,7 @@ public function subirImagen(Request $request)
+     public function show($id)
+     {
+         // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
+-        $actualizacion = UpdateBlog::with('imagenes')->findOrFail($id);
++        $actualizacion = UpdateBlog::with(['imagenes', 'categoria', 'categorias'])->findOrFail($id);
+ 
+         return new ActualizacionResource($actualizacion);
+     }
+@@ -251,6 +270,8 @@ public function update(Request $request, $id)
+         $actualizacion = UpdateBlog::findOrFail($id);
+ 
+         // Agregamos categoria_id y area_servicio_id a las reglas
++        $this->prepararCategoriaIds($request);
++
+         $data = $request->validate([
+             'actualizacion_titulo'            => 'sometimes|required|string|max:255',
+             'actualizacion_version'           => 'sometimes|required|string|max:50',
+@@ -260,18 +281,83 @@ public function update(Request $request, $id)
+             'actualizacion_fecha_publicacion' => 'nullable|date',
+             'actualizacion_fecha_creacion'    => 'nullable|date',
+             'actualizacion_contenido'         => 'sometimes|required|array',
+-            'actualizacion_categoria_id'      => 'sometimes|required|integer',
++            'actualizacion_categoria_ids'     => 'sometimes|required|array|min:1|max:3',
++            'actualizacion_categoria_ids.*'   => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
+             'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
+         ]);
+ 
++        $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
++        unset($data['actualizacion_categoria_ids']);
++
++        if (is_array($categoriaIds) && count($categoriaIds) > 0) {
++            $data['actualizacion_categoria_id'] = $categoriaIds[0];
++        }
++
+         $actualizacion->update($data);
+ 
++        if (is_array($categoriaIds)) {
++            $this->sincronizarCategorias($actualizacion, $categoriaIds);
++        }
++
+         return response()->json([
+             'message' => 'Actualización editada correctamente',
+-            'data' => $actualizacion->fresh()
++            'data' => $actualizacion->fresh(['imagenes', 'categoria', 'categorias'])
++        ]);
++    }
++
++
++    private function prepararCategoriaIds(Request $request): void
++    {
++        $ids = $request->input('actualizacion_categoria_ids');
++
++        if (is_string($ids)) {
++            $decoded = json_decode($ids, true);
++            $ids = is_array($decoded) ? $decoded : explode(',', $ids);
++        }
++
++        if ($ids === null && $request->filled('actualizacion_categoria_id')) {
++            $ids = [$request->input('actualizacion_categoria_id')];
++        }
++
++        if (! is_array($ids)) {
++            return;
++        }
++
++        $ids = collect($ids)
++            ->filter(fn ($id) => $id !== null && $id !== '')
++            ->map(fn ($id) => (int) $id)
++            ->filter(fn (int $id) => $id > 0)
++            ->unique()
++            ->take(3)
++            ->values()
++            ->all();
++
++        $request->merge([
++            'actualizacion_categoria_ids' => $ids,
++            'actualizacion_categoria_id' => $ids[0] ?? null,
+         ]);
+     }
+ 
++    private function sincronizarCategorias(UpdateBlog $actualizacion, array $categoriaIds): void
++    {
++        $categoriaIds = collect($categoriaIds)
++            ->map(fn ($id) => (int) $id)
++            ->filter(fn (int $id) => $id > 0)
++            ->unique()
++            ->take(3)
++            ->values()
++            ->all();
++
++        $actualizacion->categorias()->sync($categoriaIds);
++
++        $primeraCategoriaId = $categoriaIds[0] ?? null;
++
++        if ((int) $actualizacion->actualizacion_categoria_id !== (int) $primeraCategoriaId) {
++            $actualizacion->actualizacion_categoria_id = $primeraCategoriaId;
++            $actualizacion->save();
++        }
++    }
++
+     // public function subirImagenQuill(Request $request)
+     // {
+     //     // 1. COMENTAMOS LA VALIDACIÓN TEMPORALMENTE
+diff --git a/backend/app/Http/Controllers/api/BookmarkController.php b/backend/app/Http/Controllers/api/BookmarkController.php
+index 6f750e7..b00e089 100644
+--- a/backend/app/Http/Controllers/api/BookmarkController.php
++++ b/backend/app/Http/Controllers/api/BookmarkController.php
+@@ -19,6 +19,7 @@ public function index(Request $request)
+             ->with([
+                 'actualizacion.areaServicio',
+                 'actualizacion.categoria',
++                'actualizacion.categorias',
+                 'actualizacion.imagenes',
+             ])
+             ->where('usuario_id', $usuarioId)
+diff --git a/backend/app/Http/Controllers/api/UpdateBlogController.php b/backend/app/Http/Controllers/api/UpdateBlogController.php
+index edbb3a6..bfd19df 100644
+--- a/backend/app/Http/Controllers/api/UpdateBlogController.php
++++ b/backend/app/Http/Controllers/api/UpdateBlogController.php
+@@ -23,6 +23,7 @@ public function index(Request $request)
+         $relaciones = [
+             'areaServicio:area_servicio_id,area_servicio_nombre',
+             'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
++            'categorias:categoria_actualizacion_id,categoria_actualizacion_nombre',
+         ];
+ 
+         // if (in_array($vista, ['mis-registros', 'supervision', 'todos'], true)) {
+@@ -187,10 +188,17 @@ public function index(Request $request)
+         }
+ 
+         if ($request->filled('actualizacion_categoria_id')) {
+-            $query->where(
+-                'actualizacion_categoria_id',
+-                (int) $request->input('actualizacion_categoria_id')
+-            );
++            $categoriaId = (int) $request->input('actualizacion_categoria_id');
++
++            $query->where(function ($q) use ($categoriaId) {
++                $q->where('actualizacion_categoria_id', $categoriaId)
++                    ->orWhereHas('categorias', function ($subQuery) use ($categoriaId) {
++                        $subQuery->where(
++                            'act_categorias.categoria_actualizacion_id',
++                            $categoriaId
++                        );
++                    });
++            });
+         }
+ 
+         if ($request->filled('fecha_desde')) {
+@@ -230,6 +238,7 @@ public function show(Request $request, int $id)
+         $actualizacion = UpdateBlog::with([
+             'areaServicio',
+             'categoria',
++            'categorias',
+             'imagenes',
+             'usuarioAutor',
+             'ultimaRevisionObservacion.supervisor',
+@@ -246,13 +255,21 @@ public function store(Request $request)
+     {
+         $usuario = $request->user();
+ 
++        $this->prepararCategoriaIds($request);
++
+         $datosValidados = $request->validate([
+             'actualizacion_titulo' => ['required', 'string', 'max:255'],
+             'actualizacion_version' => ['nullable', 'string', 'max:50'],
+             'actualizacion_contenido' => ['required'],
+             'actualizacion_resumen' => ['required', 'string'],
+             'actualizacion_imagen_destacada' => ['nullable'],
+-            'actualizacion_categoria_id' => ['required', 'integer'],
++            'actualizacion_categoria_ids' => ['required', 'array', 'min:1', 'max:3'],
++            'actualizacion_categoria_ids.*' => [
++                'required',
++                'integer',
++                'distinct',
++                Rule::exists('act_categorias', 'categoria_actualizacion_id'),
++            ],
+             'actualizacion_estado' => [
+                 'nullable',
+                 Rule::in($this->estadosPermitidos()),
+@@ -272,7 +289,7 @@ public function store(Request $request)
+                     $datosValidados['actualizacion_contenido']
+                 ),
+                 'actualizacion_resumen' => $datosValidados['actualizacion_resumen'],
+-                'actualizacion_categoria_id' => $datosValidados['actualizacion_categoria_id'],
++                'actualizacion_categoria_id' => $datosValidados['actualizacion_categoria_ids'][0],
+ 
+                 /*
+                 |--------------------------------------------------------------------------
+@@ -313,6 +330,7 @@ public function store(Request $request)
+             }
+ 
+             $actualizacion = UpdateBlog::create($datosParaGuardar);
++            $this->sincronizarCategorias($actualizacion, $datosValidados['actualizacion_categoria_ids']);
+ 
+             if ($request->filled('imagenes_quill')) {
+                 $rutasImagenes = json_decode($request->input('imagenes_quill'), true);
+@@ -334,6 +352,7 @@ public function store(Request $request)
+                     $actualizacion->fresh([
+                         'areaServicio',
+                         'categoria',
++                        'categorias',
+                         'imagenes',
+                         'usuarioAutor',
+                         'ultimaRevisionObservacion.supervisor',
+@@ -361,13 +380,21 @@ public function update(Request $request, int $id)
+             abort(403, 'No tienes permiso para editar este registro.');
+         }
+ 
++        $this->prepararCategoriaIds($request);
++
+         $data = $request->validate([
+             'actualizacion_titulo' => ['sometimes', 'required', 'string', 'max:255'],
+             'actualizacion_version' => ['sometimes', 'nullable', 'string', 'max:50'],
+             'actualizacion_imagen_destacada' => ['sometimes', 'nullable'],
+             'actualizacion_resumen' => ['sometimes', 'required', 'string'],
+             'actualizacion_contenido' => ['sometimes', 'required'],
+-            'actualizacion_categoria_id' => ['sometimes', 'required', 'integer'],
++            'actualizacion_categoria_ids' => ['sometimes', 'required', 'array', 'min:1', 'max:3'],
++            'actualizacion_categoria_ids.*' => [
++                'required',
++                'integer',
++                'distinct',
++                Rule::exists('act_categorias', 'categoria_actualizacion_id'),
++            ],
+             'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
+             'actualizacion_estado' => ['sometimes', 'required', Rule::in($this->estadosPermitidos())],
+             'actualizacion_fecha_publicacion' => ['nullable', 'date'],
+@@ -381,6 +408,13 @@ public function update(Request $request, int $id)
+ 
+         unset($data['actualizacion_es_correccion']);
+ 
++        $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
++        unset($data['actualizacion_categoria_ids']);
++
++        if (is_array($categoriaIds) && count($categoriaIds) > 0) {
++            $data['actualizacion_categoria_id'] = $categoriaIds[0];
++        }
++
+         if (array_key_exists('actualizacion_contenido', $data)) {
+             $data['actualizacion_contenido'] = $this->normalizarContenido(
+                 $data['actualizacion_contenido']
+@@ -434,6 +468,11 @@ public function update(Request $request, int $id)
+         }
+ 
+         $actualizacion->update($data);
++
++        if (is_array($categoriaIds)) {
++            $this->sincronizarCategorias($actualizacion, $categoriaIds);
++        }
++
+         $actualizacion->refresh();
+ 
+         if ($this->debeNotificarCorreccion($estadoAnterior, $actualizacion, $correccionSolicitada)) {
+@@ -446,6 +485,7 @@ public function update(Request $request, int $id)
+                 $actualizacion->fresh([
+                     'areaServicio',
+                     'categoria',
++                    'categorias',
+                     'imagenes',
+                     'usuarioAutor',
+                     'ultimaRevisionObservacion.supervisor',
+@@ -497,6 +537,7 @@ public function cambiarEstado(Request $request, int $id)
+                 $actualizacion->fresh([
+                     'areaServicio',
+                     'categoria',
++                    'categorias',
+                     'imagenes',
+                     'usuarioAutor',
+                     'ultimaRevisionObservacion.supervisor',
+@@ -561,6 +602,7 @@ public function marcarRevision(Request $request, int $id)
+                 $actualizacion->fresh([
+                     'areaServicio',
+                     'categoria',
++                    'categorias',
+                     'imagenes',
+                     'usuarioAutor',
+                     'ultimaRevisionObservacion.supervisor',
+@@ -607,6 +649,8 @@ public function getCategorias()
+             'categoria_actualizacion_id',
+             'categoria_actualizacion_nombre'
+         )
++            ->where('categoria_actualizacion_activa', true)
++            ->orderBy('categoria_actualizacion_orden', 'asc')
+             ->orderBy('categoria_actualizacion_nombre', 'asc')
+             ->get();
+ 
+@@ -883,6 +927,59 @@ private function crearNotificacionCorreccion(
+         }
+     }
+ 
++
++    private function prepararCategoriaIds(Request $request): void
++    {
++        $ids = $request->input('actualizacion_categoria_ids');
++
++        if (is_string($ids)) {
++            $decoded = json_decode($ids, true);
++            $ids = is_array($decoded) ? $decoded : explode(',', $ids);
++        }
++
++        if ($ids === null && $request->filled('actualizacion_categoria_id')) {
++            $ids = [$request->input('actualizacion_categoria_id')];
++        }
++
++        if (! is_array($ids)) {
++            return;
++        }
++
++        $ids = collect($ids)
++            ->filter(fn ($id) => $id !== null && $id !== '')
++            ->map(fn ($id) => (int) $id)
++            ->filter(fn (int $id) => $id > 0)
++            ->unique()
++            ->take(3)
++            ->values()
++            ->all();
++
++        $request->merge([
++            'actualizacion_categoria_ids' => $ids,
++            'actualizacion_categoria_id' => $ids[0] ?? null,
++        ]);
++    }
++
++    private function sincronizarCategorias(UpdateBlog $actualizacion, array $categoriaIds): void
++    {
++        $categoriaIds = collect($categoriaIds)
++            ->map(fn ($id) => (int) $id)
++            ->filter(fn (int $id) => $id > 0)
++            ->unique()
++            ->take(3)
++            ->values()
++            ->all();
++
++        $actualizacion->categorias()->sync($categoriaIds);
++
++        $primeraCategoriaId = $categoriaIds[0] ?? null;
++
++        if ((int) $actualizacion->actualizacion_categoria_id !== (int) $primeraCategoriaId) {
++            $actualizacion->actualizacion_categoria_id = $primeraCategoriaId;
++            $actualizacion->save();
++        }
++    }
++
+     private function normalizarContenido($contenido): string
+     {
+         if (is_array($contenido)) {
+diff --git a/backend/app/Http/Resources/ActualizacionResource.php b/backend/app/Http/Resources/ActualizacionResource.php
+index 79b33ed..e706940 100644
+--- a/backend/app/Http/Resources/ActualizacionResource.php
++++ b/backend/app/Http/Resources/ActualizacionResource.php
+@@ -13,6 +13,28 @@ public function toArray(Request $request): array
+         $renderer = app(EditorJsRenderer::class);
+         $esDetalle = $request->route()?->parameter('id') !== null;
+ 
++        $categorias = $this->whenLoaded('categorias', function () {
++            return $this->categorias->map(fn ($categoria) => [
++                'categoria_actualizacion_id' => $categoria?->categoria_actualizacion_id,
++                'categoria_actualizacion_nombre' => $categoria?->categoria_actualizacion_nombre,
++            ])->values();
++        });
++
++        $categoriaPrincipal = null;
++
++        if ($this->relationLoaded('categorias') && $this->categorias->isNotEmpty()) {
++            $primeraCategoria = $this->categorias->first();
++            $categoriaPrincipal = [
++                'categoria_actualizacion_id' => $primeraCategoria?->categoria_actualizacion_id,
++                'categoria_actualizacion_nombre' => $primeraCategoria?->categoria_actualizacion_nombre,
++            ];
++        } elseif ($this->relationLoaded('categoria') && $this->categoria) {
++            $categoriaPrincipal = [
++                'categoria_actualizacion_id' => $this->categoria?->categoria_actualizacion_id,
++                'categoria_actualizacion_nombre' => $this->categoria?->categoria_actualizacion_nombre,
++            ];
++        }
++
+         return [
+             'id' => $this->id,
+             'actualizacion_version' => $this->actualizacion_version,
+@@ -36,6 +58,12 @@ public function toArray(Request $request): array
+ 
+             'actualizacion_area_servicio_id' => $this->actualizacion_area_servicio_id,
+             'actualizacion_categoria_id' => $this->actualizacion_categoria_id,
++            'actualizacion_categoria_ids' => $this->whenLoaded('categorias', function () {
++                return $this->categorias
++                    ->pluck('categoria_actualizacion_id')
++                    ->map(fn ($id) => (int) $id)
++                    ->values();
++            }),
+ 
+             'actualizacion_imagenes' => $this->whenLoaded('imagenes', function () {
+                 return $this->imagenes->map(fn ($imagen) => [
+@@ -85,12 +113,8 @@ public function toArray(Request $request): array
+                 ];
+             }),
+ 
+-            'categoria' => $this->whenLoaded('categoria', function () {
+-                return [
+-                    'categoria_actualizacion_id' => $this->categoria?->categoria_actualizacion_id,
+-                    'categoria_actualizacion_nombre' => $this->categoria?->categoria_actualizacion_nombre,
+-                ];
+-            }),
++            'categoria' => $categoriaPrincipal,
++            'categorias' => $categorias,
+         ];
+     }
+ }
+diff --git a/backend/app/Models/Category.php b/backend/app/Models/Category.php
+index 78c4423..0faed23 100644
+--- a/backend/app/Models/Category.php
++++ b/backend/app/Models/Category.php
+@@ -3,18 +3,29 @@
+ namespace App\Models;
+ 
+ use Illuminate\Database\Eloquent\Model;
++use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+ 
+ class Category extends Model
+ {
+-    // nombre de la tabla en la bd
+     protected $table = 'act_categorias';
+ 
+-    // llave primaria
+     protected $primaryKey = 'categoria_actualizacion_id';
+ 
+-    // campos bd
+     protected $fillable = [
+-        'categoria_nombre',
+-        'categoria_estado',
++        'categoria_actualizacion_nombre',
++        'categoria_actualizacion_activa',
++        'categoria_actualizacion_orden',
+     ];
++
++    public function actualizaciones(): BelongsToMany
++    {
++        return $this->belongsToMany(
++            UpdateBlog::class,
++            'actualizaciones_blog_categorias',
++            'categoria_actualizacion_id',
++            'actualizacion_id',
++            'categoria_actualizacion_id',
++            'id'
++        )->withTimestamps();
++    }
+ }
+diff --git a/backend/app/Models/UpdateBlog.php b/backend/app/Models/UpdateBlog.php
+index 1b82de5..57bf712 100644
+--- a/backend/app/Models/UpdateBlog.php
++++ b/backend/app/Models/UpdateBlog.php
+@@ -4,16 +4,15 @@
+ 
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
++use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+ use Illuminate\Database\Eloquent\Relations\HasMany;
+ use Illuminate\Database\Eloquent\Relations\HasOne;
+ 
+ class UpdateBlog extends Model
+ {
+-    // nombre de la tabla en la bd
+     protected $table = 'actualizaciones_blog';
+ 
+     const UPDATED_AT = null;
+-
+     const CREATED_AT = 'actualizacion_fecha_creacion';
+ 
+     protected $primaryKey = 'id';
+@@ -27,13 +26,11 @@ class UpdateBlog extends Model
+         'actualizacion_area_servicio_id',
+         'actualizacion_usuario_id_autor',
+         'actualizacion_estado',
+-        // 'actualizacion_fecha_creacion',
+-        // 'actualizacion_fecha_actualizacion',
+         'actualizacion_fecha_publicacion',
+-        'actualizacion_categoria_id'
++        'actualizacion_categoria_id', // compatibilidad: primera categoría seleccionada
+     ];
+ 
+-    public function imagenes()
++    public function imagenes(): HasMany
+     {
+         return $this->hasMany(PhotoUpdate::class, 'actualizacion_id');
+     }
+@@ -60,13 +57,35 @@ public function bookmarks(): HasMany
+         return $this->hasMany(Bookmark::class, 'actualizacion_id', 'id');
+     }
+ 
+-    public function areaServicio()
++    public function areaServicio(): BelongsTo
+     {
+         return $this->belongsTo(Area::class, 'actualizacion_area_servicio_id');
+     }
+ 
+-        public function categoria()
++    /**
++     * Categoría principal/legacy. Se conserva para no romper pantallas existentes.
++     */
++    public function categoria(): BelongsTo
++    {
++        return $this->belongsTo(
++            Category::class,
++            'actualizacion_categoria_id',
++            'categoria_actualizacion_id'
++        );
++    }
++
++    /**
++     * Relación nueva: un registro puede tener de 1 a 3 categorías.
++     */
++    public function categorias(): BelongsToMany
+     {
+-        return $this->belongsTo(Category::class, 'actualizacion_categoria_id');
++        return $this->belongsToMany(
++            Category::class,
++            'actualizaciones_blog_categorias',
++            'actualizacion_id',
++            'categoria_actualizacion_id',
++            'id',
++            'categoria_actualizacion_id'
++        )->withTimestamps();
+     }
+ }
+diff --git a/backend/database/migrations/2026_06_03_000001_create_actualizaciones_blog_categorias_table.php b/backend/database/migrations/2026_06_03_000001_create_actualizaciones_blog_categorias_table.php
+new file mode 100644
+index 0000000..18abfe2
+--- /dev/null
++++ b/backend/database/migrations/2026_06_03_000001_create_actualizaciones_blog_categorias_table.php
+@@ -0,0 +1,61 @@
++<?php
++
++use Illuminate\Database\Migrations\Migration;
++use Illuminate\Database\Schema\Blueprint;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Schema;
++
++return new class extends Migration
++{
++    public function up(): void
++    {
++        Schema::create('actualizaciones_blog_categorias', function (Blueprint $table) {
++            $table->id();
++            $table->unsignedBigInteger('actualizacion_id');
++            $table->unsignedBigInteger('categoria_actualizacion_id');
++            $table->timestamps();
++
++            $table->unique(
++                ['actualizacion_id', 'categoria_actualizacion_id'],
++                'abc_actualizacion_categoria_unique'
++            );
++
++            $table->foreign('actualizacion_id', 'abc_actualizacion_fk')
++                ->references('id')
++                ->on('actualizaciones_blog')
++                ->cascadeOnDelete();
++
++            $table->foreign('categoria_actualizacion_id', 'abc_categoria_fk')
++                ->references('categoria_actualizacion_id')
++                ->on('act_categorias')
++                ->cascadeOnDelete();
++        });
++
++        // Migra los registros existentes que ya tenían una sola categoría.
++        DB::table('actualizaciones_blog')
++            ->whereNotNull('actualizacion_categoria_id')
++            ->orderBy('id')
++            ->select('id', 'actualizacion_categoria_id')
++            ->chunkById(500, function ($actualizaciones) {
++                $ahora = now();
++
++                $filas = $actualizaciones
++                    ->map(fn ($actualizacion) => [
++                        'actualizacion_id' => $actualizacion->id,
++                        'categoria_actualizacion_id' => $actualizacion->actualizacion_categoria_id,
++                        'created_at' => $ahora,
++                        'updated_at' => $ahora,
++                    ])
++                    ->all();
++
++                if (! empty($filas)) {
++                    DB::table('actualizaciones_blog_categorias')->insertOrIgnore($filas);
++                }
++            });
++    }
++
++    public function down(): void
++    {
++        Schema::dropIfExists('actualizaciones_blog_categorias');
++    }
++};
+diff --git a/frontend/src/components/home/Bookmarks.vue b/frontend/src/components/home/Bookmarks.vue
+index 5256dd7..f22bded 100644
+--- a/frontend/src/components/home/Bookmarks.vue
++++ b/frontend/src/components/home/Bookmarks.vue
+@@ -99,7 +99,7 @@
+               </span>
+ 
+               <span>
+-                {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
++                {{ obtenerNombreCategorias(item) }}
+               </span>
+             </div>
+ 
+@@ -306,6 +306,18 @@ const verDetalle = (id: number) => {
+   router.push(`/employee/actualizaciones/${id}`)
+ }
+ 
++
++const obtenerNombreCategorias = (item: Version): string => {
++  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
++    return (item as any).categorias
++      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
++      .filter(Boolean)
++      .join(', ')
++  }
++
++  return item.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
++}
++
+ const obtenerUrlImagen = (ruta: string) => {
+   if (!ruta) {
+     return ''
+diff --git a/frontend/src/components/home/ListVersion.vue b/frontend/src/components/home/ListVersion.vue
+index 0c879b1..2cf2788 100644
+--- a/frontend/src/components/home/ListVersion.vue
++++ b/frontend/src/components/home/ListVersion.vue
+@@ -44,7 +44,7 @@
+                 </span>
+ 
+                 <span class="tag-gris">
+-                  {{ actualizacion.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
++                  {{ obtenerNombreCategorias(actualizacion) }}
+                 </span>
+               </div>
+             </div>
+@@ -155,7 +155,7 @@
+                     </span>
+ 
+                     <span class="tag-gris">
+-                      {{ item.categoria?.categoria_actualizacion_nombre || 'Sin categoría' }}
++                      {{ obtenerNombreCategorias(item) }}
+                     </span>
+                   </div>
+                   <div class="tags-right">
+@@ -337,6 +337,18 @@ const obtenerRelacionados = async () => {
+   }
+ }
+ 
++
++const obtenerNombreCategorias = (item: any): string => {
++  if (Array.isArray(item?.categorias) && item.categorias.length > 0) {
++    return item.categorias
++      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
++      .filter(Boolean)
++      .join(', ')
++  }
++
++  return item?.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
++}
++
+ const irA = (id: number) => {
+   router.push({ name: 'actualizaciones-show', params: { id } })
+   scrollAlTope()
+diff --git a/frontend/src/components/register/EditVersion.vue b/frontend/src/components/register/EditVersion.vue
+index 1026c84..0aa3fec 100644
+--- a/frontend/src/components/register/EditVersion.vue
++++ b/frontend/src/components/register/EditVersion.vue
+@@ -115,29 +115,41 @@
+             </div>
+           </div>
+ 
+-          <!-- Categoría -->
++          <!-- Categorías -->
+           <div class="col-md-6 mb-4">
+-            <label for="categoria" class="form-label fw-bold text-primary">
+-              Categoría <span class="text-danger">*</span>
++            <label class="form-label fw-bold text-primary">
++              Categorías <span class="text-danger">*</span>
++              <small class="text-muted">(máximo 3)</small>
+             </label>
+-            <select 
+-              id="categoria" 
+-              class="form-select" 
+-              :class="{ 'is-invalid': errores.actualizacion_categoria_id }"
+-              v-model="form.categoria_id" 
+-              required
++
++            <div
++              class="categoria-checklist"
++              :class="{ 'is-invalid': errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id }"
+             >
+-              <option :value="null" disabled>Selecciona una categoría...</option>
+-              <option 
+-                v-for="categoria in listaCategorias" 
++              <label
++                v-for="categoria in listaCategorias"
+                 :key="categoria.categoria_actualizacion_id"
+-                :value="Number(categoria.categoria_actualizacion_id)"
++                class="categoria-check"
+               >
+-                {{ categoria.categoria_actualizacion_nombre }}
+-              </option>
+-            </select>
+-            <div v-if="errores.actualizacion_categoria_id" class="invalid-feedback">
+-              {{ errores.actualizacion_categoria_id?.[0] }}
++                <input
++                  type="checkbox"
++                  :value="Number(categoria.categoria_actualizacion_id)"
++                  v-model="form.categoria_ids"
++                  :disabled="
++                    !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
++                    form.categoria_ids.length >= 3
++                  "
++                />
++                <span>{{ categoria.categoria_actualizacion_nombre }}</span>
++              </label>
++            </div>
++
++            <div class="form-text">
++              Seleccionadas: {{ form.categoria_ids.length }}/3
++            </div>
++
++            <div v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id" class="invalid-feedback d-block">
++              {{ errores.actualizacion_categoria_ids?.[0] || errores.actualizacion_categoria_id?.[0] }}
+             </div>
+           </div>
+         </div>
+@@ -309,7 +321,7 @@ const form = reactive({
+   resumen: '',
+   imagen_destacada: '',
+   area_servicio_id: null as number | null,
+-  categoria_id: null as number | null,
++  categoria_ids: [] as number[],
+   usuario_id_autor: null as number | null,
+   estado: 'borrador',
+   fecha_creacion: '',
+@@ -325,10 +337,25 @@ const textoBotonGuardar = computed(() => {
+   return props.modoCorreccion ? 'Enviar corrección' : 'Guardar cambios'
+ })
+ 
++
++const normalizarCategoriaIds = (valor: any): number[] => {
++  const ids = Array.isArray(valor) ? valor : (valor ? [valor] : [])
++
++  return ids
++    .map((id) => Number(id))
++    .filter((id, index, array) => Number.isFinite(id) && id > 0 && array.indexOf(id) === index)
++    .slice(0, 3)
++}
++
++const categoriaSeleccionada = (categoriaId: number) => {
++  return form.categoria_ids.includes(categoriaId)
++}
++
+ const formularioValido = computed(() => {
+   return form.titulo.trim() !== '' && 
+          form.area_servicio_id !== null && 
+-         form.categoria_id !== null
++         form.categoria_ids.length > 0 &&
++         form.categoria_ids.length <= 3
+ })
+ 
+ // Métodos
+@@ -480,9 +507,9 @@ const cargarRegistro = async () => {
+       ? Number(data.actualizacion_area_servicio_id)
+       : null
+ 
+-    form.categoria_id = data.actualizacion_categoria_id
+-      ? Number(data.actualizacion_categoria_id)
+-      : null
++    form.categoria_ids = normalizarCategoriaIds(
++      data.actualizacion_categoria_ids || data.actualizacion_categoria_id
++    )
+ 
+     const contenidoBD = data.actualizacion_contenido
+ 
+@@ -551,7 +578,8 @@ const guardarCambios = async () => {
+       actualizacion_fecha_publicacion: fechaPublicacionFinal,
+       actualizacion_es_correccion: props.modoCorreccion,
+       actualizacion_contenido: contenidoFinal,
+-      actualizacion_categoria_id: form.categoria_id,
++      actualizacion_categoria_id: form.categoria_ids[0],
++      actualizacion_categoria_ids: form.categoria_ids,
+       actualizacion_area_servicio_id: form.area_servicio_id,
+     }
+ 
+@@ -769,4 +797,31 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
+ ::-webkit-scrollbar-thumb:hover {
+   background: var(--secondary);
+ }
++
++.categoria-checklist {
++  border: 1px solid #dee2e6;
++  border-radius: 0.375rem;
++  padding: 0.75rem;
++  max-height: 180px;
++  overflow-y: auto;
++  background: #fff;
++}
++
++.categoria-checklist.is-invalid {
++  border-color: #dc3545;
++}
++
++.categoria-check {
++  display: flex;
++  align-items: center;
++  gap: 0.5rem;
++  padding: 0.35rem 0;
++  cursor: pointer;
++}
++
++.categoria-check input:disabled + span {
++  color: #adb5bd;
++  cursor: not-allowed;
++}
++
+ </style>
+diff --git a/frontend/src/components/register/List.vue b/frontend/src/components/register/List.vue
+index 10ff437..9fcd5ab 100644
+--- a/frontend/src/components/register/List.vue
++++ b/frontend/src/components/register/List.vue
+@@ -667,7 +667,16 @@ watch(
+ )
+ 
+ const obtenerNombreArea = (item: Version) => item.area_servicio?.area_servicio_nombre || 'Sin área'
+-const obtenerNombreCategoria = (item: Version) => item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
++const obtenerNombreCategoria = (item: Version) => {
++  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
++    return (item as any).categorias
++      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
++      .filter(Boolean)
++      .join(', ')
++  }
++
++  return item.categoria?.categoria_actualizacion_nombre || 'Sin Categoria'
++}
+ 
+ const obtenerNombreAutor = (item: any) => {
+   const autor = item.usuario_autor || item.autor || item.usuario
+diff --git a/frontend/src/components/register/NewVersion.vue b/frontend/src/components/register/NewVersion.vue
+index c466418..c58a725 100644
+--- a/frontend/src/components/register/NewVersion.vue
++++ b/frontend/src/components/register/NewVersion.vue
+@@ -87,14 +87,33 @@
+         </div>
+       </div>
+       <div class="col-md-6 mb-3">
+-        <label for="categoria" class="form-label fw-bold text-primary">Categoría *</label>
+-        <select id="categoria" class="form-select" v-model="registro.actualizacion_categoria_id" required>
+-          <option value="" disabled>Selecciona una categoría...</option>
+-          <option v-for="categoria in listaCategorias" :key="categoria.categoria_actualizacion_id"
+-            :value="categoria.categoria_actualizacion_id">
+-            {{ categoria.categoria_actualizacion_nombre }}
+-          </option>
+-        </select>
++        <label class="form-label fw-bold text-primary">
++          Categorías *
++          <small class="text-muted">(máximo 3)</small>
++        </label>
++
++        <div class="categoria-checklist">
++          <label
++            v-for="categoria in listaCategorias"
++            :key="categoria.categoria_actualizacion_id"
++            class="categoria-check"
++          >
++            <input
++              type="checkbox"
++              :value="Number(categoria.categoria_actualizacion_id)"
++              v-model="registro.actualizacion_categoria_ids"
++              :disabled="
++                !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
++                registro.actualizacion_categoria_ids.length >= 3
++              "
++            />
++            <span>{{ categoria.categoria_actualizacion_nombre }}</span>
++          </label>
++        </div>
++
++        <div class="form-text">
++          Seleccionadas: {{ registro.actualizacion_categoria_ids.length }}/3
++        </div>
+       </div>
+       <div class="d-flex justify-content-end gap-2 mt-4">
+         <button type="button" class="btn btn-outline-secondary " data-bs-dismiss="modal"><i class="bi bi-x-circle me-1"></i> Cancelar</button>
+@@ -151,7 +170,7 @@ const registroVacio = () => ({
+   resumen: '',
+   imagen_destacada: '',
+   area_servicio_id: '' as any,
+-  actualizacion_categoria_id: '' as any,
++  actualizacion_categoria_ids: [] as number[],
+   usuario_id_autor: idUsuarioLogueado,
+   estado: 'borrador',
+   fecha_creacion: new Date().toISOString().split('T')[0],
+@@ -161,6 +180,20 @@ const registroVacio = () => ({
+ 
+ const registro = reactive<NewVersion>(registroVacio())
+ 
++
++const normalizarCategoriaIds = (valor: any): number[] => {
++  const ids = Array.isArray(valor) ? valor : (valor ? [valor] : [])
++
++  return ids
++    .map((id) => Number(id))
++    .filter((id, index, array) => Number.isFinite(id) && id > 0 && array.indexOf(id) === index)
++    .slice(0, 3)
++}
++
++const categoriaSeleccionada = (categoriaId: number) => {
++  return registro.actualizacion_categoria_ids.includes(categoriaId)
++}
++
+ // ── Autosave ──────────────────────────────────────────────────────
+ const hayBorradorGuardado = ref(false)
+ const ultimoGuardado = ref<string | null>(null)
+@@ -180,7 +213,7 @@ const cargarBorrador = () => {
+       version: draft.version || '',
+       resumen: draft.resumen || '',
+       area_servicio_id: draft.area_servicio_id || '',
+-      actualizacion_categoria_id: draft.actualizacion_categoria_id || '',
++      actualizacion_categoria_ids: normalizarCategoriaIds(draft.actualizacion_categoria_ids || draft.actualizacion_categoria_id),
+       estado: draft.estado || 'borrador',
+       fecha_publicacion: draft.fecha_publicacion || new Date().toISOString().split('T')[0],
+     })
+@@ -214,7 +247,7 @@ const guardarBorrador = async () => {
+       version: registro.version,
+       resumen: registro.resumen,
+       area_servicio_id: registro.area_servicio_id,
+-      actualizacion_categoria_id: registro.actualizacion_categoria_id,
++      actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
+       estado: registro.estado,
+       fecha_publicacion: registro.fecha_publicacion,
+       editorBlocks,
+@@ -253,7 +286,7 @@ watch(
+     version: registro.version,
+     resumen: registro.resumen,
+     area_servicio_id: registro.area_servicio_id,
+-    actualizacion_categoria_id: registro.actualizacion_categoria_id,
++    actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
+     estado: registro.estado,
+     fecha_publicacion: registro.fecha_publicacion,
+   }),
+@@ -374,10 +407,19 @@ const guardarRegistro = async () => {
+     formData.append('actualizacion_contenido', JSON.stringify(outputData))
+     formData.append('actualizacion_resumen', registro.resumen)
+     formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id))
+-    formData.append(
+-      'actualizacion_categoria_id',
+-      String(registro.actualizacion_categoria_id)
+-    )
++
++    const categoriaIds = registro.actualizacion_categoria_ids.slice(0, 3)
++
++    if (categoriaIds.length === 0) {
++      toast.warning('Selecciona al menos una categoría.')
++      enviando.value = false
++      return
++    }
++
++    formData.append('actualizacion_categoria_id', String(categoriaIds[0]))
++    categoriaIds.forEach((categoriaId) => {
++      formData.append('actualizacion_categoria_ids[]', String(categoriaId))
++    })
+     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor))
+     formData.append('actualizacion_estado', registro.estado)
+     formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
+@@ -591,4 +633,27 @@ const limpiarFormulario = () => {
+   color: white;
+ }
+ 
++
++.categoria-checklist {
++  border: 1px solid #dee2e6;
++  border-radius: 0.375rem;
++  padding: 0.75rem;
++  max-height: 180px;
++  overflow-y: auto;
++  background: #fff;
++}
++
++.categoria-check {
++  display: flex;
++  align-items: center;
++  gap: 0.5rem;
++  padding: 0.35rem 0;
++  cursor: pointer;
++}
++
++.categoria-check input:disabled + span {
++  color: #adb5bd;
++  cursor: not-allowed;
++}
++
+ </style>
+diff --git a/frontend/src/types/newVersion.ts b/frontend/src/types/newVersion.ts
+index 04420dc..6a7cdf0 100644
+--- a/frontend/src/types/newVersion.ts
++++ b/frontend/src/types/newVersion.ts
+@@ -1,4 +1,3 @@
+-
+ export interface NewVersion {
+   id?: number | null;
+   titulo: string;
+@@ -7,10 +6,11 @@ export interface NewVersion {
+   resumen: string;
+   imagen_destacada: string;
+   area_servicio_id: number | null;
+-  actualizacion_categoria_id: number | null;
++  actualizacion_categoria_id?: number | null;
++  actualizacion_categoria_ids: number[];
+   usuario_id_autor: number | null;
+   estado: string;
+   fecha_creacion: string;
+   fecha_publicacion: string;
+-  imagenes_quill?: string[]; 
+-}
+\ No newline at end of file
++  imagenes_quill?: string[];
++}
+diff --git a/frontend/src/types/version.ts b/frontend/src/types/version.ts
+index b3d3cb1..d548b7a 100644
+--- a/frontend/src/types/version.ts
++++ b/frontend/src/types/version.ts
+@@ -7,9 +7,13 @@ export interface Version {
+   actualizacion_estado: string;
+   actualizacion_fecha_publicacion: string;
+   actualizacion_fecha_creacion: string;
+-  actualizacion_imagenes: ImagenGaleria[]; // El arreglo que nos devuelve el "with('imagenes')" de Laravel
++  actualizacion_area_servicio_id?: number | string | null;
++  actualizacion_categoria_id?: number | string | null;
++  actualizacion_categoria_ids?: number[];
++  actualizacion_imagenes: ImagenGaleria[];
+   area_servicio: AreaServicio;
+-  categoria: Category;
++  categoria?: Category | null;
++  categorias?: Category[];
+ }
+ 
+ export interface ImagenGaleria {
+@@ -19,10 +23,12 @@ export interface ImagenGaleria {
+ 
+ export interface AreaServicio {
+   id?: number;
++  area_servicio_id?: number | string;
+   area_servicio_nombre: string;
+ }
+ 
+ export interface Category {
+   id?: number;
++  categoria_actualizacion_id?: number | string;
+   categoria_actualizacion_nombre: string;
+-}
+\ No newline at end of file
++}

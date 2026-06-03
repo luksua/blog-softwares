@@ -19,6 +19,7 @@ class BookmarkController extends Controller
             ->with([
                 'actualizacion.areaServicio',
                 'actualizacion.categoria',
+                'actualizacion.categorias',
                 'actualizacion.imagenes',
             ])
             ->where('usuario_id', $usuarioId)
