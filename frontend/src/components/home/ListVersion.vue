@@ -97,7 +97,6 @@
           <aside class="indice-resumen" aria-label="Resumen del documento">
             <!-- Header igual al índice -->
             <div class="indice-header">
-              <span class="indice-icon" aria-hidden="true">📋</span>
               <h2 class="indice-titulo">Resumen</h2>
             </div>
 
@@ -135,7 +134,61 @@
             <!-- Grid de 3 cards -->
             <div v-else class="relacionados-footer-grid">
               <div v-for="item in relacionados" :key="item.id" class="tarjeta-changelog">
-                <div class="tarjeta-header">
+                <div class="tarjeta-changelog h-100">
+
+                  <!-- ── CABECERA: Imagen + overlay inferior izquierdo ── -->
+                  <div class="tarjeta-header">
+                    <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
+                      <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
+                        class="imagen-destacada" loading="lazy" />
+                      <div class="imagen-overlay">
+                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                      </div>
+                    </div>
+                    <div v-else class="sin-imagen">
+                      <span class="sin-imagen-icono">🖼️</span>
+                      <p>Sin imagen destacada</p>
+                      <div class="imagen-overlay">
+                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ── CUERPO ── -->
+                  <div class="tarjeta-cuerpo" @click="irA(item.id)">
+                    <div class="metadatos-top">
+                      <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                      <span class="separador">|</span>
+                      <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+                    </div>
+
+                    <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
+                    <p class="resumen">{{ item.actualizacion_resumen }}</p>
+
+                    <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
+                    <div class="categorias-iconos">
+                      <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
+                        <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
+                        <span class="ico-label">{{ cat.nombre }}</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <!-- ── FOOTER: solo bookmark y ver más ── -->
+                  <div class="tarjeta-pie">
+                    <!-- <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)"
+                      @click.stop="toggleBookmark(item.id)"
+                      :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'">
+                      <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
+                    </button> -->
+                    <button class="btn-enlace" @click.stop="irA(item.id)">
+                      Ver más
+                      <i class="bi bi-arrow-right"></i>    
+                    </button>
+                  </div>
+                </div>
+                <!-- <div class="tarjeta-header">
                   <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
                     <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" :alt="item.actualizacion_titulo"
                       class="imagen-destacada" loading="lazy" />
@@ -172,7 +225,7 @@
                       <i class="bi bi-arrow-right"></i>
                     </button>
                   </div>
-                </div>
+                </div> -->
               </div>
             </div>
 
@@ -194,6 +247,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api/api'
+import type { Version } from '../../types/version'
 
 const props = defineProps<{
   id: string | number
@@ -294,6 +348,70 @@ const scrollToElement = (elementId: string) => {
 
   container.scrollTo({ top, behavior: 'smooth' })
 }
+
+const normalizarTexto = (texto: string): string =>
+  texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+const obtenerIconoCategoria = (nombre: string | undefined): string => {
+  if (!nombre) return 'bi-tag-fill'
+
+  const n = normalizarTexto(nombre)
+
+  const mapa: Record<string, string> = {
+    'manual de usuario': 'bi-person-lines-fill',
+    'manual tecnico': 'bi-tools',
+    'instalador': 'bi-box-arrow-down',
+    'actualizacion del sistema': 'bi-arrow-repeat',
+    'nueva funcionalidad': 'bi-stars',
+    'mejora': 'bi-arrow-up-circle-fill',
+    'correccion de errores': 'bi-bug-fill',
+    'parche de seguridad': 'bi-shield-fill-check',
+    'guia de instalacion': 'bi-journal-arrow-down',
+    'guia rapida': 'bi-lightning-charge-fill',
+    'documentacion': 'bi-file-earmark-text-fill',
+    'notas de version': 'bi-card-list',
+    'general': 'bi-info-circle-fill',
+  }
+
+  if (mapa[n]) return mapa[n]
+
+  // Fallback por coincidencias parciales
+  if (n.includes('manual')) return 'bi-journal-text'
+  if (n.includes('instal')) return 'bi-box-arrow-down'
+  if (n.includes('actualizacion')) return 'bi-arrow-repeat'
+  if (n.includes('funcionalidad')) return 'bi-stars'
+  if (n.includes('mejora')) return 'bi-arrow-up-circle-fill'
+  if (n.includes('correccion') || n.includes('error')) return 'bi-bug-fill'
+  if (n.includes('seguridad') || n.includes('parche')) return 'bi-shield-fill-check'
+  if (n.includes('guia')) return 'bi-journal-bookmark-fill'
+  if (n.includes('documentacion')) return 'bi-file-earmark-text-fill'
+  if (n.includes('version')) return 'bi-card-list'
+  if (n.includes('general')) return 'bi-info-circle-fill'
+
+  return 'bi-tag-fill'
+}
+
+const obtenerCategorias = (item: Version): { id: string | number; nombre: string }[] => {
+  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
+    return (item as any).categorias.map((c: any) => ({
+      id: c.categoria_actualizacion_id ?? c.id ?? Math.random(),
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }))
+  }
+  if ((item as any).categoria) {
+    const c = (item as any).categoria
+    return [{
+      id: c.categoria_actualizacion_id ?? c.id ?? 0,
+      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+    }]
+  }
+  return [{ id: 0, nombre: 'Sin categoría' }]
+}
+
 
 const irAHeading = (id: string) => {
   scrollToElement(id)
@@ -847,7 +965,6 @@ watch(() => props.id, () => {
   padding: 24px;
   background: #f8fafc;
   border-radius: 12px;
-  border-left: 4px solid var(--primary);
 }
 
 .resumen-texto {
@@ -1015,8 +1132,11 @@ watch(() => props.id, () => {
 }
 
 .tarjeta-header {
+  position: relative;
   padding: 0;
   display: block;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
 }
 
 .imagen-container {
@@ -1143,7 +1263,7 @@ watch(() => props.id, () => {
 .tags-right {
   gap: 8px;
   display: flex;
-  align-items: center;
+  align-items: end;
   flex-shrink: 0;
 }
 
@@ -1250,7 +1370,6 @@ watch(() => props.id, () => {
   text-align: center;
   color: #94a3b8;
   font-size: 1rem;
-  border: 1px dashed #e1e7f0;
   border-radius: 12px;
   background: white;
 }
@@ -1345,170 +1464,6 @@ watch(() => props.id, () => {
   }
 }
 
-/* ── Tarjeta changelog ── */
-.tarjeta-changelog {
-  border: 1px solid #eaeaea;
-  border-radius: 16px;
-  background-color: white;
-  transition: var(--transition);
-  overflow: visible;
-  /* ← era hidden */
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.tarjeta-changelog:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-4px);
-  /* ← era -2px */
-}
-
-/* ── Cabecera ── */
-.tarjeta-header {
-  position: relative;
-  /* ← añadir */
-  padding: 0;
-  display: block;
-  border-radius: 16px 16px 0 0;
-  /* ← añadir */
-  overflow: hidden;
-  /* ← mover aquí desde la tarjeta */
-}
-
-.imagen-container {
-  position: relative;
-  /* ← añadir */
-  overflow: hidden;
-  width: 100%;
-  background: #f5f5f5;
-  /* ← añadir */
-}
-
-.imagen-destacada {
-  width: 100%;
-  aspect-ratio: 22/9;
-  /* ← era 22/8 */
-  object-fit: cover;
-  display: block;
-  object-position: center;
-  transition: var(--transition);
-}
-
-.imagen-container:hover .imagen-destacada {
-  transform: scale(1.05);
-  /* ← era 1.02 */
-}
-
-/* ── Overlay con área (nuevo en detalle) ── */
-.imagen-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top left,
-      rgba(0, 0, 0, 0.78) 0%,
-      rgba(0, 0, 0, 0.15) 38%,
-      transparent 62%);
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 10px 12px;
-  pointer-events: none;
-}
-
-.area-label {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.03em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-/* ── Sin imagen ── */
-.sin-imagen {
-  position: relative;
-  /* ← añadir */
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e1e7f0;
-  color: #9ca3af;
-  width: 100%;
-  aspect-ratio: 22/9;
-  /* ← era 22/8 */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-/* ── Cuerpo ── */
-.tarjeta-cuerpo {
-  padding: 14px 16px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.titulo-version {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
-  /* ← Reemplazar white-space/overflow/ellipsis por clamp para móvil: */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .titulo-version {
-    font-size: 1.2rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    -webkit-line-clamp: 1;
-    display: block;
-  }
-}
-
-.resumen {
-  font-size: 0.9rem;
-  /* ← era 0.95rem */
-  color: #555;
-  line-height: 1.5;
-  /* ← era 1.6 */
-  margin: 0 0 10px 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (min-width: 768px) {
-  .resumen {
-    -webkit-line-clamp: 2;
-  }
-}
-
-/* ── Footer ── */
-.tarjeta-pie {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid #f0f2f5;
-  margin-top: auto;
-}
 
 /* ── Layout de 3 columnas: índice | contenido | resumen ── */
 .contenido-wrapper {
@@ -1530,8 +1485,6 @@ watch(() => props.id, () => {
   /* ← era flex-end */
   background: #f8fafc;
   border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
   max-height: calc(100vh - 60px);
   overflow-y: auto;
   display: flex;
@@ -1557,11 +1510,10 @@ watch(() => props.id, () => {
 /* ── Resumen interior ── */
 .resumen-container {
   margin: 0;
-  padding: 20px;
+  padding: 10px;
   background: transparent;
   /* ← sin fondo propio, el aside ya lo tiene */
   border-radius: 0;
-  border-left: 4px solid var(--primary);
   border-bottom: none;
 }
 
@@ -1612,4 +1564,362 @@ watch(() => props.id, () => {
     max-width: 100%;
   }
 }
+
+
+/*
+  OVERLAY: degradado de transparente → negro
+  origen en la esquina inferior DERECHA, con label de área
+*/
+.imagen-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top left,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.15) 38%,
+      transparent 62%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.area-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sin-imagen {
+  position: relative;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e1e7f0;
+  color: #9ca3af;
+  width: 100%;
+  aspect-ratio: 22/9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.sin-imagen-icono {
+  font-size: 32px;
+  margin-bottom: 8px;
+}
+
+.sin-imagen p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* ── CUERPO ──────────────────────────────────────────── */
+.tarjeta-cuerpo {
+  padding: 14px 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.metadatos-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.separador {
+  color: #a0aec0;
+  font-weight: 300;
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.version-number {
+  display: inline-block;
+  padding: 3px 10px;
+  background: white;
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #e1e7f0;
+}
+
+.titulo-version {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .titulo-version {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 1;
+  }
+}
+
+/* ── CUERPO ──────────────────────────────────────────── */
+.tarjeta-cuerpo {
+  padding: 14px 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.metadatos-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.separador {
+  color: #a0aec0;
+  font-weight: 300;
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
+
+.version-number {
+  display: inline-block;
+  padding: 3px 10px;
+  background: white;
+  color: var(--primary);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #e1e7f0;
+}
+
+.titulo-version {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .titulo-version {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 1;
+  }
+}
+
+.resumen {
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 10px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .resumen {
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* ── ICONOS DE CATEGORÍA → texto al hover ─────────────── */
+.categorias-iconos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.icono-categoria {
+  /* Dimensiones base: cuadrado del tamaño del ícono */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  max-width: 30px;
+  border-radius: 8px;
+  background: #f4f5f7;
+  border: 1px solid transparent;
+  overflow: hidden;
+  cursor: default;
+  /* Animar width/max-width y colores */
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.22s ease,
+    border-color 0.22s ease,
+    padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 0 7px;
+}
+
+/* Al hover: expande horizontalmente para mostrar el texto */
+.icono-categoria:hover {
+  max-width: 200px;
+  background: rgba(7, 126, 157, 0.10);
+  border-color: rgba(7, 126, 157, 0.25);
+  padding: 0 10px;
+}
+
+/* El ícono: visible por defecto → se oculta en hover */
+.icono-categoria .ico-icon {
+  font-size: 16px;
+  color: var(--secondary);
+  flex-shrink: 0;
+  /* ancho fijo → colapsa */
+  width: 16px;
+  opacity: 1;
+  transition:
+    opacity 0.15s ease,
+    width 0.22s ease,
+    margin 0.22s ease;
+}
+
+.icono-categoria:hover .ico-icon {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+}
+
+/* El texto: oculto por defecto → aparece en hover */
+.icono-categoria .ico-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+  /* colapsa cuando no hay hover */
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease 0.08s;
+}
+
+.icono-categoria:hover .ico-label {
+  max-width: 180px;
+  opacity: 1;
+}
+
+/* ── FOOTER ──────────────────────────────────────────── */
+.tarjeta-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #f0f2f5;
+  margin-top: auto;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon i {
+  font-size: 1.25rem;
+  color: var(--secondary);
+}
+
+.btn-icon:active {
+  transform: scale(0.9);
+}
+
+.btn-icon:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+  .btn-icon:hover:not(:disabled) {
+    background: rgba(7, 126, 157, 0.1);
+  }
+
+  .btn-icon:hover:not(:disabled) i {
+    color: var(--primary);
+  }
+}
+
+.btn-enlace {
+  background: none;
+  border: none;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: var(--transition);
+}
+
+.btn-enlace i {
+  font-size: 0.9rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-enlace:active {
+  transform: scale(0.95);
+}
+
+@media (min-width: 768px) {
+  .btn-enlace:hover {
+    color: var(--primary);
+    background: rgba(7, 126, 157, 0.08);
+  }
+
+  .btn-enlace:hover i {
+    transform: translateX(4px);
+  }
+}
+
 </style>
