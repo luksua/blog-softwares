@@ -89,14 +89,17 @@
 
           <!-- Columna principal del artículo -->
           <div class="contenido-columna">
-            <section id="resumen" class="resumen-container" aria-label="Resumen del artículo">
-              <p class="resumen-texto">{{ actualizacion.actualizacion_resumen }}</p>
-            </section>
-
             <section class="contenido-container" aria-label="Contenido completo">
               <div ref="contenidoRef" class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
             </section>
           </div>
+
+          <aside class="indice-resumen" aria-label="Índice del documento">
+            <section id="resumen" class="resumen-container" aria-label="Resumen del artículo">
+              <p class="resumen-texto">{{ actualizacion.actualizacion_resumen }}</p>
+            </section>
+
+          </aside>
         </div>
 
         <!-- Sección "También te puede interesar" -->
@@ -686,6 +689,20 @@ watch(() => props.id, () => {
   position: sticky;
   top: 24px;
   align-self: flex-start;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.indice-resumen {
+  position: sticky;
+  top: 24px;
+  align-self: flex-end;
   background: #f8fafc;
   border-radius: 16px;
   padding: 20px;

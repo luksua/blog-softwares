@@ -64,21 +64,42 @@
           <label for="area" class="filtro-label">Área / Servicio</label>
           <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
             <option value="">Todas las áreas</option>
-            <option v-for="area in areasDisponibles" :key="area.area_servicio_id" :value="Number(area.area_servicio_id)">
+            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+              :value="Number(area.area_servicio_id)">
               {{ area.area_servicio_nombre }}
             </option>
           </select>
         </div>
 
         <div class="filtro-grupo">
-          <label for="categoria" class="filtro-label">Categoría</label>
-          <select id="categoria" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
-            <option value="">Todas las categorías</option>
-            <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
-              :value="Number(categoria.categoria_actualizacion_id)">
-              {{ categoria.categoria_actualizacion_nombre }}
-            </option>
-          </select>
+          <label class="filtro-label">Categoría</label>
+
+          <div class="categoria-dropdown" :class="{ abierto: categoriaDropdownAbierto }">
+            <button type="button" class="categoria-dropdown-btn" :disabled="cargandoFiltros"
+              @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
+              <span class="categoria-dropdown-seleccion">
+                <i class="bi" :class="iconoCategoriaSeleccionada"></i>
+                <span>{{ nombreCategoriaSeleccionada }}</span>
+              </span>
+
+              <i class="bi bi-chevron-down categoria-dropdown-flecha"></i>
+            </button>
+
+            <div v-if="categoriaDropdownAbierto" class="categoria-dropdown-menu">
+              <button type="button" class="categoria-dropdown-item" :class="{ activo: filtros.categoriaId === '' }"
+                @click="seleccionarCategoria('')">
+                <i class="bi bi-tags-fill"></i>
+                <span>Todas las categorías</span>
+              </button>
+
+              <button v-for="categoria in categoriasConIcono" :key="categoria.id" type="button"
+                class="categoria-dropdown-item" :class="{ activo: filtros.categoriaId === categoria.id }"
+                @click="seleccionarCategoria(categoria.id)">
+                <i class="bi" :class="categoria.icono"></i>
+                <span>{{ categoria.nombre }}</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="filtro-grupo">
@@ -141,11 +162,7 @@
 
                 <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
                 <div class="categorias-iconos">
-                  <div
-                    v-for="cat in obtenerCategorias(item)"
-                    :key="cat.id"
-                    class="icono-categoria"
-                  >
+                  <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
                     <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
                     <span class="ico-label">{{ cat.nombre }}</span>
                   </div>
@@ -155,12 +172,8 @@
 
               <!-- ── FOOTER: solo bookmark y ver más ── -->
               <div class="tarjeta-pie">
-                <button
-                  class="btn-icon"
-                  :disabled="bookmarkEnProceso(item.id)"
-                  @click.stop="toggleBookmark(item.id)"
-                  :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'"
-                >
+                <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)" @click.stop="toggleBookmark(item.id)"
+                  :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'">
                   <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
                 </button>
                 <button class="btn-enlace" @click.stop="verDetalle(item.id)">
@@ -484,6 +497,45 @@ const obtenerIconoCategoria = (nombre: string | undefined): string => {
   return 'bi-tag-fill'
 }
 
+const categoriaDropdownAbierto = ref(false)
+
+const categoriasConIcono = computed(() => {
+  return categoriasDisponibles.value.map((categoria) => {
+    const id = Number(categoria.categoria_actualizacion_id)
+    const nombre = categoria.categoria_actualizacion_nombre
+
+    return {
+      ...categoria,
+      id,
+      nombre,
+      icono: obtenerIconoCategoria(nombre),
+    }
+  })
+})
+
+const categoriaSeleccionada = computed(() => {
+  const categoriaId = filtros.value.categoriaId
+
+  if (categoriaId === '') return null
+
+  return categoriasConIcono.value.find(
+    (categoria) => categoria.id === Number(categoriaId)
+  ) ?? null
+})
+
+const iconoCategoriaSeleccionada = computed(() => {
+  return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
+})
+
+const nombreCategoriaSeleccionada = computed(() => {
+  return categoriaSeleccionada.value?.nombre ?? 'Todas las categorías'
+})
+
+const seleccionarCategoria = (id: number | '') => {
+  filtros.value.categoriaId = id
+  categoriaDropdownAbierto.value = false
+}
+
 /**
  * Normaliza las categorías de un item, soportando:
  * - item.categorias → array (relación hasMany)
@@ -540,7 +592,9 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .contenedor-lista { padding: 0 24px; }
+  .contenedor-lista {
+    padding: 0 24px;
+  }
 }
 
 /* ── Estados ──────────────────────────────────────────── */
@@ -554,13 +608,21 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .estado-mensaje { padding: 60px 40px; }
+  .estado-mensaje {
+    padding: 60px 40px;
+  }
 }
 
-.estado-mensaje.error  { border-top: 3px solid #ef4444; }
-.estado-mensaje.vacio  { border-top: 3px solid var(--warning); }
+.estado-mensaje.error {
+  border-top: 3px solid #ef4444;
+}
 
-.error-icon, .empty-icon {
+.estado-mensaje.vacio {
+  border-top: 3px solid var(--warning);
+}
+
+.error-icon,
+.empty-icon {
   font-size: 48px;
   margin-bottom: 16px;
 }
@@ -590,7 +652,9 @@ onUnmounted(() => {
 }
 
 /* ── Botón toggle filtros ─────────────────────────────── */
-.filtros-toggle-wrapper { margin-bottom: 8px; }
+.filtros-toggle-wrapper {
+  margin-bottom: 8px;
+}
 
 .btn-toggle-filtros {
   width: 100%;
@@ -632,21 +696,32 @@ onUnmounted(() => {
   box-shadow: var(--shadow-sm);
 }
 
-.filtros-barra.filtros-visible { display: grid; }
+.filtros-barra.filtros-visible {
+  display: grid;
+}
 
 @media (min-width: 768px) {
-  .filtros-barra { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .filtros-barra {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 992px) {
-  .filtros-barra { grid-template-columns: repeat(3, 1fr); }
+  .filtros-barra {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (min-width: 1200px) {
-  .filtros-barra { grid-template-columns: repeat(6, minmax(160px, 1fr)) auto; }
+  .filtros-barra {
+    grid-template-columns: repeat(6, minmax(160px, 1fr)) auto;
+  }
 }
 
-.filtro-seccion-completa { grid-column: 1 / -1; }
+.filtro-seccion-completa {
+  grid-column: 1 / -1;
+}
 
 .filtro-label {
   display: block;
@@ -688,7 +763,11 @@ onUnmounted(() => {
 }
 
 /* Chips */
-.chips-grupo { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips-grupo {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
 .chip {
   padding: 7px 16px;
@@ -702,10 +781,15 @@ onUnmounted(() => {
   transition: var(--transition);
 }
 
-.chip:active { transform: scale(0.96); }
+.chip:active {
+  transform: scale(0.96);
+}
 
 @media (min-width: 768px) {
-  .chip:hover { border-color: var(--primary); color: var(--primary); }
+  .chip:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
 }
 
 .chip.activo {
@@ -715,7 +799,10 @@ onUnmounted(() => {
 }
 
 /* Botón limpiar */
-.filtro-acciones { display: flex; align-items: flex-end; }
+.filtro-acciones {
+  display: flex;
+  align-items: flex-end;
+}
 
 .btn-limpiar {
   height: 42px;
@@ -734,27 +821,37 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-.btn-limpiar:active { transform: scale(0.96); }
+.btn-limpiar:active {
+  transform: scale(0.96);
+}
 
 @media (min-width: 768px) {
-  .btn-limpiar:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .btn-limpiar:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+  }
 }
 
 /* ── Tarjetas ─────────────────────────────────────────── */
-.lista-feed { margin-top: 4px; }
+.lista-feed {
+  margin-top: 4px;
+}
 
 .tarjeta-changelog {
   border: 1px solid #eaeaea;
   border-radius: 16px;
   background-color: white;
   transition: var(--transition);
-  overflow: visible; /* visible para que el chip no se corte */
+  overflow: visible;
+  /* visible para que el chip no se corte */
   display: flex;
   flex-direction: column;
   cursor: pointer;
 }
 
-.tarjeta-changelog:active { transform: scale(0.98); }
+.tarjeta-changelog:active {
+  transform: scale(0.98);
+}
 
 @media (min-width: 768px) {
   .tarjeta-changelog:hover {
@@ -789,7 +886,9 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .imagen-container:hover .imagen-destacada { transform: scale(1.05); }
+  .imagen-container:hover .imagen-destacada {
+    transform: scale(1.05);
+  }
 }
 
 /*
@@ -799,12 +898,10 @@ onUnmounted(() => {
 .imagen-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to top left,
-    rgba(0, 0, 0, 0.78) 0%,
-    rgba(0, 0, 0, 0.15) 38%,
-    transparent 62%
-  );
+  background: linear-gradient(to top left,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.15) 38%,
+      transparent 62%);
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
@@ -846,7 +943,10 @@ onUnmounted(() => {
   margin-bottom: 8px;
 }
 
-.sin-imagen p { margin: 0; font-size: 0.85rem; }
+.sin-imagen p {
+  margin: 0;
+  font-size: 0.85rem;
+}
 
 /* ── CUERPO ──────────────────────────────────────────── */
 .tarjeta-cuerpo {
@@ -864,9 +964,16 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-.separador { color: #a0aec0; font-weight: 300; }
+.separador {
+  color: #a0aec0;
+  font-weight: 300;
+}
 
-.fecha { font-size: 0.85rem; color: #888; font-weight: 500; }
+.fecha {
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: 500;
+}
 
 .version-number {
   display: inline-block;
@@ -914,7 +1021,9 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .resumen { -webkit-line-clamp: 2; }
+  .resumen {
+    -webkit-line-clamp: 2;
+  }
 }
 
 /* ── ICONOS DE CATEGORÍA → texto al hover ─────────────── */
@@ -999,7 +1108,7 @@ onUnmounted(() => {
 /* ── FOOTER ──────────────────────────────────────────── */
 .tarjeta-pie {
   display: flex;
-  justify-content:space-between;
+  justify-content: space-between;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
@@ -1019,8 +1128,14 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.btn-icon i { font-size: 1.25rem; color: var(--secondary); }
-.btn-icon:active { transform: scale(0.9); }
+.btn-icon i {
+  font-size: 1.25rem;
+  color: var(--secondary);
+}
+
+.btn-icon:active {
+  transform: scale(0.9);
+}
 
 .btn-icon:disabled {
   opacity: 0.5;
@@ -1028,8 +1143,13 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .btn-icon:hover:not(:disabled) { background: rgba(7, 126, 157, 0.1); }
-  .btn-icon:hover:not(:disabled) i { color: var(--primary); }
+  .btn-icon:hover:not(:disabled) {
+    background: rgba(7, 126, 157, 0.1);
+  }
+
+  .btn-icon:hover:not(:disabled) i {
+    color: var(--primary);
+  }
 }
 
 .btn-enlace {
@@ -1047,12 +1167,24 @@ onUnmounted(() => {
   transition: var(--transition);
 }
 
-.btn-enlace i { font-size: 0.9rem; transition: transform 0.3s ease; }
-.btn-enlace:active { transform: scale(0.95); }
+.btn-enlace i {
+  font-size: 0.9rem;
+  transition: transform 0.3s ease;
+}
+
+.btn-enlace:active {
+  transform: scale(0.95);
+}
 
 @media (min-width: 768px) {
-  .btn-enlace:hover { color: var(--primary); background: rgba(7, 126, 157, 0.08); }
-  .btn-enlace:hover i { transform: translateX(4px); }
+  .btn-enlace:hover {
+    color: var(--primary);
+    background: rgba(7, 126, 157, 0.08);
+  }
+
+  .btn-enlace:hover i {
+    transform: translateX(4px);
+  }
 }
 
 /* ── Paginación ───────────────────────────────────────── */
@@ -1067,13 +1199,21 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .paginacion-container { flex-direction: row; }
+  .paginacion-container {
+    flex-direction: row;
+  }
 }
 
-.info-paginacion { color: #6b7280; font-size: 0.85rem; text-align: center; }
+.info-paginacion {
+  color: #6b7280;
+  font-size: 0.85rem;
+  text-align: center;
+}
 
 @media (min-width: 768px) {
-  .info-paginacion { font-size: 0.88rem; }
+  .info-paginacion {
+    font-size: 0.88rem;
+  }
 }
 
 .pagination-moderno {
@@ -1087,7 +1227,9 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .pagination-moderno { gap: 6px; }
+  .pagination-moderno {
+    gap: 6px;
+  }
 }
 
 .pagination-moderno li a {
@@ -1108,7 +1250,10 @@ onUnmounted(() => {
 }
 
 @media (min-width: 768px) {
-  .pagination-moderno li a { min-width: 36px; height: 36px; }
+  .pagination-moderno li a {
+    min-width: 36px;
+    height: 36px;
+  }
 }
 
 .pagination-moderno li.active a {
@@ -1126,8 +1271,14 @@ onUnmounted(() => {
   }
 }
 
-.pagination-moderno li.disabled a { opacity: 0.5; cursor: not-allowed; }
-.pagination-moderno li a:active { transform: scale(0.95); }
+.pagination-moderno li.disabled a {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-moderno li a:active {
+  transform: scale(0.95);
+}
 
 /* ── Inputs ───────────────────────────────────────────── */
 .input-busqueda-wrapper {
@@ -1144,15 +1295,26 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.filtro-busqueda .filtro-input { padding-left: 34px; }
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+}
 
 /* Animaciones */
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.filtros-barra.filtros-visible { animation: slideDown 0.3s ease; }
+.filtros-barra.filtros-visible {
+  animation: slideDown 0.3s ease;
+}
 
 /* ── Hero ─────────────────────────────────────────────── */
 .supervision-hero {
@@ -1171,7 +1333,9 @@ onUnmounted(() => {
   box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
 }
 
-.supervision-hero h2 { font-weight: 700; }
+.supervision-hero h2 {
+  font-weight: 700;
+}
 
 .supervision-hero p {
   max-width: 760px;
@@ -1190,5 +1354,116 @@ onUnmounted(() => {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.select-categoria-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-categoria-icon {
+  position: absolute;
+  left: 12px;
+  z-index: 1;
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.filtro-input-con-icono {
+  padding-left: 38px;
+}
+
+.categoria-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.categoria-dropdown-btn {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d7dde8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.categoria-dropdown-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.categoria-dropdown-seleccion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.categoria-dropdown-seleccion span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoria-dropdown-seleccion i {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.categoria-dropdown-flecha {
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+
+.categoria-dropdown.abierto .categoria-dropdown-flecha {
+  transform: rotate(180deg);
+}
+
+.categoria-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #fff;
+  border: 1px solid #d7dde8;
+  border-radius: 12px;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.14);
+  padding: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.categoria-dropdown-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px 12px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.categoria-dropdown-item:hover {
+  background: #f3f6fb;
+}
+
+.categoria-dropdown-item.activo {
+  background: #eaf1ff;
+  font-weight: 600;
+}
+
+.categoria-dropdown-item i {
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 </style>

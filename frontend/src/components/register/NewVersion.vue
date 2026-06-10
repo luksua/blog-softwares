@@ -48,11 +48,6 @@
         <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
       </div>
 
-      <div class="mb-4">
-        <label class="form-label fw-bold text-primary">Contenido *</label>
-        <div id="editorjs" class="editor-container border p-3"></div>
-      </div>
-
       <div class="row">
         
         <div class="col-md-6 mb-3">

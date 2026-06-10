@@ -44,7 +44,6 @@ class UpdateBlogAdminController extends Controller
 
             $datosParaGuardar['actualizacion_categoria_id'] = $datosValidados['actualizacion_categoria_ids'][0];
 
-            // ✅ CAMBIO 2: Si viene una imagen física, la guardamos en el disco
             if ($request->hasFile('actualizacion_imagen_destacada')) {
                 // Esto guarda el archivo en 'storage/app/public/blog/portadas'
                 // y devuelve la ruta (ej: "blog/portadas/AJs83...jpg")
@@ -186,7 +185,6 @@ class UpdateBlogAdminController extends Controller
     public function subirImagenEditor(Request $request)
     {
         $request->validate([
-            // ✅ IMPORTANTE: Vuelve a poner 'mimes' y 'image'. 
             // Dejar solo 'file' sin mimes es peligroso porque un usuario malintencionado 
             // podría subir un archivo .php o .exe camuflado.
             'imagen' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
