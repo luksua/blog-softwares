@@ -1466,4 +1466,50 @@ onUnmounted(() => {
   font-size: 0.9rem;
   flex-shrink: 0;
 }
+
+/* ── Select de Área con apariencia igual al dropdown de Categoría ── */
+.filtro-grupo select.filtro-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* misma altura y forma que .categoria-dropdown-btn */
+  min-height: 42px;
+  height: auto;
+  border: 1px solid #d7dde8;
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 0 36px 0 12px;
+
+  /* flecha manual igual a bi-chevron-down */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+
+  font-size: 0.95rem;
+  color: #374151;
+  cursor: pointer;
+  width: 100%;
+  transition: var(--transition);
+}
+
+.filtro-grupo select.filtro-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
+}
+
+.filtro-grupo select.filtro-input:disabled {
+  background-color: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Hover solo en desktop */
+@media (min-width: 768px) {
+  .filtro-grupo select.filtro-input:hover:not(:disabled) {
+    border-color: var(--primary);
+  }
+}
 </style>

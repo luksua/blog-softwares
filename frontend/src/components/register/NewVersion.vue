@@ -48,8 +48,15 @@
         <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
       </div>
 
+      <div class="editor-column">
+        <label class="form-label fw-bold text-primary">Contenido *</label>
+        <div class="editor-wrapper">
+          <div id="editorjs"></div>
+        </div>
+      </div>
+
       <div class="row">
-        
+
         <div class="col-md-6 mb-3">
           <label class="form-label fw-bold text-primary">
             Categorías *
@@ -1025,6 +1032,86 @@ onBeforeUnmount(() => {
 
   .selected-tag {
     font-size: 0.65rem;
+  }
+}
+
+/* ── Layout principal del formulario: 2 columnas ── */
+.form-container-x {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  gap: 0 32px;
+  align-items: start;
+}
+
+/* ── Columna izquierda: todo menos el editor ── */
+.autosave-bar {
+  grid-column: 1;
+}
+
+/* Apilamos todos los campos directos del form en col 1 */
+.form-container-x>.mb-3,
+.form-container-x>.row {
+  grid-column: 1;
+}
+
+/* ── Botones: abajo de la col izquierda ── */
+.form-container-x>.d-flex {
+  grid-column: 1;
+  margin-top: auto;
+}
+
+/* ── Editor: columna derecha, ocupa toda la altura ── */
+.editor-column {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  /* ocupa todas las filas */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+}
+
+.editor-label {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.editor-wrapper {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  min-height: 500px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
+}
+
+/* ── Responsive: vuelve a 1 columna en móvil ── */
+@media (max-width: 768px) {
+  .form-container-x {
+    grid-template-columns: 1fr;
+  }
+
+  .autosave-bar,
+  .form-container-x>.mb-3,
+  .form-container-x>.row,
+  .form-container-x>.d-flex,
+  .editor-column {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .editor-column {
+    position: relative;
   }
 }
 </style>

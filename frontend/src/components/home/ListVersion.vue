@@ -94,11 +94,16 @@
             </section>
           </div>
 
-          <aside class="indice-resumen" aria-label="Índice del documento">
+          <aside class="indice-resumen" aria-label="Resumen del documento">
+            <!-- Header igual al índice -->
+            <div class="indice-header">
+              <span class="indice-icon" aria-hidden="true">📋</span>
+              <h2 class="indice-titulo">Resumen</h2>
+            </div>
+
             <section id="resumen" class="resumen-container" aria-label="Resumen del artículo">
               <p class="resumen-texto">{{ actualizacion.actualizacion_resumen }}</p>
             </section>
-
           </aside>
         </div>
 
@@ -1337,6 +1342,274 @@ watch(() => props.id, () => {
 
   .tags-right {
     justify-content: center;
+  }
+}
+
+/* ── Tarjeta changelog ── */
+.tarjeta-changelog {
+  border: 1px solid #eaeaea;
+  border-radius: 16px;
+  background-color: white;
+  transition: var(--transition);
+  overflow: visible;
+  /* ← era hidden */
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.tarjeta-changelog:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  /* ← era -2px */
+}
+
+/* ── Cabecera ── */
+.tarjeta-header {
+  position: relative;
+  /* ← añadir */
+  padding: 0;
+  display: block;
+  border-radius: 16px 16px 0 0;
+  /* ← añadir */
+  overflow: hidden;
+  /* ← mover aquí desde la tarjeta */
+}
+
+.imagen-container {
+  position: relative;
+  /* ← añadir */
+  overflow: hidden;
+  width: 100%;
+  background: #f5f5f5;
+  /* ← añadir */
+}
+
+.imagen-destacada {
+  width: 100%;
+  aspect-ratio: 22/9;
+  /* ← era 22/8 */
+  object-fit: cover;
+  display: block;
+  object-position: center;
+  transition: var(--transition);
+}
+
+.imagen-container:hover .imagen-destacada {
+  transform: scale(1.05);
+  /* ← era 1.02 */
+}
+
+/* ── Overlay con área (nuevo en detalle) ── */
+.imagen-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top left,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.15) 38%,
+      transparent 62%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+
+.area-label {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ── Sin imagen ── */
+.sin-imagen {
+  position: relative;
+  /* ← añadir */
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e1e7f0;
+  color: #9ca3af;
+  width: 100%;
+  aspect-ratio: 22/9;
+  /* ← era 22/8 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* ── Cuerpo ── */
+.tarjeta-cuerpo {
+  padding: 14px 16px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.titulo-version {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 8px 0;
+  /* ← Reemplazar white-space/overflow/ellipsis por clamp para móvil: */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .titulo-version {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 1;
+    display: block;
+  }
+}
+
+.resumen {
+  font-size: 0.9rem;
+  /* ← era 0.95rem */
+  color: #555;
+  line-height: 1.5;
+  /* ← era 1.6 */
+  margin: 0 0 10px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 768px) {
+  .resumen {
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* ── Footer ── */
+.tarjeta-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid #f0f2f5;
+  margin-top: auto;
+}
+
+/* ── Layout de 3 columnas: índice | contenido | resumen ── */
+.contenido-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px 1fr 260px;
+  /* ← era 260px 1fr */
+  gap: 40px;
+  padding: 40px 5%;
+  position: relative;
+}
+
+/* ── Resumen: sticky a la derecha ── */
+.indice-resumen {
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  /* ← era flex-end */
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  order: 3;
+  /* ← asegura que quede al final */
+}
+
+/* El índice queda primero */
+.indice-sidebar {
+  order: 1;
+}
+
+/* El contenido en el medio */
+.contenido-columna {
+  order: 2;
+  min-width: 0;
+  max-width: 100%;
+  /* ← era 720px, ahora usa el grid */
+  margin: 0;
+}
+
+/* ── Resumen interior ── */
+.resumen-container {
+  margin: 0;
+  padding: 20px;
+  background: transparent;
+  /* ← sin fondo propio, el aside ya lo tiene */
+  border-radius: 0;
+  border-left: 4px solid var(--primary);
+  border-bottom: none;
+}
+
+.resumen-texto {
+  font-size: 0.95rem;
+  /* ← ligeramente menor para el aside lateral */
+  line-height: 1.7;
+  color: #334155;
+  margin: 0;
+}
+
+/* ── Título del resumen (añadir header igual al índice) ── */
+.indice-resumen .indice-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* ── Responsive: colapsar a 1 columna en tablet ── */
+@media (max-width: 1200px) {
+  .contenido-wrapper {
+    grid-template-columns: 200px 1fr;
+    /* ← quita resumen */
+  }
+
+  .indice-resumen {
+    display: none;
+    /* ← se oculta en tablet/móvil */
+  }
+}
+
+@media (max-width: 991px) {
+  .contenido-wrapper {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .indice-sidebar {
+    position: relative;
+    top: 0;
+    max-height: 300px;
+  }
+
+  .contenido-columna {
+    max-width: 100%;
   }
 }
 </style>
