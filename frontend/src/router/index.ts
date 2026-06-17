@@ -5,6 +5,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
 import HomePageAdmin from '../features/admin/HomePage.vue'
 import SupervisionPage from '../features/admin/SupervisionPage.vue'
+import DashboardPage from '../features/admin/DashboardArea.vue'
 import ListaActualizaciones from '../components/home/List.vue'
 import VerActualizacion from '../components/home/ListVersion.vue'
 import VerActualizacionAdmin from '../components/register/ListVersion.vue'
@@ -117,6 +118,17 @@ const router = createRouter({
           }),
           meta: {
             requiresAuth: true,
+          },
+        },
+
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: DashboardPage,
+          meta: {
+            sinPadding: true,
+            requiresAuth: true,
+            requiresSupervisor: true,
           },
         },
 

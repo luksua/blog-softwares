@@ -48,6 +48,14 @@ route: {{ route.name }}
         <li v-if="mostrarSupervision">
           <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
             <i class="bi bi-people-fill nav-icon"></i>
+            <span v-show="isExpanded" class="nav-text">Dashboard</span>
+            <div v-if="!isExpanded" class="tooltip">Dashboard</div>
+          </router-link>
+        </li>
+
+        <li v-if="mostrarSupervision">
+          <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+            <i class="bi bi-people-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Supervisión</span>
             <div v-if="!isExpanded" class="tooltip">Supervisión</div>
           </router-link>
@@ -95,10 +103,15 @@ route: {{ route.name }}
                 Supervisión
               </router-link>
 
+              <router-link v-if="mostrarSupervision" :to="{ name: 'dashboard' }" class="nav-link-header">
+                Dashboard
+              </router-link>
+              
               <router-link v-if="mostrarGuardados" :to="{ name: 'employee-guardados' }"
                 class="nav-link-header nav-icon-link" title="Guardados">
                 <i class="bi bi-bookmark-fill fs-5"></i>
               </router-link>
+
             </nav>
 
             <div class="notification-wrapper" @click.stop>

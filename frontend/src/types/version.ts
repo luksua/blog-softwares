@@ -14,6 +14,8 @@ export interface Version {
   area_servicio: AreaServicio;
   categoria?: Category | null;
   categorias?: Category[];
+
+  actualizacion_lecturas?: number
 }
 
 export interface ImagenGaleria {

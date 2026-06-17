@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UpdateBlogController;
+use App\Http\Controllers\Api\BlogDashboardController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
 
@@ -142,4 +143,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/actualizaciones/{id}/inactivar', [UpdateBlogController::class, 'inactivar'])
         ->whereNumber('id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/blog-dashboard', BlogDashboardController::class);
 });

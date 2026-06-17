@@ -12,18 +12,13 @@
 
         <div v-if="mostrarFiltrosMovil" class="filtros-panel-movil">
           <div class="filtro-movil-item">
-            <input 
-              v-model="filtros.busqueda" 
-              type="text" 
-              placeholder="Buscar..." 
-              class="input-movil"
-            />
+            <input v-model="filtros.busqueda" type="text" placeholder="Buscar..." class="input-movil" />
           </div>
-          
+
           <div class="filtro-movil-item">
             <select v-model="filtros.categoriaId" class="select-movil">
               <option value="">Todas las categorías</option>
-              <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id" 
+              <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
                 :value="Number(categoria.categoria_actualizacion_id)">
                 {{ categoria.categoria_actualizacion_nombre }}
               </option>
@@ -77,13 +72,100 @@
               <span class="info-value">v{{ item.actualizacion_version }}</span>
             </div>
 
-            <div class="info-row">
+            <!-- ======= ÁREA (selector moderno) ======= -->
+            <div class="filtro-grupo info-row">
+              <label class="filtro-label">Área / Servicio</label>
+              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!areaSeleccionada">
+                    <i class="bi bi-building"></i>
+                    <span>Selecciona un área...</span>
+                  </div>
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">{{ areaSeleccionada.area_servicio_nombre }}</span>
+                  </div>
+                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
+                  </div>
+                  <div class="dropdown-options">
+                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
+                      class="dropdown-option"
+                      :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
+                      @click="seleccionarArea(Number(area.area_servicio_id))">
+                      <span class="option-name">{{ area.area_servicio_nombre }}</span>
+                      <span class="option-check">
+                        <i v-if="areaSeleccionada?.area_servicio_id === area.area_servicio_id"
+                          class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
+                      No se encontraron áreas
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ======= CATEGORÍA (selector moderno) ======= -->
+            <div class="filtro-grupo info-row">
+              <label class="filtro-label">Categoría</label>
+              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
+                    <i class="bi bi-tags-fill"></i>
+                    <span>Todas las categorías</span>
+                  </div>
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">{{ categoriaSeleccionada.nombre }}</span>
+                  </div>
+                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
+                  </div>
+                  <div class="dropdown-options">
+                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
+                      @click="seleccionarCategoria('')">
+                      <span class="option-name">Todas las categorías</span>
+                      <span class="option-check">
+                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
+                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
+                      @click="seleccionarCategoria(cat.id)">
+                      <span class="option-name">
+                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
+                        {{ cat.nombre }}
+                      </span>
+                      <span class="option-check">
+                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
+                      No se encontraron categorías
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <!-- <div class="info-row">
               <i class="bi bi-folder"></i>
               <span class="info-label">Área:</span>
               <span class="info-value">{{ obtenerNombreArea(item) }}</span>
-            </div>
+            </div> -->
 
-            <div class="info-row">
+            <!-- <div class="info-row">
               <i class="bi bi-grid"></i>
               <span class="info-label">Categorías:</span>
               <div class="categorias-movil">
@@ -97,12 +179,13 @@
                 </span>
                 <span v-if="obtenerListaCategorias(item).length === 0" class="cat-vacia">Sin categoría</span>
               </div>
-            </div>
+            </div> -->
 
             <div class="info-row">
               <i class="bi bi-calendar"></i>
               <span class="info-label">Fecha:</span>
-              <span class="info-value">{{ formatearFecha(item.actualizacion_fecha_publicacion || item.actualizacion_fecha_creacion) }}</span>
+              <span class="info-value">{{ formatearFecha(item.actualizacion_fecha_publicacion ||
+                item.actualizacion_fecha_creacion) }}</span>
             </div>
 
             <div v-if="esVistaSupervision" class="info-row">
@@ -119,7 +202,7 @@
             </button>
 
             <template v-if="esVistaSupervision">
-              <button v-if="item.actualizacion_estado !== 'revision'" class="accion-movil revision" 
+              <button v-if="item.actualizacion_estado !== 'revision'" class="accion-movil revision"
                 @click="confirmarRevision(item)">
                 <i class="bi bi-clipboard-check"></i>
                 <span>Revisar</span>
@@ -127,13 +210,13 @@
             </template>
 
             <template v-else>
-              <button class="accion-movil editar" @click="editarActualizacion(item)" data-bs-toggle="modal" 
+              <button class="accion-movil editar" @click="editarActualizacion(item)" data-bs-toggle="modal"
                 data-bs-target="#modalEditarRegistro">
                 <i :class="item.actualizacion_estado === 'revision' ? 'bi bi-send-check' : 'bi bi-pencil-square'"></i>
                 <span>{{ item.actualizacion_estado === 'revision' ? 'Corregir' : 'Editar' }}</span>
               </button>
 
-              <button v-if="item.actualizacion_estado !== 'inactivo'" class="accion-movil archivar" 
+              <button v-if="item.actualizacion_estado !== 'inactivo'" class="accion-movil archivar"
                 @click="confirmarEliminar(item)">
                 <i class="bi bi-archive"></i>
                 <span>Archivar</span>
@@ -227,6 +310,92 @@
               </select>
             </div>
 
+            <!-- ======= ÁREA (selector moderno) ======= -->
+            <!-- <div v-if="!esVistaSupervision" class="filtro-grupo">
+              <label class="filtro-label">Área / Servicio</label>
+              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!areaSeleccionada">
+                    <i class="bi bi-building"></i>
+                    <span>Selecciona un área...</span>
+                  </div>
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">{{ areaSeleccionada.area_servicio_nombre }}</span>
+                  </div>
+                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
+                  </div>
+                  <div class="dropdown-options">
+                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
+                      class="dropdown-option"
+                      :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
+                      @click="seleccionarArea(Number(area.area_servicio_id))">
+                      <span class="option-name">{{ area.area_servicio_nombre }}</span>
+                      <span class="option-check">
+                        <i v-if="areaSeleccionada?.area_servicio_id === area.area_servicio_id"
+                          class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
+                      No se encontraron áreas
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div> -->
+
+            <!-- ======= CATEGORÍA (selector moderno) ======= -->
+            <!-- <div class="filtro-grupo">
+              <label class="filtro-label">Categoría</label>
+              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
+                    <i class="bi bi-tags-fill"></i>
+                    <span>Todas las categorías</span>
+                  </div>
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">{{ categoriaSeleccionada.nombre }}</span>
+                  </div>
+                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
+                  </div>
+                  <div class="dropdown-options">
+                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
+                      @click="seleccionarCategoria('')">
+                      <span class="option-name">Todas las categorías</span>
+                      <span class="option-check">
+                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
+                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
+                      @click="seleccionarCategoria(cat.id)">
+                      <span class="option-name">
+                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
+                        {{ cat.nombre }}
+                      </span>
+                      <span class="option-check">
+                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
+                      No se encontraron categorías
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div> -->
+
             <div v-if="!esVistaSupervision" class="filtro-grupo">
               <label for="area">Área</label>
               <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
@@ -294,16 +463,11 @@
 
                 <td class="cell-categoria" data-label="Categoría">
                   <div class="categorias-container">
-                    <span 
-                      v-for="(cat, idx) in obtenerListaCategorias(item)" 
-                      :key="idx"
-                      class="categoria-badge"
-                      :style="{ 
-                        backgroundColor: getCategoriaColor(cat) + '15',
-                        borderColor: getCategoriaColor(cat),
-                        color: getCategoriaColor(cat)
-                      }"
-                    >
+                    <span v-for="(cat, idx) in obtenerListaCategorias(item)" :key="idx" class="categoria-badge" :style="{
+                      backgroundColor: getCategoriaColor(cat) + '15',
+                      borderColor: getCategoriaColor(cat),
+                      color: getCategoriaColor(cat)
+                    }">
                       <i :class="getCategoriaIcon(cat)" :style="{ color: getCategoriaColor(cat) }"></i>
                       {{ cat }}
                     </span>
@@ -500,30 +664,18 @@
     <Teleport to="body">
       <template v-if="mostrarAlertaRevision">
         <!-- Overlay -->
-        <div
-          :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]"
-          @click="offcanvasAbierto = false"
-        />
+        <div :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]" @click="offcanvasAbierto = false" />
 
         <!-- Botón flotante -->
-        <button
-          class="fab-revision"
-          :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
-          @click="offcanvasAbierto = true"
-          aria-label="Ver revisiones pendientes"
-          title="Revisiones pendientes"
-        >
+        <button class="fab-revision" :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
+          @click="offcanvasAbierto = true" aria-label="Ver revisiones pendientes" title="Revisiones pendientes">
           <i class="bi bi-clipboard-check"></i>
           <span class="fab-badge">{{ notificacionesRevision.length }}</span>
         </button>
 
         <!-- Panel offcanvas -->
-        <aside
-          :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Revisiones pendientes"
-        >
+        <aside :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]" role="dialog" aria-modal="true"
+          aria-label="Revisiones pendientes">
           <div class="oc-header">
             <div class="oc-header-left">
               <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
@@ -536,23 +688,15 @@
           </div>
 
           <div class="oc-body">
-            <div
-              v-for="notificacion in notificacionesRevision"
-              :key="notificacion.id"
-              class="oc-item"
-            >
+            <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="oc-item">
               <div class="oc-item-inner">
                 <div class="oc-item-icon-wrap">
                   <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
                 </div>
                 <div class="oc-item-content">
                   <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
-                  <button
-                    v-if="notificacion.actualizacion_id"
-                    type="button"
-                    class="oc-item-btn"
-                    @click="handleCorreccionDesdeOffcanvas(notificacion)"
-                  >
+                  <button v-if="notificacion.actualizacion_id" type="button" class="oc-item-btn"
+                    @click="handleCorreccionDesdeOffcanvas(notificacion)">
                     <i class="bi bi-pencil-square"></i>
                     Corregir registro
                   </button>
@@ -861,12 +1005,16 @@ const obtenerListaCategorias = (item: Version): string[] => {
       .map((categoria: any) => categoria.categoria_actualizacion_nombre)
       .filter(Boolean)
   }
-  
+
   if (item.categoria?.categoria_actualizacion_nombre) {
     return [item.categoria.categoria_actualizacion_nombre]
   }
-  
+
   return []
+}
+const seleccionarCategoria = (id: number | '') => {
+  filtros.value.categoriaId = id
+  categoriaDropdownAbierto.value = false
 }
 
 const getCategoriaColor = (nombre: string) => {
@@ -883,7 +1031,7 @@ const getCategoriaColor = (nombre: string) => {
     'capacitacion': '#14B8A6',
     'proyectos': '#6366F1'
   }
-  
+
   const lowerNombre = nombre.toLowerCase()
   for (const [key, color] of Object.entries(colorMap)) {
     if (lowerNombre.includes(key)) {
@@ -909,7 +1057,7 @@ const getCategoriaIcon = (nombre: string) => {
     'notas de version': 'bi-card-list',
     'general': 'bi-info-circle-fill',
   }
-  
+
   const lowerNombre = nombre.toLowerCase()
   for (const [key, icon] of Object.entries(iconMap)) {
     if (lowerNombre.includes(key)) {
@@ -919,10 +1067,10 @@ const getCategoriaIcon = (nombre: string) => {
   return 'bi bi-tag-fill'
 }
 
-const obtenerNombreCategoria = (item: Version) => {
-  const categorias = obtenerListaCategorias(item)
-  return categorias.join(', ') || 'Sin categoría'
-}
+// const obtenerNombreCategoria = (item: Version) => {
+//   const categorias = obtenerListaCategorias(item)
+//   return categorias.join(', ') || 'Sin categoría'
+// }
 
 const obtenerNombreAutor = (item: any) => {
   const autor = item.usuario_autor || item.autor || item.usuario
@@ -1065,9 +1213,113 @@ const marcarRevisionActualizacion = async () => {
   }
 }
 
+const normalizarTexto = (texto: string): string =>
+  texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+
+
+const obtenerIconoCategoria = (nombre: string | undefined): string => {
+  if (!nombre) return 'bi-tag-fill'
+
+  const n = normalizarTexto(nombre)
+
+  const mapa: Record<string, string> = {
+    'manual de usuario': 'bi-person-lines-fill',
+    'manual tecnico': 'bi-tools',
+    'instalador': 'bi-box-arrow-down',
+    'actualizacion del sistema': 'bi-arrow-repeat',
+    'nueva funcionalidad': 'bi-stars',
+    'mejora': 'bi-arrow-up-circle-fill',
+    'correccion de errores': 'bi-bug-fill',
+    'parche de seguridad': 'bi-shield-fill-check',
+    'guia de instalacion': 'bi-journal-arrow-down',
+    'guia rapida': 'bi-lightning-charge-fill',
+    'documentacion': 'bi-file-earmark-text-fill',
+    'notas de version': 'bi-card-list',
+    'general': 'bi-info-circle-fill',
+  }
+
+  if (mapa[n]) return mapa[n]
+
+  // Fallback por coincidencias parciales
+  if (n.includes('manual')) return 'bi-journal-text'
+  if (n.includes('instal')) return 'bi-box-arrow-down'
+  if (n.includes('actualizacion')) return 'bi-arrow-repeat'
+  if (n.includes('funcionalidad')) return 'bi-stars'
+  if (n.includes('mejora')) return 'bi-arrow-up-circle-fill'
+  if (n.includes('correccion') || n.includes('error')) return 'bi-bug-fill'
+  if (n.includes('seguridad') || n.includes('parche')) return 'bi-shield-fill-check'
+  if (n.includes('guia')) return 'bi-journal-bookmark-fill'
+  if (n.includes('documentacion')) return 'bi-file-earmark-text-fill'
+  if (n.includes('version')) return 'bi-card-list'
+  if (n.includes('general')) return 'bi-info-circle-fill'
+
+  return 'bi-tag-fill'
+}
+
+const categoriaDropdownAbierto = ref(false)
+
+const categoriasConIcono = computed(() => {
+  return categoriasDisponibles.value.map((categoria) => {
+    const id = Number(categoria.categoria_actualizacion_id)
+    const nombre = categoria.categoria_actualizacion_nombre
+
+    return {
+      ...categoria,
+      id,
+      nombre,
+      icono: obtenerIconoCategoria(nombre),
+    }
+  })
+})
+
+// ── Área ──
+const areaDropdownAbierto = ref(false)
+const busquedaArea = ref('')
+
+const areaSeleccionada = computed(() => {
+  if (!filtros.value.areaServicioId) return null
+  return areasDisponibles.value.find(a => Number(a.area_servicio_id) === Number(filtros.value.areaServicioId)) || null
+})
+
+const areasFiltradas = computed(() => {
+  if (!busquedaArea.value) return areasDisponibles.value
+  const q = busquedaArea.value.toLowerCase()
+  return areasDisponibles.value.filter(a =>
+    a.area_servicio_nombre.toLowerCase().includes(q)
+  )
+})
+
+const seleccionarArea = (id: number) => {
+  filtros.value.areaServicioId = id
+  areaDropdownAbierto.value = false
+  busquedaArea.value = ''
+}
+
+// ── Categoría (reutilizamos el dropdown existente pero con nuevo trigger) ──
+const busquedaCategoria = ref('')
+// Nota: ya tienes 'categoriaDropdownAbierto' y 'seleccionarCategoria'
+// Solo necesitas el computed para la selección actual y el filtrado con íconos
+
+const categoriaSeleccionada = computed(() => {
+  if (!filtros.value.categoriaId) return null
+  return categoriasConIcono.value.find(c => c.id === Number(filtros.value.categoriaId)) || null
+})
+
+const categoriasFiltradasConIcono = computed(() => {
+  if (!busquedaCategoria.value) return categoriasConIcono.value
+  const q = busquedaCategoria.value.toLowerCase()
+  return categoriasConIcono.value.filter(c =>
+    c.nombre.toLowerCase().includes(q)
+  )
+})
+
 onMounted(async () => {
   window.addEventListener('resize', handleResize)
-  
+
   await Promise.all([
     obtenerCatalogosFiltros(),
     obtenerActualizaciones(1),
@@ -1109,10 +1361,14 @@ defineExpose({ obtenerActualizaciones })
 }
 
 @media (min-width: 768px) {
-  .contenedor-lista-tabla { padding: 0 24px; }
+  .contenedor-lista-tabla {
+    padding: 0 24px;
+  }
 }
 
-.modo-supervision { max-width: 1500px; }
+.modo-supervision {
+  max-width: 1500px;
+}
 
 /* ============================================
    ESTILOS PARA MÓVIL (< 420px)
@@ -1178,6 +1434,7 @@ defineExpose({ obtenerActualizaciones })
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1495,10 +1752,19 @@ defineExpose({ obtenerActualizaciones })
   color: #6b7280;
 }
 
-.estado-mensaje.error  { border-top: 3px solid #ef4444; }
-.estado-mensaje.vacio  { border-top: 3px solid var(--warning); }
+.estado-mensaje.error {
+  border-top: 3px solid #ef4444;
+}
 
-.error-icon, .empty-icon { font-size: 48px; margin-bottom: 16px; }
+.estado-mensaje.vacio {
+  border-top: 3px solid var(--warning);
+}
+
+.error-icon,
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
 
 .btn-retry {
   margin-top: 20px;
@@ -1512,10 +1778,17 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition);
 }
 
-.btn-retry:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn-retry:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
 
 /* Filtros */
-.tabla-con-filtros { display: flex; flex-direction: column; gap: 16px; }
+.tabla-con-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
 .filtros-barra {
   background: white;
@@ -1541,7 +1814,9 @@ defineExpose({ obtenerActualizaciones })
   gap: 8px;
 }
 
-.btn-toggle-filtros:hover { background: #f0f2f5; }
+.btn-toggle-filtros:hover {
+  background: #f0f2f5;
+}
 
 .filtros-contenido {
   display: grid;
@@ -1552,21 +1827,37 @@ defineExpose({ obtenerActualizaciones })
 }
 
 @media (min-width: 768px) {
-  .filtros-contenido { grid-template-columns: repeat(2, 1fr); margin-top: 0; }
-  .btn-toggle-filtros { display: none; }
+  .filtros-contenido {
+    grid-template-columns: repeat(2, 1fr);
+    margin-top: 0;
+  }
+
+  .btn-toggle-filtros {
+    display: none;
+  }
 }
 
-@media (min-width: 1024px) { 
-  .filtros-contenido { grid-template-columns: repeat(3, 1fr); } 
+@media (min-width: 1024px) {
+  .filtros-contenido {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.filtros-visible { display: grid; }
+.filtros-visible {
+  display: grid;
+}
 
 @media (max-width: 767px) {
-  .filtros-contenido:not(.filtros-visible) { display: none; }
+  .filtros-contenido:not(.filtros-visible) {
+    display: none;
+  }
 }
 
-.filtro-grupo { display: flex; flex-direction: column; gap: 8px; }
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
 .filtro-grupo label {
   font-size: 0.82rem;
@@ -1588,19 +1879,23 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition);
 }
 
-.filtro-input:focus { 
-  outline: none; 
-  border-color: var(--primary); 
-  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12); 
+.filtro-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
 }
 
-.filtro-input:disabled { 
-  background: #f9fafb; 
-  opacity: 0.7; 
-  cursor: not-allowed; 
+.filtro-input:disabled {
+  background: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.filtro-acciones { display: flex; gap: 10px; align-items: end; }
+.filtro-acciones {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
 
 .btn-limpiar {
   height: 42px;
@@ -1615,7 +1910,10 @@ defineExpose({ obtenerActualizaciones })
   color: #374151;
 }
 
-.btn-limpiar:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.btn-limpiar:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
 
 /* Tabla */
 .table-container {
@@ -1627,7 +1925,9 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition);
 }
 
-.table-container:hover { box-shadow: var(--shadow-lg); }
+.table-container:hover {
+  box-shadow: var(--shadow-lg);
+}
 
 .base-table {
   width: 100%;
@@ -1635,8 +1935,10 @@ defineExpose({ obtenerActualizaciones })
   min-width: 600px;
 }
 
-@media (max-width: 768px) { 
-  .base-table { min-width: 100%; } 
+@media (max-width: 768px) {
+  .base-table {
+    min-width: 100%;
+  }
 }
 
 .base-table thead tr {
@@ -1665,8 +1967,14 @@ defineExpose({ obtenerActualizaciones })
   cursor: pointer;
 }
 
-.base-table tbody tr:hover td { color: #1a202c; }
-.base-table tbody tr:hover .titulo-texto { color: var(--primary); }
+.base-table tbody tr:hover td {
+  color: #1a202c;
+}
+
+.base-table tbody tr:hover .titulo-texto {
+  color: var(--primary);
+}
+
 .base-table tbody tr:hover .version-badge {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
@@ -1684,7 +1992,9 @@ defineExpose({ obtenerActualizaciones })
 }
 
 .base-table tbody tr:hover .badge-estado,
-.base-table tbody tr:hover .btn-icon { transform: scale(1.05); }
+.base-table tbody tr:hover .btn-icon {
+  transform: scale(1.05);
+}
 
 .base-table td {
   padding: 12px 20px;
@@ -1696,7 +2006,10 @@ defineExpose({ obtenerActualizaciones })
 
 /* Tarjetas en móvil para desktop */
 @media (max-width: 768px) {
-  .base-table thead { display: none; }
+  .base-table thead {
+    display: none;
+  }
+
   .base-table tbody tr {
     display: block;
     margin-bottom: 16px;
@@ -1704,7 +2017,11 @@ defineExpose({ obtenerActualizaciones })
     box-shadow: var(--shadow-sm);
     border: 1px solid #e1e7f0;
   }
-  .base-table tbody tr:hover { transform: translateX(4px) scale(1.02); }
+
+  .base-table tbody tr:hover {
+    transform: translateX(4px) scale(1.02);
+  }
+
   .base-table td {
     display: flex;
     justify-content: space-between;
@@ -1714,7 +2031,11 @@ defineExpose({ obtenerActualizaciones })
     border-bottom: 1px solid #f0f2f5;
     text-align: right;
   }
-  .base-table td:last-child { border-bottom: none; }
+
+  .base-table td:last-child {
+    border-bottom: none;
+  }
+
   .base-table td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -1723,12 +2044,23 @@ defineExpose({ obtenerActualizaciones })
     text-align: left;
     min-width: 100px;
   }
-  .icon-group { justify-content: flex-end; }
+
+  .icon-group {
+    justify-content: flex-end;
+  }
 }
 
 /* Celdas */
-.titulo-texto { font-weight: 600; color: #1a202c; transition: var(--transition-smooth); }
-.area-texto { color: #4b5563; font-weight: 500; }
+.titulo-texto {
+  font-weight: 600;
+  color: #1a202c;
+  transition: var(--transition-smooth);
+}
+
+.area-texto {
+  color: #4b5563;
+  font-weight: 500;
+}
 
 .version-badge {
   display: inline-block;
@@ -1742,7 +2074,12 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition-smooth);
 }
 
-.fecha-info { display: flex; flex-direction: column; gap: 4px; }
+.fecha-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .fecha-label {
   font-size: 0.7rem;
   font-weight: 600;
@@ -1751,8 +2088,18 @@ defineExpose({ obtenerActualizaciones })
   letter-spacing: 0.5px;
   transition: var(--transition-smooth);
 }
-.fecha-publicado { font-size: 0.85rem; color: var(--primary); transition: var(--transition-smooth); }
-.fecha-creado { font-size: 0.85rem; color: #9ca3af; transition: var(--transition-smooth); }
+
+.fecha-publicado {
+  font-size: 0.85rem;
+  color: var(--primary);
+  transition: var(--transition-smooth);
+}
+
+.fecha-creado {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  transition: var(--transition-smooth);
+}
 
 .badge-estado {
   display: inline-block;
@@ -1763,13 +2110,37 @@ defineExpose({ obtenerActualizaciones })
   text-transform: capitalize;
   transition: var(--transition-smooth);
 }
-.estado-green { background-color: #e6f7e9; color: #2e7d32; }
-.estado-yellow { background-color: #fef8e3; color: #f9a825; }
-.estado-blue { background-color: #eaf4fd; color: #2f84d3; }
-.estado-dark-gray { background-color: #e5e7eb; color: #374151; }
-.estado-gray { background-color: #f2f4f7; color: #5f6671; }
 
-.icon-group { display: flex; gap: 15px; justify-content: flex-end; }
+.estado-green {
+  background-color: #e6f7e9;
+  color: #2e7d32;
+}
+
+.estado-yellow {
+  background-color: #fef8e3;
+  color: #f9a825;
+}
+
+.estado-blue {
+  background-color: #eaf4fd;
+  color: #2f84d3;
+}
+
+.estado-dark-gray {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.estado-gray {
+  background-color: #f2f4f7;
+  color: #5f6671;
+}
+
+.icon-group {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+}
 
 .btn-icon {
   background: none;
@@ -1780,9 +2151,16 @@ defineExpose({ obtenerActualizaciones })
   cursor: pointer;
   transition: var(--transition-smooth);
 }
-.btn-icon:hover { color: #4b5563; }
 
-.col-autor, .cell-autor { min-width: 170px; }
+.btn-icon:hover {
+  color: #4b5563;
+}
+
+.col-autor,
+.cell-autor {
+  min-width: 170px;
+}
+
 .autor-texto {
   display: inline-flex;
   align-items: center;
@@ -1790,7 +2168,11 @@ defineExpose({ obtenerActualizaciones })
   color: #1f2937;
 }
 
-.btn-icon-revision { width: auto; padding: 8px 11px; gap: 6px; }
+.btn-icon-revision {
+  width: auto;
+  padding: 8px 11px;
+  gap: 6px;
+}
 
 /* Categorías en desktop */
 .categorias-container {
@@ -1840,12 +2222,22 @@ defineExpose({ obtenerActualizaciones })
   gap: 16px;
 }
 
-@media (max-width: 768px) { 
-  .table-footer { flex-direction: column; text-align: center; } 
+@media (max-width: 768px) {
+  .table-footer {
+    flex-direction: column;
+    text-align: center;
+  }
 }
 
-.info-registros { font-size: 0.85rem; color: #6b7280; }
-.total-registros { color: var(--primary); font-weight: 500; }
+.info-registros {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.total-registros {
+  color: var(--primary);
+  font-weight: 500;
+}
 
 .pagination-moderno {
   display: flex;
@@ -1856,7 +2248,11 @@ defineExpose({ obtenerActualizaciones })
   flex-wrap: wrap;
   justify-content: center;
 }
-.pagination-moderno li { display: inline-block; }
+
+.pagination-moderno li {
+  display: inline-block;
+}
+
 .pagination-moderno li a {
   display: flex;
   align-items: center;
@@ -1872,21 +2268,32 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition);
   border: 1px solid #e1e7f0;
 }
+
 .pagination-moderno li.active a {
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-color: transparent;
   box-shadow: var(--shadow-sm);
 }
+
 .pagination-moderno li:not(.disabled):not(.active) a:hover {
   background: #f0f2f5;
   transform: translateY(-2px);
   border-color: var(--primary);
 }
-.pagination-moderno li.disabled a { opacity: 0.5; cursor: not-allowed; }
+
+.pagination-moderno li.disabled a {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* Input búsqueda con ícono */
-.input-busqueda-wrapper { position: relative; display: flex; align-items: center; }
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .icono-busqueda {
   position: absolute;
   left: 12px;
@@ -1894,11 +2301,18 @@ defineExpose({ obtenerActualizaciones })
   font-size: 0.95rem;
   pointer-events: none;
 }
-.filtro-busqueda .filtro-input { padding-left: 34px; }
+
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+}
 
 /* Filtros desktop optimizados */
 @media (min-width: 1200px) {
-  .filtros-barra { padding: 22px 24px; border-radius: 20px; }
+  .filtros-barra {
+    padding: 22px 24px;
+    border-radius: 20px;
+  }
+
   .filtros-contenido {
     display: grid;
     grid-template-columns: repeat(20, minmax(0, 1fr));
@@ -1906,12 +2320,31 @@ defineExpose({ obtenerActualizaciones })
     align-items: end;
     margin-top: 0;
   }
-  .filtro-busqueda { grid-column: span 3; }
-  .filtro-grupo:nth-child(2) { grid-column: span 3; }
-  .filtro-grupo:nth-child(3) { grid-column: span 3; }
-  .filtro-grupo:nth-child(4) { grid-column: span 2; }
-  .filtro-grupo:nth-child(5) { grid-column: span 3; }
-  .filtro-grupo:nth-child(6) { grid-column: span 4; }
+
+  .filtro-busqueda {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(2) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(3) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(4) {
+    grid-column: span 2;
+  }
+
+  .filtro-grupo:nth-child(5) {
+    grid-column: span 3;
+  }
+
+  .filtro-grupo:nth-child(6) {
+    grid-column: span 4;
+  }
+
   .filtro-acciones {
     grid-column: span 2;
     display: flex;
@@ -1919,14 +2352,34 @@ defineExpose({ obtenerActualizaciones })
     justify-content: flex-start;
     padding-left: 6px;
   }
-  .filtro-input { height: 44px; }
-  .filtro-grupo label { min-height: 16px; margin-bottom: 2px; }
-  .btn-limpiar { width: auto; min-width: 76px; height: 44px; padding: 0 12px; }
+
+  .filtro-input {
+    height: 44px;
+  }
+
+  .filtro-grupo label {
+    min-height: 16px;
+    margin-bottom: 2px;
+  }
+
+  .btn-limpiar {
+    width: auto;
+    min-width: 76px;
+    height: 44px;
+    padding: 0 12px;
+  }
 }
 
 /* Modales */
-.modal-content { margin: 16px; }
-@media (min-width: 768px) { .modal-content { margin: 0; } }
+.modal-content {
+  margin: 16px;
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    margin: 0;
+  }
+}
 
 .modal-header {
   border-bottom: none;
@@ -1953,9 +2406,22 @@ defineExpose({ obtenerActualizaciones })
   flex-wrap: wrap;
 }
 
-.revision-observacion-group { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
-.campo-obligatorio { color: #ef4444; }
-.revision-observacion-error { color: #ef4444; font-size: 0.85rem; margin: 0; }
+.revision-observacion-group {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo-obligatorio {
+  color: #ef4444;
+}
+
+.revision-observacion-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin: 0;
+}
 </style>
 
 <!-- Estilos globales para los elementos renderizados con Teleport -->
@@ -1969,6 +2435,7 @@ defineExpose({ obtenerActualizaciones })
   pointer-events: none;
   transition: background 0.25s ease;
 }
+
 .oc-overlay--open {
   background: rgba(0, 0, 0, 0.35);
   pointer-events: all;
@@ -2036,8 +2503,15 @@ defineExpose({ obtenerActualizaciones })
 }
 
 @keyframes fab-pulse {
-  0%, 100% { box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4); }
-  50% { box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4), 0 0 0 8px rgba(7, 126, 157, 0.12); }
+
+  0%,
+  100% {
+    box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4), 0 0 0 8px rgba(7, 126, 157, 0.12);
+  }
 }
 
 /* Panel offcanvas */
@@ -2134,9 +2608,18 @@ defineExpose({ obtenerActualizaciones })
   gap: 10px;
 }
 
-.oc-body::-webkit-scrollbar { width: 4px; }
-.oc-body::-webkit-scrollbar-track { background: #f9fafb; }
-.oc-body::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+.oc-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.oc-body::-webkit-scrollbar-track {
+  background: #f9fafb;
+}
+
+.oc-body::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
 
 /* Item de revisión */
 .oc-item {
@@ -2224,9 +2707,190 @@ defineExpose({ obtenerActualizaciones })
     width: 100%;
     max-width: 100%;
   }
+
   .fab-revision {
     bottom: 20px;
     right: 20px;
   }
+}
+
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-input {
+  height: 42px;
+  border: 1px solid #d7deea;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  color: #374151;
+  background: #fff;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.filtro-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
+}
+
+.filtro-input:disabled {
+  background: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   SELECTORES MODERNOS (Área y Categoría) – igual que en el modal
+   ============================================================ */
+.categoria-select-wrapper {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.categoria-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 42px;
+}
+
+.categoria-select-trigger:hover {
+  border-color: var(--primary);
+}
+
+.categoria-select-wrapper.open .categoria-select-trigger {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
+}
+
+.select-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.select-placeholder i {
+  font-size: 0.9rem;
+}
+
+.select-selected {
+  flex: 1;
+}
+
+.selected-tag-single {
+  background: rgba(7, 126, 157, 0.1);
+  color: var(--primary);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.categoria-select-trigger .bi-chevron-down,
+.categoria-select-trigger .bi-chevron-up {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+/* Dropdown (igual que en el modal) */
+.categoria-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+
+.dropdown-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dropdown-search i {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.dropdown-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 6px 0;
+}
+
+.dropdown-search input::placeholder {
+  color: #cbd5e1;
+}
+
+.dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-option:hover:not(.disabled) {
+  background: #f8fafc;
+}
+
+.dropdown-option.selected {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+.option-name {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.dropdown-option.selected .option-name {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.option-check i {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.dropdown-empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
 }
 </style>

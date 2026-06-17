@@ -51,6 +51,7 @@ class UpdateBlogController extends Controller
                 'actualizacion_fecha_creacion',
                 'actualizacion_fecha_publicacion',
                 'actualizacion_categoria_id',
+                'actualizacion_lecturas'
             ])
             ->with($relaciones);
 
@@ -263,6 +264,11 @@ class UpdateBlogController extends Controller
             default => $query->latest('actualizacion_fecha_publicacion'),
         };
 
+        // if ($query->actualizacion_estado === 'publicado') {
+        //     $query->increment('actualizacion_lecturas');
+        //     $query->refresh();
+        // }
+
         $perPage = (int) $request->input('per_page', 12);
 
         return ActualizacionResource::collection(
@@ -282,6 +288,22 @@ class UpdateBlogController extends Controller
             'usuarioAutor',
             'ultimaRevisionObservacion.supervisor',
         ])->findOrFail($id);
+
+        //         public function show($id)
+        // {
+        //     $actualizacion = UpdateBlog::with([
+        //         'areaServicio:area_servicio_id,area_servicio_nombre',
+        //         'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
+        //         'categorias:categoria_actualizacion_id,categoria_actualizacion_nombre',
+        //     ])->findOrFail($id);
+
+        if ($actualizacion->actualizacion_estado === 'publicado') {
+            $actualizacion->increment('actualizacion_lecturas');
+            $actualizacion->refresh();
+        }
+
+        //     return new ActualizacionResource($actualizacion);
+        // }
 
         if (! $this->puedeVer($usuario, $actualizacion)) {
             abort(403, 'No tienes permiso para ver este registro.');

@@ -30,14 +30,18 @@ class BlogDashboardController extends Controller
             ->groupBy('actualizacion_estado')
             ->orderBy('actualizacion_estado')
             ->get()
-            ->map(fn ($item) => [
+            ->map(fn($item) => [
                 'estado' => $item->estado ?: 'sin_estado',
                 'total' => (int) $item->total,
             ])
             ->values();
 
         $porAreaAgrupado = (clone $base)
-            ->selectRaw('actualizacion_area_servicio_id as area_servicio_id, COUNT(*) as total')
+            ->selectRaw("
+                    actualizacion_area_servicio_id as area_servicio_id,
+                    COUNT(*) as total,
+                    SUM(CASE WHEN actualizacion_estado = 'revision' THEN 1 ELSE 0 END) as pendientes_revision
+                ")
             ->groupBy('actualizacion_area_servicio_id')
             ->orderByDesc('total')
             ->limit(12)
@@ -49,12 +53,13 @@ class BlogDashboardController extends Controller
             ->keyBy('area_servicio_id');
 
         $porArea = $porAreaAgrupado
-            ->map(fn ($item) => [
+            ->map(fn($item) => [
                 'area_servicio_id' => $item->area_servicio_id ? (int) $item->area_servicio_id : null,
                 'area' => $item->area_servicio_id && isset($areas[$item->area_servicio_id])
                     ? $areas[$item->area_servicio_id]->area_servicio_nombre
                     : 'Sin área',
                 'total' => (int) $item->total,
+                'pendientes_revision' => (int) $item->pendientes_revision,
             ])
             ->values();
 
@@ -107,7 +112,7 @@ class BlogDashboardController extends Controller
                 ->latest('actualizacion_fecha_publicacion')
                 ->limit(10);
 
-            $registrosMasLeidos = $queryMasLeidos->get()->map(fn (UpdateBlog $item) => [
+            $registrosMasLeidos = $queryMasLeidos->get()->map(fn(UpdateBlog $item) => [
                 'id' => $item->id,
                 'titulo' => $item->actualizacion_titulo,
                 'lecturas' => (int) ($item->actualizacion_lecturas ?? 0),
@@ -174,8 +179,8 @@ class BlogDashboardController extends Controller
         }
 
         $areas = collect($alcance['areas'] ?? [])
-            ->filter(fn ($areaId) => $areaId !== null && $areaId !== '')
-            ->map(fn ($areaId) => (int) $areaId)
+            ->filter(fn($areaId) => $areaId !== null && $areaId !== '')
+            ->map(fn($areaId) => (int) $areaId)
             ->unique()
             ->values()
             ->all();
@@ -206,8 +211,8 @@ class BlogDashboardController extends Controller
         }
 
         return collect($areas)
-            ->filter(fn ($areaId) => $areaId !== null && $areaId !== '')
-            ->map(fn ($areaId) => (int) $areaId)
+            ->filter(fn($areaId) => $areaId !== null && $areaId !== '')
+            ->map(fn($areaId) => (int) $areaId)
             ->unique()
             ->values()
             ->all();

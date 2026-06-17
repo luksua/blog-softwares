@@ -28,6 +28,11 @@ class UpdateBlog extends Model
         'actualizacion_estado',
         'actualizacion_fecha_publicacion',
         'actualizacion_categoria_id', // compatibilidad: primera categoría seleccionada
+        'actualizacion_lecturas',
+    ];
+
+    protected $casts = [
+        'actualizacion_lecturas' => 'integer',
     ];
 
     public function imagenes(): HasMany

@@ -46,6 +46,8 @@ class ActualizacionResource extends JsonResource
             'actualizacion_estado' => $this->actualizacion_estado,
             'actualizacion_usuario_id_autor' => $this->actualizacion_usuario_id_autor,
 
+            'actualizacion_lecturas' => (int) ($this->actualizacion_lecturas ?? 0),
+
             'actualizacion_contenido' => $this->when(
                 $esDetalle,
                 fn() => $this->actualizacion_contenido

@@ -82,7 +82,8 @@
               </div>
               <div class="dropdown-options">
                 <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
-                  class="dropdown-option" :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
+                  class="dropdown-option"
+                  :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
                   @click="seleccionarArea(Number(area.area_servicio_id))">
                   <span class="option-name">{{ area.area_servicio_nombre }}</span>
                   <span class="option-check">
@@ -125,9 +126,8 @@
                     <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
                   </span>
                 </button>
-                <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
-                  class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
-                  @click="seleccionarCategoria(cat.id)">
+                <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id" class="dropdown-option"
+                  :class="{ selected: categoriaSeleccionada?.id === cat.id }" @click="seleccionarCategoria(cat.id)">
                   <span class="option-name">
                     <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
                     {{ cat.nombre }}
@@ -195,9 +195,20 @@
               <!-- ── CUERPO ── -->
               <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
                 <div class="metadatos-top">
-                  <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                  <span class="fecha">
+                    {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
+                  </span>
+
                   <span class="separador">|</span>
-                  <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+
+                  <span class="version-number">
+                    v{{ item.actualizacion_version || '0.0' }}
+                  </span>
+
+                  <span class="views-badge" title="Visualizaciones">
+                    <i class="bi bi-eye-fill"></i>
+                    {{ formatearNumero(item.actualizacion_lecturas || 0) }}
+                  </span>
                 </div>
 
                 <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
@@ -350,6 +361,10 @@ const obtenerCatalogosFiltros = async () => {
   } finally {
     cargandoFiltros.value = false
   }
+}
+
+const formatearNumero = (valor: number) => {
+  return new Intl.NumberFormat('es-CO').format(valor || 0)
 }
 
 const obtenerActualizaciones = async (page = 1) => {
@@ -650,7 +665,6 @@ const categoriasFiltradasConIcono = computed(() => {
 </script>
 
 <style scoped>
-
 :root {
   --primary: #077E9D;
   --secondary: #025B7D;
@@ -1588,7 +1602,7 @@ const categoriasFiltradasConIcono = computed(() => {
     border-color: var(--primary);
   }
 }
-  
+
 /* ============================================================
    SELECTORES MODERNOS (Área y Categoría) – igual que en el modal
    ============================================================ */
@@ -1750,5 +1764,23 @@ const categoriasFiltradasConIcono = computed(() => {
 .counter-text {
   font-size: 0.7rem;
   color: #64748b;
+}
+
+.views-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  background: rgba(7, 126, 157, 0.08);
+  color: var(--primary);
+  border: 1px solid rgba(7, 126, 157, 0.16);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.views-badge i {
+  font-size: 0.85rem;
 }
 </style>
