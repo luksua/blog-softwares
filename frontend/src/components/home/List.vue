@@ -60,48 +60,91 @@
           </div>
         </div>
 
+        <!-- ======= ÁREA (selector moderno) ======= -->
         <div class="filtro-grupo">
-          <label for="area" class="filtro-label">Área / Servicio</label>
-          <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
-            <option value="">Todas las áreas</option>
-            <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
-              :value="Number(area.area_servicio_id)">
-              {{ area.area_servicio_nombre }}
-            </option>
-          </select>
-        </div>
+          <label class="filtro-label">Área / Servicio</label>
+          <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
+            <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
+              <div class="select-placeholder" v-if="!areaSeleccionada">
+                <i class="bi bi-building"></i>
+                <span>Selecciona un área...</span>
+              </div>
+              <div class="select-selected" v-else>
+                <span class="selected-tag-single">{{ areaSeleccionada.area_servicio_nombre }}</span>
+              </div>
+              <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </div>
 
-        <div class="filtro-grupo">
-          <label class="filtro-label">Categoría</label>
-
-          <div class="categoria-dropdown" :class="{ abierto: categoriaDropdownAbierto }">
-            <button type="button" class="categoria-dropdown-btn" :disabled="cargandoFiltros"
-              @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
-              <span class="categoria-dropdown-seleccion">
-                <i class="bi" :class="iconoCategoriaSeleccionada"></i>
-                <span>{{ nombreCategoriaSeleccionada }}</span>
-              </span>
-
-              <i class="bi bi-chevron-down categoria-dropdown-flecha"></i>
-            </button>
-
-            <div v-if="categoriaDropdownAbierto" class="categoria-dropdown-menu">
-              <button type="button" class="categoria-dropdown-item" :class="{ activo: filtros.categoriaId === '' }"
-                @click="seleccionarCategoria('')">
-                <i class="bi bi-tags-fill"></i>
-                <span>Todas las categorías</span>
-              </button>
-
-              <button v-for="categoria in categoriasConIcono" :key="categoria.id" type="button"
-                class="categoria-dropdown-item" :class="{ activo: filtros.categoriaId === categoria.id }"
-                @click="seleccionarCategoria(categoria.id)">
-                <i class="bi" :class="categoria.icono"></i>
-                <span>{{ categoria.nombre }}</span>
-              </button>
+            <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
+              <div class="dropdown-search" v-if="areasDisponibles.length > 5">
+                <i class="bi bi-search"></i>
+                <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
+              </div>
+              <div class="dropdown-options">
+                <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
+                  class="dropdown-option" :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
+                  @click="seleccionarArea(Number(area.area_servicio_id))">
+                  <span class="option-name">{{ area.area_servicio_nombre }}</span>
+                  <span class="option-check">
+                    <i v-if="areaSeleccionada?.area_servicio_id === area.area_servicio_id" class="bi bi-check-lg"></i>
+                  </span>
+                </button>
+                <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
+                  No se encontraron áreas
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- ======= CATEGORÍA (selector moderno) ======= -->
+        <div class="filtro-grupo">
+          <label class="filtro-label">Categoría</label>
+          <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
+            <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
+              <div class="select-placeholder" v-if="!categoriaSeleccionada">
+                <i class="bi bi-tags-fill"></i>
+                <span>Todas las categorías</span>
+              </div>
+              <div class="select-selected" v-else>
+                <span class="selected-tag-single">{{ categoriaSeleccionada.nombre }}</span>
+              </div>
+              <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </div>
+
+            <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
+              <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
+                <i class="bi bi-search"></i>
+                <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
+              </div>
+              <div class="dropdown-options">
+                <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
+                  @click="seleccionarCategoria('')">
+                  <span class="option-name">Todas las categorías</span>
+                  <span class="option-check">
+                    <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
+                  </span>
+                </button>
+                <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
+                  class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
+                  @click="seleccionarCategoria(cat.id)">
+                  <span class="option-name">
+                    <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
+                    {{ cat.nombre }}
+                  </span>
+                  <span class="option-check">
+                    <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
+                  </span>
+                </button>
+                <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
+                  No se encontraron categorías
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fechas y limpiar -->
         <div class="filtro-grupo">
           <label for="fechaDesde" class="filtro-label">Desde</label>
           <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
@@ -513,16 +556,6 @@ const categoriasConIcono = computed(() => {
   })
 })
 
-const categoriaSeleccionada = computed(() => {
-  const categoriaId = filtros.value.categoriaId
-
-  if (categoriaId === '') return null
-
-  return categoriasConIcono.value.find(
-    (categoria) => categoria.id === Number(categoriaId)
-  ) ?? null
-})
-
 const iconoCategoriaSeleccionada = computed(() => {
   return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
 })
@@ -572,9 +605,52 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
+
+// ── Área ──
+const areaDropdownAbierto = ref(false)
+const busquedaArea = ref('')
+
+const areaSeleccionada = computed(() => {
+  if (!filtros.value.areaServicioId) return null
+  return areasDisponibles.value.find(a => Number(a.area_servicio_id) === Number(filtros.value.areaServicioId)) || null
+})
+
+const areasFiltradas = computed(() => {
+  if (!busquedaArea.value) return areasDisponibles.value
+  const q = busquedaArea.value.toLowerCase()
+  return areasDisponibles.value.filter(a =>
+    a.area_servicio_nombre.toLowerCase().includes(q)
+  )
+})
+
+const seleccionarArea = (id: number) => {
+  filtros.value.areaServicioId = id
+  areaDropdownAbierto.value = false
+  busquedaArea.value = ''
+}
+
+// ── Categoría (reutilizamos el dropdown existente pero con nuevo trigger) ──
+const busquedaCategoria = ref('')
+// Nota: ya tienes 'categoriaDropdownAbierto' y 'seleccionarCategoria'
+// Solo necesitas el computed para la selección actual y el filtrado con íconos
+
+const categoriaSeleccionada = computed(() => {
+  if (!filtros.value.categoriaId) return null
+  return categoriasConIcono.value.find(c => c.id === Number(filtros.value.categoriaId)) || null
+})
+
+const categoriasFiltradasConIcono = computed(() => {
+  if (!busquedaCategoria.value) return categoriasConIcono.value
+  const q = busquedaCategoria.value.toLowerCase()
+  return categoriasConIcono.value.filter(c =>
+    c.nombre.toLowerCase().includes(q)
+  )
+})
+
 </script>
 
 <style scoped>
+
 :root {
   --primary: #077E9D;
   --secondary: #025B7D;
@@ -1511,5 +1587,168 @@ onUnmounted(() => {
   .filtro-grupo select.filtro-input:hover:not(:disabled) {
     border-color: var(--primary);
   }
+}
+  
+/* ============================================================
+   SELECTORES MODERNOS (Área y Categoría) – igual que en el modal
+   ============================================================ */
+.categoria-select-wrapper {
+  position: relative;
+  margin-bottom: 0;
+}
+
+.categoria-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 42px;
+}
+
+.categoria-select-trigger:hover {
+  border-color: var(--primary);
+}
+
+.categoria-select-wrapper.open .categoria-select-trigger {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
+}
+
+.select-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.select-placeholder i {
+  font-size: 0.9rem;
+}
+
+.select-selected {
+  flex: 1;
+}
+
+.selected-tag-single {
+  background: rgba(7, 126, 157, 0.1);
+  color: var(--primary);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.categoria-select-trigger .bi-chevron-down,
+.categoria-select-trigger .bi-chevron-up {
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+
+/* Dropdown (igual que en el modal) */
+.categoria-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdown-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dropdown-search i {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.dropdown-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 6px 0;
+}
+
+.dropdown-search input::placeholder {
+  color: #cbd5e1;
+}
+
+.dropdown-options {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.dropdown-option:hover:not(.disabled) {
+  background: #f8fafc;
+}
+
+.dropdown-option.selected {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+.option-name {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
+.dropdown-option.selected .option-name {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.option-check i {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.dropdown-empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+/* Contador (igual que en el modal) */
+.categoria-counter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.counter-text {
+  font-size: 0.7rem;
+  color: #64748b;
 }
 </style>
