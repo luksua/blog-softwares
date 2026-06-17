@@ -8,334 +8,389 @@
       <p class="mt-2 text-secondary">Cargando actualización...</p>
     </div>
 
-    <div v-else>
-      <form @submit.prevent="guardarCambios">
-        <!-- Alerta de corrección -->
-        <div v-if="modoCorreccion" class="alert alert-warning mb-4">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          <strong>Corrección pendiente.</strong>
-          Realiza los ajustes solicitados. Al enviar la corrección, el registro quedará publicado y se notificará al
-          supervisor del área.
-        </div>
-
-        <!-- Título -->
-        <div class="form-group mb-4">
-          <label class="form-label fw-bold text-primary">
-            Título <span class="text-danger">*</span>
-          </label>
-          <input 
-            v-model="form.titulo" 
-            type="text" 
-            class="form-control" 
-            :class="{ 'is-invalid': errores.titulo || errores.actualizacion_titulo }"
-            ref="inputTitulo"
-            placeholder="Ingrese el título de la actualización"
-          />
-          <div v-if="errores.titulo || errores.actualizacion_titulo" class="invalid-feedback">
-            {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
-          </div>
-        </div>
-
-        <div class="row">
-          <!-- Versión -->
-          <div class="col-12 col-sm-6 mb-4">
-            <label class="form-label fw-bold text-primary">Versión</label>
-            <input 
-              v-model="form.version" 
-              type="text" 
-              class="form-control" 
-              :class="{ 'is-invalid': errores.version || errores.actualizacion_version }"
-              placeholder="Ej: 1.0.0"
-            />
-            <div v-if="errores.version || errores.actualizacion_version" class="invalid-feedback">
-              {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
-            </div>
+    <div v-else class="edit-modal-content">
+      <form @submit.prevent="guardarCambios" class="edit-form-grid">
+        <!-- COLUMNA IZQUIERDA: campos -->
+        <div class="left-column">
+          <!-- Alerta de corrección -->
+          <div v-if="modoCorreccion" class="alert alert-warning mb-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Corrección pendiente.</strong>
+            Realiza los ajustes solicitados. Al enviar la corrección, el registro quedará publicado y se notificará al
+            supervisor del área.
           </div>
 
-          <!-- Imagen destacada -->
-          <div class="col-12 col-sm-6 mb-4">
-            <label class="form-label fw-bold text-primary">Imagen destacada (Portada)</label>
-            
-            <div v-if="previewImagen || form.imagen_destacada" class="mb-3">
-              <div class="position-relative d-inline-block">
-                <img 
-                  :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" 
-                  alt="Portada actual"
-                  class="img-thumbnail" 
-                  style="max-height: 150px; border-radius: 8px;" 
-                />
-                <button 
-                  v-if="previewImagen || form.imagen_destacada"
-                  type="button"
-                  class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
-                  style="transform: translate(50%, -50%);"
-                  @click="eliminarImagen"
-                >
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-              <div class="form-text mt-2">
-                {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
-              </div>
-            </div>
-
-            <input 
-              type="file" 
-              class="form-control" 
-              :class="{ 'is-invalid': errores.imagen_destacada }"
-              accept="image/*" 
-              @change="manejarImagen" 
-            />
-            <div v-if="errores.imagen_destacada" class="invalid-feedback">
-              {{ errores.imagen_destacada?.[0] }}
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <!-- Área -->
-          <div class="col-12 col-md-6 mb-4">
-            <label for="area" class="form-label fw-bold text-primary">
-              Área <span class="text-danger">*</span>
-            </label>
-            <select 
-              id="area" 
-              class="form-select" 
-              :class="{ 'is-invalid': errores.area_servicio_id || errores.actualizacion_area_servicio_id }"
-              v-model="form.area_servicio_id" 
-              required
-            >
-              <option value="" disabled>Selecciona un área...</option>
-              <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
-                {{ area.area_servicio_nombre }}
-              </option>
-            </select>
-            <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id" class="invalid-feedback">
-              {{ errores.area_servicio_id?.[0] || errores.actualizacion_area_servicio_id?.[0] }}
-            </div>
-          </div>
-
-          <!-- Categorías - Select Moderno Responsive -->
-          <div class="col-12 col-md-6 mb-4">
+          <!-- Título -->
+          <div class="form-group mb-4">
             <label class="form-label fw-bold text-primary">
-              Categorías <span class="text-danger">*</span>
-              <small class="text-muted">(máximo 3)</small>
+              Título <span class="text-danger">*</span>
             </label>
+            <input
+              v-model="form.titulo"
+              type="text"
+              class="form-control"
+              :class="{ 'is-invalid': errores.titulo || errores.actualizacion_titulo }"
+              ref="inputTitulo"
+              placeholder="Ingrese el título de la actualización"
+            />
+            <div v-if="errores.titulo || errores.actualizacion_titulo" class="invalid-feedback">
+              {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
+            </div>
+          </div>
 
-            <!-- Select moderno -->
-            <div class="categoria-select-wrapper" :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }">
-              <div class="categoria-select-trigger" @click="toggleSelect">
-                <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
-                  <i class="bi bi-tag"></i>
-                  <span>Selecciona hasta 3 categorías</span>
-                </div>
-                <div class="select-selected" v-else>
-                  <div class="selected-tags">
-                    <span v-for="cat in categoriasSeleccionadas.slice(0, 2)" :key="cat.id" class="selected-tag">
-                      {{ cat.nombre }}
-                    </span>
-                    <span v-if="categoriasSeleccionadas.length > 2" class="selected-more">
-                      +{{ categoriasSeleccionadas.length - 2 }}
-                    </span>
-                  </div>
-                </div>
-                <i class="bi" :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-              </div>
-
-              <!-- Dropdown de opciones -->
-              <div v-if="selectAbierto" class="categoria-select-dropdown">
-                <div class="dropdown-search" v-if="listaCategorias.length > 5">
-                  <i class="bi bi-search"></i>
-                  <input 
-                    type="text" 
-                    v-model="busquedaCategoria" 
-                    placeholder="Buscar categoría..."
-                    @click.stop
-                  />
-                </div>
-                <div class="dropdown-options">
-                  <button
-                    type="button"
-                    v-for="categoria in categoriasFiltradas"
-                    :key="categoria.categoria_actualizacion_id"
-                    class="dropdown-option"
-                    :class="{
-                      selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
-                      disabled: !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3
-                    }"
-                    @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
-                    :disabled="!categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3"
-                  >
-                    <span class="option-name">{{ categoria.categoria_actualizacion_nombre }}</span>
-                    <span class="option-check">
-                      <i v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))" class="bi bi-check-lg"></i>
-                    </span>
-                  </button>
-                  <div v-if="categoriasFiltradas.length === 0" class="dropdown-empty">
-                    No se encontraron categorías
-                  </div>
-                </div>
+          <!-- Versión e imagen -->
+          <div class="row">
+            <!-- Versión -->
+            <div class="col-12 col-sm-6 mb-4">
+              <label class="form-label fw-bold text-primary">Versión</label>
+              <input
+                v-model="form.version"
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid': errores.version || errores.actualizacion_version }"
+                placeholder="Ej: 1.0.0"
+              />
+              <div v-if="errores.version || errores.actualizacion_version" class="invalid-feedback">
+                {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
               </div>
             </div>
 
-            <!-- Etiquetas de seleccionadas debajo -->
-            <!-- <div v-if="categoriasSeleccionadas.length > 0" class="categorias-seleccionadas">
-              <span class="seleccionadas-label">Seleccionadas:</span>
-              <div class="seleccionadas-labels">
-                <span
-                  v-for="categoria in categoriasSeleccionadas"
-                  :key="categoria.id"
-                  class="label-categoria"
-                  :style="{ backgroundColor: getCategoriaColor(categoria.nombre) + '15', borderColor: getCategoriaColor(categoria.nombre) }"
-                >
-                  <i :class="getCategoriaIcon(categoria.nombre)" :style="{ color: getCategoriaColor(categoria.nombre) }"></i>
-                  {{ categoria.nombre }}
+            <!-- Imagen destacada -->
+            <div class="col-12 col-sm-6 mb-4">
+              <label class="form-label fw-bold text-primary">Imagen destacada (Portada)</label>
+
+              <div v-if="previewImagen || form.imagen_destacada" class="mb-3">
+                <div class="position-relative d-inline-block">
+                  <img
+                    :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)"
+                    alt="Portada actual"
+                    class="img-thumbnail"
+                    style="max-height: 150px; border-radius: 8px;"
+                  />
+
                   <button
+                    v-if="previewImagen || form.imagen_destacada"
                     type="button"
-                    class="label-remove"
-                    @click="toggleCategoria(categoria.id)"
+                    class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
+                    style="transform: translate(50%, -50%);"
+                    @click="eliminarImagen"
                   >
                     <i class="bi bi-x"></i>
                   </button>
+                </div>
+
+                <div class="form-text mt-2">
+                  {{ previewImagen ? 'Nueva imagen seleccionada' : 'Imagen actual' }}
+                </div>
+              </div>
+
+              <input
+                type="file"
+                class="form-control"
+                :class="{ 'is-invalid': errores.imagen_destacada }"
+                accept="image/*"
+                @change="manejarImagen"
+              />
+
+              <div v-if="errores.imagen_destacada" class="invalid-feedback">
+                {{ errores.imagen_destacada?.[0] }}
+              </div>
+            </div>
+          </div>
+
+           <!-- Resumen -->
+          <div class="form-group mb-4">
+            <label class="form-label fw-bold text-primary">Resumen</label>
+            <textarea
+              v-model="form.resumen"
+              class="form-control"
+              :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen }"
+              rows="3"
+              placeholder="Breve descripción de la actualización..."
+            ></textarea>
+
+            <div v-if="errores.resumen || errores.actualizacion_resumen" class="invalid-feedback">
+              {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
+            </div>
+          </div>
+
+
+          <!-- Área y categorías -->
+          <div class="row">
+            <!-- Área -->
+            <div class="col-12 col-md-6 mb-4">
+              <label for="area" class="form-label fw-bold text-primary">
+                Área <span class="text-danger">*</span>
+              </label>
+
+              <select
+                id="area"
+                class="form-select"
+                :class="{ 'is-invalid': errores.area_servicio_id || errores.actualizacion_area_servicio_id }"
+                v-model="form.area_servicio_id"
+                required
+              >
+                <option value="" disabled>Selecciona un área...</option>
+                <option
+                  v-for="area in listaAreas"
+                  :key="area.area_servicio_id"
+                  :value="area.area_servicio_id"
+                >
+                  {{ area.area_servicio_nombre }}
+                </option>
+              </select>
+
+              <div v-if="errores.area_servicio_id || errores.actualizacion_area_servicio_id" class="invalid-feedback">
+                {{ errores.area_servicio_id?.[0] || errores.actualizacion_area_servicio_id?.[0] }}
+              </div>
+            </div>
+
+            <!-- Categorías -->
+            <div class="col-12 col-md-6 mb-4">
+              <label class="form-label fw-bold text-primary">
+                Categorías <span class="text-danger">*</span>
+                <small class="text-muted">(máximo 3)</small>
+              </label>
+
+              <div
+                class="categoria-select-wrapper"
+                :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }"
+              >
+                <div class="categoria-select-trigger" @click="toggleSelect">
+                  <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
+                    <i class="bi bi-tag"></i>
+                    <span>Selecciona hasta 3 categorías</span>
+                  </div>
+
+                  <div class="select-selected" v-else>
+                    <div class="selected-tags">
+                      <span
+                        v-for="cat in categoriasSeleccionadas.slice(0, 2)"
+                        :key="cat.id"
+                        class="selected-tag"
+                      >
+                        {{ cat.nombre }}
+                      </span>
+
+                      <span v-if="categoriasSeleccionadas.length > 2" class="selected-more">
+                        +{{ categoriasSeleccionadas.length - 2 }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <i class="bi" :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <!-- Dropdown de opciones -->
+                <div v-if="selectAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="listaCategorias.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input
+                      type="text"
+                      v-model="busquedaCategoria"
+                      placeholder="Buscar categoría..."
+                      @click.stop
+                    />
+                  </div>
+
+                  <div class="dropdown-options">
+                    <button
+                      type="button"
+                      v-for="categoria in categoriasFiltradas"
+                      :key="categoria.categoria_actualizacion_id"
+                      class="dropdown-option"
+                      :class="{
+                        selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
+                        disabled:
+                          !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                          categoriasSeleccionadas.length >= 3
+                      }"
+                      @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
+                      :disabled="
+                        !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                        categoriasSeleccionadas.length >= 3
+                      "
+                    >
+                      <span class="option-name">
+                        {{ categoria.categoria_actualizacion_nombre }}
+                      </span>
+
+                      <span class="option-check">
+                        <i
+                          v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
+                          class="bi bi-check-lg"
+                        ></i>
+                      </span>
+                    </button>
+
+                    <div v-if="categoriasFiltradas.length === 0" class="dropdown-empty">
+                      No se encontraron categorías
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contador -->
+              <div class="categoria-counter">
+                <span class="counter-text">
+                  {{ categoriasSeleccionadas.length }}/3 categorías
+                </span>
+
+                <span v-if="categoriasSeleccionadas.length >= 3" class="counter-warning">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  Límite alcanzado
                 </span>
               </div>
-            </div> -->
 
-            <!-- Contador -->
-            <div class="categoria-counter">
-              <span class="counter-text">{{ categoriasSeleccionadas.length }}/3 categorías</span>
-              <span v-if="categoriasSeleccionadas.length >= 3" class="counter-warning">
-                <i class="bi bi-exclamation-triangle-fill"></i> Límite alcanzado
-              </span>
-            </div>
-
-            <div v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id" class="invalid-feedback d-block">
-              {{ errores.actualizacion_categoria_ids?.[0] || errores.actualizacion_categoria_id?.[0] }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Resumen -->
-        <div class="form-group mb-4">
-          <label class="form-label fw-bold text-primary">Resumen</label>
-          <textarea 
-            v-model="form.resumen" 
-            class="form-control" 
-            :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen }"
-            rows="3" 
-            placeholder="Breve descripción de la actualización..."
-          ></textarea>
-          <div v-if="errores.resumen || errores.actualizacion_resumen" class="invalid-feedback">
-            {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
-          </div>
-        </div>
-
-        <div class="row">
-          <!-- Estado -->
-          <div class="col-12 col-md-6 mb-4">
-            <template v-if="!modoCorreccion">
-              <label class="form-label fw-bold text-primary">Estado</label>
-              <select 
-                v-model="form.estado" 
-                class="form-select" 
-                :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }"
+              <div
+                v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id"
+                class="invalid-feedback d-block"
               >
-                <option value="borrador">Borrador</option>
-                <option value="revision">Revisión</option>
-                <option value="publicado">Publicado</option>
-                <option value="inactivo">Inactivo</option>
-              </select>
-              <div v-if="errores.estado || errores.actualizacion_estado" class="invalid-feedback">
-                {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
+                {{ errores.actualizacion_categoria_ids?.[0] || errores.actualizacion_categoria_id?.[0] }}
               </div>
-            </template>
-
-            <template v-else>
-              <label class="form-label fw-bold text-warning">Estado de la corrección</label>
-              <div class="alert alert-warning mb-0 py-2">
-                <i class="bi bi-send-check me-2"></i>
-                Se enviará como <strong>Publicado</strong>
-              </div>
-            </template>
+            </div>
           </div>
 
-          <!-- Fechas -->
-          <div class="col-12 col-md-6 mb-4">
-            <template v-if="estadoParaVista !== 'publicado'">
-              <label class="form-label fw-bold text-secondary">Fecha de creación</label>
-              <input 
-                v-model="form.fecha_creacion" 
-                type="date" 
-                class="form-control bg-light" 
-                readonly 
-                disabled 
-              />
-              <div class="form-text text-secondary mt-1">
-                <i class="bi bi-info-circle me-1"></i>
-                Registro no publicado. Mostrando fecha de creación.
-              </div>
-            </template>
+         
+          <!-- Estado y fechas -->
+          <div class="row">
+            <!-- Estado -->
+            <div class="col-12 col-md-6 mb-4">
+              <template v-if="!modoCorreccion">
+                <label class="form-label fw-bold text-primary">Estado</label>
 
-            <template v-else>
-              <label class="form-label fw-bold text-primary">Fecha de publicación</label>
-              <input 
-                v-model="form.fecha_publicacion" 
-                type="date" 
-                class="form-control border-primary bg-light" 
-                :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
-                readonly 
-              />
-              <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion" class="invalid-feedback">
-                {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
-              </div>
-              <div class="form-text text-primary fw-bold mt-1">
-                <i class="bi bi-check-circle-fill me-1"></i>
-                El registro se publicará con esta fecha.
-              </div>
-            </template>
+                <select
+                  v-model="form.estado"
+                  class="form-select"
+                  :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }"
+                >
+                  <option value="borrador">Borrador</option>
+                  <option value="revision">Revisión</option>
+                  <option value="publicado">Publicado</option>
+                  <option value="inactivo">Inactivo</option>
+                </select>
+
+                <div v-if="errores.estado || errores.actualizacion_estado" class="invalid-feedback">
+                  {{ errores.estado?.[0] || errores.actualizacion_estado?.[0] }}
+                </div>
+              </template>
+
+              <template v-else>
+                <label class="form-label fw-bold text-warning">Estado de la corrección</label>
+
+                <div class="alert alert-warning mb-0 py-2">
+                  <i class="bi bi-send-check me-2"></i>
+                  Se enviará como <strong>Publicado</strong>
+                </div>
+              </template>
+            </div>
+
+            <!-- Fechas -->
+            <div class="col-12 col-md-6 mb-4">
+              <template v-if="estadoParaVista !== 'publicado'">
+                <label class="form-label fw-bold ">Fecha de creación</label>
+
+                <input
+                  v-model="form.fecha_creacion"
+                  type="date"
+                  class="form-control bg-light"
+                  readonly
+                  disabled
+                />
+
+                <div class="form-text text-secondary mt-1">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Registro no publicado. Mostrando fecha de creación.
+                </div>
+              </template>
+
+              <template v-else>
+                <label class="form-label fw-bold text-primary">Fecha de publicación</label>
+
+                <input
+                  v-model="form.fecha_publicacion"
+                  type="date"
+                  class="form-control border-primary bg-light"
+                  :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
+                  readonly
+                />
+
+                <div
+                  v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                  class="invalid-feedback"
+                >
+                  {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
+                </div>
+
+                <div class="form-text text-primary fw-bold mt-1">
+                  <i class="bi bi-check-circle-fill me-1"></i>
+                  El registro se publicará con esta fecha.
+                </div>
+              </template>
+            </div>
           </div>
+
+          <!-- Botones de acción -->
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="cerrarModal"
+              :disabled="guardando"
+            >
+              <i class="bi bi-x-circle me-1"></i>
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="guardando || !formularioValido"
+            >
+              <span
+                v-if="guardando"
+                class="spinner-border spinner-border-sm me-2"
+                role="status"
+              ></span>
+
+              <i
+                v-else
+                :class="modoCorreccion ? 'bi bi-send-check' : 'bi bi-save'"
+                class="me-1"
+              ></i>
+
+              {{ textoBotonGuardar }}
+            </button>
+          </div>
+
+          <!-- Mensaje de éxito -->
+          <transition name="fade">
+            <div v-if="mensajeOk" class="alert alert-success mt-4 mb-0">
+              <i class="bi bi-check-circle-fill me-2"></i>
+              {{ mensajeOk }}
+            </div>
+          </transition>
         </div>
 
-        <!-- Contenido del editor -->
-        <div class="form-group mb-4">
+        <!-- COLUMNA DERECHA: editor -->
+        <div class="editor-column">
           <label class="form-label fw-bold text-primary">Contenido</label>
+          <div class="editor-wrapper">
           <div ref="editorHolder" id="editorjs" class="editor-container border rounded p-3 bg-white"></div>
         </div>
+          <!-- <label class="form-label fw-bold text-primary">
+            Contenido
+          </label>
 
-        <!-- Botones de acción -->
-        <div class="form-actions">
-          <button 
-            type="button" 
-            class="btn btn-outline-secondary" 
-            @click="cerrarModal"
-            :disabled="guardando"
-          >
-            <i class="bi bi-x-circle me-1"></i>
-            Cancelar
-          </button>
-
-          <button 
-            type="submit" 
-            class="btn btn-primary" 
-            :disabled="guardando || !formularioValido"
-          >
-            <span v-if="guardando" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            <i v-else :class="modoCorreccion ? 'bi bi-send-check' : 'bi bi-save'" class="me-1"></i>
-            {{ textoBotonGuardar }}
-          </button>
+          <div class="editor-wrapper">
+            <div ref="editorHolder" class="editor-container"></div>
+          </div> -->
         </div>
-
-        <!-- Mensaje de éxito -->
-        <transition name="fade">
-          <div v-if="mensajeOk" class="alert alert-success mt-4 mb-0">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            {{ mensajeOk }}
-          </div>
-        </transition>
       </form>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
@@ -419,7 +474,7 @@ const categoriasSeleccionadas = computed(() => {
 const categoriasFiltradas = computed(() => {
   if (!busquedaCategoria.value) return listaCategorias.value
   const busqueda = busquedaCategoria.value.toLowerCase()
-  return listaCategorias.value.filter(cat => 
+  return listaCategorias.value.filter(cat =>
     cat.categoria_actualizacion_nombre.toLowerCase().includes(busqueda)
   )
 })
@@ -438,7 +493,7 @@ const categoriaSeleccionada = (categoriaId: number) => {
 
 const toggleCategoria = (categoriaId: number) => {
   const index = form.categoria_ids.indexOf(categoriaId)
-  
+
   if (index > -1) {
     form.categoria_ids.splice(index, 1)
   } else {
@@ -456,48 +511,48 @@ const toggleSelect = () => {
 }
 
 // Función para asignar colores según la categoría
-const getCategoriaColor = (nombre: string) => {
-  const colorMap: Record<string, string> = {
-    'inicio': '#077E9D',
-    'noticias': '#FCBB1C',
-    'actualizaciones': '#025B7D',
-    'documentos': '#4F46E5',
-    'tutoriales': '#10B981',
-    'eventos': '#F59E0B',
-    'avisos': '#EF4444',
-    'novedades': '#8B5CF6'
-  }
-  
-  const lowerNombre = nombre.toLowerCase()
-  for (const [key, color] of Object.entries(colorMap)) {
-    if (lowerNombre.includes(key)) {
-      return color
-    }
-  }
-  return '#077E9D'
-}
+// const getCategoriaColor = (nombre: string) => {
+//   const colorMap: Record<string, string> = {
+//     'inicio': '#077E9D',
+//     'noticias': '#FCBB1C',
+//     'actualizaciones': '#025B7D',
+//     'documentos': '#4F46E5',
+//     'tutoriales': '#10B981',
+//     'eventos': '#F59E0B',
+//     'avisos': '#EF4444',
+//     'novedades': '#8B5CF6'
+//   }
+
+//   const lowerNombre = nombre.toLowerCase()
+//   for (const [key, color] of Object.entries(colorMap)) {
+//     if (lowerNombre.includes(key)) {
+//       return color
+//     }
+//   }
+//   return '#077E9D'
+// }
 
 // Función para asignar iconos según la categoría
-const getCategoriaIcon = (nombre: string) => {
-  const iconMap: Record<string, string> = {
-    'inicio': 'bi bi-house-fill',
-    'noticias': 'bi bi-megaphone-fill',
-    'actualizaciones': 'bi bi-arrow-repeat',
-    'documentos': 'bi bi-file-text-fill',
-    'tutoriales': 'bi bi-journal-bookmark-fill',
-    'eventos': 'bi bi-calendar-event-fill',
-    'avisos': 'bi bi-bell-fill',
-    'novedades': 'bi bi-star-fill'
-  }
-  
-  const lowerNombre = nombre.toLowerCase()
-  for (const [key, icon] of Object.entries(iconMap)) {
-    if (lowerNombre.includes(key)) {
-      return icon
-    }
-  }
-  return 'bi bi-tag-fill'
-}
+// const getCategoriaIcon = (nombre: string) => {
+//   const iconMap: Record<string, string> = {
+//     'inicio': 'bi bi-house-fill',
+//     'noticias': 'bi bi-megaphone-fill',
+//     'actualizaciones': 'bi bi-arrow-repeat',
+//     'documentos': 'bi bi-file-text-fill',
+//     'tutoriales': 'bi bi-journal-bookmark-fill',
+//     'eventos': 'bi bi-calendar-event-fill',
+//     'avisos': 'bi bi-bell-fill',
+//     'novedades': 'bi bi-star-fill'
+//   }
+
+//   const lowerNombre = nombre.toLowerCase()
+//   for (const [key, icon] of Object.entries(iconMap)) {
+//     if (lowerNombre.includes(key)) {
+//       return icon
+//     }
+//   }
+//   return 'bi bi-tag-fill'
+// }
 
 // Cerrar select al hacer click fuera
 const cerrarSelectAlClickFuera = (event: MouseEvent) => {
@@ -509,10 +564,10 @@ const cerrarSelectAlClickFuera = (event: MouseEvent) => {
 }
 
 const formularioValido = computed(() => {
-  return form.titulo.trim() !== '' && 
-         form.area_servicio_id !== null && 
-         form.categoria_ids.length > 0 &&
-         form.categoria_ids.length <= 3
+  return form.titulo.trim() !== '' &&
+    form.area_servicio_id !== null &&
+    form.categoria_ids.length > 0 &&
+    form.categoria_ids.length <= 3
 })
 
 // Métodos
@@ -521,17 +576,17 @@ const manejarImagen = (event: Event) => {
   if (target.files && target.files.length > 0) {
     const file = target.files[0]
     const maxSize = 5 * 1024 * 1024 // 5MB
-    
+
     if (file.size > maxSize) {
       errores.value.imagen_destacada = ['La imagen no debe superar los 5MB']
       return
     }
-    
+
     if (!file.type.startsWith('image/')) {
       errores.value.imagen_destacada = ['Solo se permiten archivos de imagen']
       return
     }
-    
+
     archivoImagen.value = file
     previewImagen.value = URL.createObjectURL(file)
     delete errores.value.imagen_destacada
@@ -552,10 +607,10 @@ const obtenerUrlImagen = (ruta: string) => {
   if (ruta.startsWith('http')) return ruta
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-  
+
   if (ruta.startsWith('/storage/')) return `${backendUrl}${ruta}`
   if (ruta.startsWith('storage/')) return `${backendUrl}/${ruta}`
-  
+
   return `${backendUrl}/storage/${ruta}`
 }
 
@@ -694,7 +749,7 @@ const cargarRegistro = async () => {
 
 const guardarCambios = async () => {
   if (!formularioValido.value) return
-  
+
   guardando.value = true
   errores.value = {}
   mensajeOk.value = ''
@@ -741,9 +796,9 @@ const guardarCambios = async () => {
     }
 
     await api.put(`/actualizaciones/${props.id}`, payload)
-    
+
     emit('guardado')
-    
+
     // Ocultar mensaje después de 3 segundos
     setTimeout(() => {
       if (mensajeOk.value) mensajeOk.value = ''
@@ -774,11 +829,11 @@ onBeforeUnmount(() => {
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
   document.removeEventListener('click', cerrarSelectAlClickFuera)
-  
+
   if (editor.value && typeof editor.value.destroy === 'function') {
     editor.value.destroy()
   }
-  
+
   // Limpiar previews de imágenes
   if (previewImagen.value) {
     URL.revokeObjectURL(previewImagen.value)
@@ -788,8 +843,8 @@ onBeforeUnmount(() => {
 // Watchers
 watch(
   () => props.id,
-  () => { 
-    if (props.id) cargarRegistro() 
+  () => {
+    if (props.id) cargarRegistro()
   },
   { immediate: true }
 )
@@ -1154,7 +1209,6 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   align-items: center;
   justify-content: space-between;
   margin-top: 8px;
-  padding-top: 6px;
   border-top: 1px solid #f1f5f9;
 }
 
@@ -1183,11 +1237,6 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 .editor-container {
   min-height: 350px;
   transition: all 0.3s ease;
-}
-
-.editor-container:focus-within {
-  box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
-  border-color: var(--primary);
 }
 
 /* Botones de acción responsive */
@@ -1230,7 +1279,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   .form-actions {
     gap: 10px;
   }
-  
+
   .btn {
     padding: 8px 16px;
     font-size: 0.9rem;
@@ -1242,45 +1291,45 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   .form-group {
     margin-bottom: 1rem;
   }
-  
+
   .form-label {
     font-size: 0.85rem;
   }
-  
+
   .form-control,
   .form-select {
     font-size: 0.9rem;
     padding: 8px 12px;
   }
-  
+
   .categoria-select-trigger {
     padding: 8px 12px;
     min-height: 40px;
   }
-  
+
   .selected-tag {
     font-size: 0.65rem;
     padding: 2px 6px;
   }
-  
+
   .dropdown-option {
     padding: 8px 12px;
   }
-  
+
   .option-name {
     font-size: 0.8rem;
   }
-  
+
   .form-actions {
     flex-direction: column-reverse;
     gap: 10px;
   }
-  
+
   .form-actions .btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .editor-container {
     min-height: 280px;
   }
@@ -1291,81 +1340,81 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   .edit-version-container {
     padding: 0;
   }
-  
+
   .form-label {
     font-size: 0.8rem;
   }
-  
+
   .form-control,
   .form-select {
     font-size: 0.85rem;
     padding: 6px 10px;
   }
-  
+
   .categoria-select-trigger {
     padding: 8px 10px;
     min-height: 38px;
   }
-  
+
   .select-placeholder {
     font-size: 0.75rem;
   }
-  
+
   .select-placeholder i {
     font-size: 0.8rem;
   }
-  
+
   .selected-tag {
     font-size: 0.6rem;
     padding: 2px 5px;
   }
-  
+
   .selected-more {
     font-size: 0.6rem;
     padding: 2px 5px;
   }
-  
+
   .categorias-seleccionadas {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .seleccionadas-labels {
     width: 100%;
   }
-  
+
   .label-categoria {
     width: calc(100% - 8px);
     justify-content: space-between;
   }
-  
+
   .categoria-counter {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
   }
-  
+
   .counter-warning {
     align-self: flex-start;
   }
-  
+
   .dropdown-option {
     padding: 8px 10px;
   }
-  
+
   .option-name {
     font-size: 0.75rem;
   }
-  
+
   .editor-container {
     min-height: 250px;
   }
-  
+
   .alert {
     font-size: 0.85rem;
     padding: 10px 12px;
   }
-  
+
   .alert i {
     font-size: 0.9rem;
   }
@@ -1376,63 +1425,63 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   .form-label {
     font-size: 0.75rem;
   }
-  
+
   .form-control,
   .form-select {
     font-size: 0.8rem;
     padding: 6px 8px;
   }
-  
+
   .categoria-select-trigger {
     padding: 6px 8px;
   }
-  
+
   .select-placeholder {
     font-size: 0.7rem;
     gap: 6px;
   }
-  
+
   .select-placeholder i {
     font-size: 0.75rem;
   }
-  
+
   .selected-tag {
     font-size: 0.65rem;
     padding: 1px 4px;
   }
-  
+
   .selected-more {
     font-size: 0.7rem;
     padding: 1px 4px;
   }
-  
+
   .dropdown-option {
     padding: 6px 8px;
   }
-  
+
   .option-name {
     font-size: 0.7rem;
   }
-  
+
   .option-check i {
     font-size: 0.8rem;
   }
-  
+
   .label-categoria {
     font-size: 0.65rem;
     padding: 2px 5px 2px 6px;
   }
-  
+
   .counter-text,
   .counter-warning {
     font-size: 0.65rem;
   }
-  
+
   .btn {
     font-size: 0.8rem;
     padding: 6px 12px;
   }
-  
+
   .editor-container {
     min-height: 220px;
   }
@@ -1443,17 +1492,214 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   .editor-container {
     min-height: 200px;
   }
-  
+
   .dropdown-options {
     max-height: 150px;
   }
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --primary: #0999be;
-    --secondary: #0370a0;
+/* Modal responsive: máximo según pantalla */
+:global(#modalEditarRegistro .modal-dialog) {
+  width: min(1400px, calc(100vw - 24px));
+  max-width: min(1400px, calc(100vw - 24px));
+  margin: 12px auto;
+}
+
+:global(#modalEditarRegistro .modal-content) {
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:global(#modalEditarRegistro .modal-body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Contenedor raíz del componente edit */
+.edit-version-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+}
+
+.edit-modal-content {
+  height: 100%;
+  min-height: 0;
+}
+
+/* Misma estructura del componente "nuevo registro" */
+.edit-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 32px;
+  align-items: stretch;
+  height: calc(100dvh - 150px);
+  max-height: calc(100dvh - 150px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Columna izquierda: campos */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.left-column .mb-4,
+.left-column .form-group,
+.left-column .row {
+  margin-bottom: 0 !important;
+}
+
+/* Acciones al final de la columna izquierda */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Columna derecha: solo esta zona maneja el scroll del contenido */
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px 24px;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
+}
+
+.editor-container {
+  min-height: 100%;
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Editor.js: evita que el contenido rompa el ancho */
+:deep(.codex-editor) {
+  padding: 0;
+}
+
+:deep(.codex-editor__redactor) {
+  min-height: 100%;
+  padding-bottom: 40px !important;
+}
+
+:deep(.ce-block__content),
+:deep(.ce-toolbar__content) {
+  max-width: 100%;
+  padding: 0;
+}
+
+:deep(.ce-block__content) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Scrollbar solo del editor */
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  :global(#modalEditarRegistro .modal-dialog) {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    margin: 8px auto;
+  }
+
+  :global(#modalEditarRegistro .modal-content) {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .edit-form-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(280px, 1fr);
+    gap: 24px;
+    height: calc(100dvh - 130px);
+    max-height: calc(100dvh - 130px);
+  }
+
+  .left-column {
+    overflow: visible;
+  }
+
+  .editor-column {
+    min-height: 280px;
+  }
+
+  .editor-wrapper {
+    min-height: 280px;
+    padding: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
   }
 }
+
+@media (max-width: 576px) {
+  .edit-form-grid {
+    height: calc(100dvh - 115px);
+    max-height: calc(100dvh - 115px);
+  }
+
+  .editor-column {
+    min-height: 240px;
+  }
+
+  .editor-wrapper {
+    min-height: 240px;
+    padding: 14px;
+  }
+}
+
 </style>

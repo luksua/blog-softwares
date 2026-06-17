@@ -1,7 +1,7 @@
 <template>
-  <div>
+  <div class="new-version-container">
     <form @submit.prevent="guardarRegistro" class="form-container-x">
-      <!-- COLUMNA IZQUIERDA: todos los campos excepto el editor -->
+      <!-- COLUMNA IZQUIERDA: campos del formulario -->
       <div class="left-column">
         <!-- Barra de autosave -->
         <div class="autosave-bar">
@@ -10,97 +10,217 @@
               <span class="autosave-dot pulsando"></span>
               Guardando borrador...
             </span>
+
             <span v-else-if="ultimoGuardado" class="autosave-ok">
               <span class="autosave-dot ok"></span>
               Borrador guardado a las {{ ultimoGuardado }}
             </span>
+
             <span v-else class="autosave-vacio">
               El borrador se guardará automáticamente
             </span>
           </div>
 
-          <button v-if="hayBorradorGuardado" type="button" class="btn-descartar"
-            @click="descartarBorrador(true); limpiarFormulario()">
+          <button
+            v-if="hayBorradorGuardado"
+            type="button"
+            class="btn-descartar"
+            @click="descartarBorrador(true); limpiarFormulario()"
+          >
             Descartar borrador
           </button>
         </div>
 
         <!-- Título -->
-        <div class="mb-3 pt-2">
-          <label for="titulo" class="form-label fw-bold text-primary">Título *</label>
-          <input ref="tituloInput" type="text" id="titulo" class="form-control" v-model="registro.titulo" required />
+        <div class="form-group">
+          <label for="titulo" class="form-label fw-bold text-primary">
+            Título <span class="text-danger">*</span>
+          </label>
+
+          <input
+            ref="tituloInput"
+            type="text"
+            id="titulo"
+            class="form-control"
+            v-model="registro.titulo"
+            placeholder="Ingrese el título de la actualización"
+            required
+          />
         </div>
 
-        <!-- Versión y Portada -->
+        <!-- Versión y portada -->
         <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="version" class="form-label fw-bold text-primary">Número de Versión</label>
-            <input type="text" id="version" class="form-control" v-model="registro.version" required />
+          <div class="col-12 col-sm-6 mb-3">
+            <label for="version" class="form-label fw-bold text-primary">
+              Número de Versión
+            </label>
+
+            <input
+              type="text"
+              id="version"
+              class="form-control"
+              v-model="registro.version"
+              placeholder="Ej: 1.0.0"
+              required
+            />
           </div>
-          <div class="col-md-6 mb-3">
-            <label for="miniatura" class="form-label fw-bold text-primary">Portada</label>
-            <input type="file" id="miniatura" class="form-control" accept="image/*" @change="manejarArchivoMiniatura" />
+
+          <div class="col-12 col-sm-6 mb-3">
+            <label for="miniatura" class="form-label fw-bold text-primary">
+              Portada
+            </label>
+
+            <input
+              type="file"
+              id="miniatura"
+              class="form-control"
+              accept="image/*"
+              @change="manejarArchivoMiniatura"
+            />
+
             <div v-if="previewMiniatura" class="mt-2 text-center">
-              <img :src="previewMiniatura" alt="Vista previa" class="img-thumbnail"
-                style="max-height: 120px; border-radius: 8px;" />
+              <img
+                :src="previewMiniatura"
+                alt="Vista previa"
+                class="img-thumbnail"
+                style="max-height: 120px; border-radius: 8px;"
+              />
             </div>
           </div>
         </div>
 
         <!-- Resumen -->
-        <div class="mb-3">
-          <label for="resumen" class="form-label fw-bold text-primary">Resumen</label>
-          <textarea id="resumen" class="form-control" v-model="registro.resumen" rows="2" required></textarea>
+        <div class="form-group">
+          <label for="resumen" class="form-label fw-bold text-primary">
+            Resumen
+          </label>
+
+          <textarea
+            id="resumen"
+            class="form-control"
+            v-model="registro.resumen"
+            rows="2"
+            placeholder="Breve descripción de la actualización..."
+            required
+          ></textarea>
         </div>
 
         <!-- Categorías y Área -->
         <div class="row">
-          <div class="col-md-6 mb-3">
+          <!-- Área -->
+          <div class="col-12 col-md-6 mb-3">
+            <label for="area_servicio" class="form-label fw-bold text-primary">
+              Área <span class="text-danger">*</span>
+            </label>
+
+            <select
+              id="area_servicio"
+              class="form-select"
+              v-model="registro.area_servicio_id"
+              required
+            >
+              <option value="" disabled>Selecciona un área...</option>
+
+              <option
+                v-for="area in listaAreas"
+                :key="area.area_servicio_id"
+                :value="area.area_servicio_id"
+              >
+                {{ area.area_servicio_nombre }}
+              </option>
+            </select>
+          </div>
+                    <!-- Categorías -->
+          <div class="col-12 col-md-6 mb-3">
             <label class="form-label fw-bold text-primary">
-              Categorías *
+              Categorías <span class="text-danger">*</span>
               <small class="text-muted">(máximo 3)</small>
             </label>
 
-            <!-- Select moderno -->
-            <div class="categoria-select-wrapper"
-              :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }">
+            <div
+              class="categoria-select-wrapper"
+              :class="{
+                open: selectAbierto,
+                'has-selection': categoriasSeleccionadas.length > 0
+              }"
+            >
               <div class="categoria-select-trigger" @click="toggleSelect">
-                <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
+                <div
+                  v-if="categoriasSeleccionadas.length === 0"
+                  class="select-placeholder"
+                >
                   <i class="bi bi-tag"></i>
                   <span>Selecciona hasta 3 categorías</span>
                 </div>
-                <div class="select-selected" v-else>
+
+                <div v-else class="select-selected">
                   <div class="selected-tags">
-                    <span v-for="cat in categoriasSeleccionadas.slice(0, 2)" :key="cat.id" class="selected-tag">
+                    <span
+                      v-for="cat in categoriasSeleccionadas.slice(0, 2)"
+                      :key="cat.id"
+                      class="selected-tag"
+                    >
                       {{ cat.nombre }}
                     </span>
-                    <span v-if="categoriasSeleccionadas.length > 2" class="selected-more">
+
+                    <span
+                      v-if="categoriasSeleccionadas.length > 2"
+                      class="selected-more"
+                    >
                       +{{ categoriasSeleccionadas.length - 2 }}
                     </span>
                   </div>
                 </div>
-                <i class="bi" :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+
+                <i
+                  class="bi"
+                  :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"
+                ></i>
               </div>
 
               <!-- Dropdown de opciones -->
               <div v-if="selectAbierto" class="categoria-select-dropdown">
                 <div class="dropdown-search" v-if="listaCategorias.length > 5">
                   <i class="bi bi-search"></i>
-                  <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
+
+                  <input
+                    type="text"
+                    v-model="busquedaCategoria"
+                    placeholder="Buscar categoría..."
+                    @click.stop
+                  />
                 </div>
+
                 <div class="dropdown-options">
-                  <button type="button" v-for="categoria in categoriasFiltradas"
-                    :key="categoria.categoria_actualizacion_id" class="dropdown-option" :class="{
+                  <button
+                    type="button"
+                    v-for="categoria in categoriasFiltradas"
+                    :key="categoria.categoria_actualizacion_id"
+                    class="dropdown-option"
+                    :class="{
                       selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
-                      disabled: !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3
-                    }" @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
-                    :disabled="!categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) && categoriasSeleccionadas.length >= 3">
-                    <span class="option-name">{{ categoria.categoria_actualizacion_nombre }}</span>
+                      disabled:
+                        !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                        categoriasSeleccionadas.length >= 3
+                    }"
+                    :disabled="
+                      !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                      categoriasSeleccionadas.length >= 3
+                    "
+                    @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
+                  >
+                    <span class="option-name">
+                      {{ categoria.categoria_actualizacion_nombre }}
+                    </span>
+
                     <span class="option-check">
-                      <i v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
-                        class="bi bi-check-lg"></i>
+                      <i
+                        v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
+                        class="bi bi-check-lg"
+                      ></i>
                     </span>
                   </button>
+
                   <div v-if="categoriasFiltradas.length === 0" class="dropdown-empty">
                     No se encontraron categorías
                   </div>
@@ -110,59 +230,116 @@
 
             <!-- Contador -->
             <div class="categoria-counter">
-              <span class="counter-text">{{ categoriasSeleccionadas.length }}/3 categorías</span>
-              <span v-if="categoriasSeleccionadas.length >= 3" class="counter-warning">
-                <i class="bi bi-exclamation-triangle-fill"></i> Límite alcanzado
+              <span class="counter-text">
+                {{ categoriasSeleccionadas.length }}/3 categorías
+              </span>
+
+              <span
+                v-if="categoriasSeleccionadas.length >= 3"
+                class="counter-warning"
+              >
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Límite alcanzado
               </span>
             </div>
           </div>
-
-          <div class="col-md-6 mb-3">
-            <label for="area_servicio" class="form-label fw-bold text-primary">Área *</label>
-            <select id="area_servicio" class="form-select" v-model="registro.area_servicio_id" required>
-              <option value="" disabled>Selecciona un área...</option>
-              <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
-                {{ area.area_servicio_nombre }}
-              </option>
-            </select>
-          </div>
         </div>
 
-        <!-- Estado y Fecha -->
+        <!-- Estado y fecha -->
         <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="estado" class="form-label fw-bold text-primary">Estado</label>
-            <select id="estado" class="form-select" v-model="registro.estado" required>
-              <option v-for="estado in listaEstados" :key="estado.id" :value="estado.id">
+          <div class="col-12 col-md-6 mb-3">
+            <label for="estado" class="form-label fw-bold text-primary">
+              Estado
+            </label>
+
+            <select
+              id="estado"
+              class="form-select"
+              v-model="registro.estado"
+              required
+            >
+              <option
+                v-for="estado in listaEstados"
+                :key="estado.id"
+                :value="estado.id"
+              >
                 {{ estado.nombre }}
               </option>
             </select>
           </div>
-          <div class="col-md-6 mb-3">
-            <label for="fecha_publicacion" class="form-label fw-bold text-primary">Fecha:</label>
-            <input type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion" required
-              disabled />
+
+          <div class="col-12 col-md-6 mb-3">
+            <label for="fecha_publicacion" class="form-label fw-bold text-primary">
+              Fecha
+            </label>
+
+            <input
+              type="date"
+              id="fecha_publicacion"
+              class="form-control"
+              v-model="registro.fecha_publicacion"
+              required
+              disabled
+            />
           </div>
         </div>
 
         <!-- Usuario oculto -->
-        <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor" disabled
-          hidden required />
+        <input
+          type="number"
+          id="usuario_id_autor"
+          class="form-control"
+          v-model="registro.usuario_id_autor"
+          disabled
+          hidden
+          required
+        />
 
-        <!-- Botones de acción (al final de la columna) -->
-        <div class="d-flex justify-content-end gap-2 mt-4 actions">
+        <!-- Botones de acción -->
+        <!-- <div class="d-flex justify-content-end gap-2 mt-4 actions">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
             <i class="bi bi-x-circle me-1"></i> Cancelar
           </button>
           <button type="submit" class="btn-primary" :disabled="enviando">
             {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
           </button>
+        </div> -->
+        
+        <div class="d-flex justify-content-end gap-2 mt-4 actions">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            data-bs-dismiss="modal"
+            @click="emit('cerrar')"
+          >
+            <i class="bi bi-x-circle me-1"></i>
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn btn-primary"
+            :disabled="enviando"
+          >
+            <span
+              v-if="enviando"
+              class="spinner-border spinner-border-sm me-2"
+              role="status"
+            ></span>
+
+            <i v-else class="bi bi-send-check me-1"></i>
+
+            {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
+          </button>
         </div>
       </div>
 
-      <!-- COLUMNA DERECHA: Editor de contenido -->
+      <!-- COLUMNA DERECHA: editor de contenido -->
       <div class="editor-column">
-        <label class="form-label fw-bold text-primary">Contenido *</label>
+        <label class="form-label fw-bold text-primary">
+          Contenido <span class="text-danger">*</span>
+        </label>
+
         <div class="editor-wrapper">
           <div id="editorjs"></div>
         </div>
@@ -684,7 +861,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px 14px;
-  background: #f8fafc;
+  background: #fdfeff;
   border: 1px solid #e1e7f0;
   border-radius: 10px;
   gap: 12px;
@@ -1075,5 +1252,237 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
+/* ============================================
+   MODAL NUEVO REGISTRO: tamaño máximo pantalla
+   ============================================ */
 
+:global(#modalNuevoRegistro .modal-dialog) {
+  width: min(1400px, calc(100vw - 24px));
+  max-width: min(1400px, calc(100vw - 24px));
+  margin: 12px auto;
+}
+
+:global(#modalNuevoRegistro .modal-content) {
+  max-height: calc(100dvh - 24px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+:global(#modalNuevoRegistro .modal-body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+
+/* ============================================
+   CONTENEDOR DEL COMPONENTE
+   ============================================ */
+
+.new-version-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+
+/* ============================================
+   LAYOUT DOS COLUMNAS
+   ============================================ */
+
+.form-container-x {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 32px;
+  align-items: stretch;
+
+  height: calc(100dvh - 150px);
+  max-height: calc(100dvh - 150px);
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+
+/* ============================================
+   COLUMNA IZQUIERDA: CAMPOS
+   ============================================ */
+
+.left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+.left-column .mb-3,
+.left-column .row,
+.left-column .form-group {
+  margin-bottom: 0 !important;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+
+  margin-top: auto !important;
+  padding-top: 1.5rem;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+
+/* ============================================
+   COLUMNA DERECHA: EDITOR
+   Aquí es donde SÍ debe haber scroll
+   ============================================ */
+
+.editor-column {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  min-height: 0;
+
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+
+  padding: 20px 24px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
+}
+
+
+/* ============================================
+   EDITOR.JS
+   Evita desbordes horizontales
+   ============================================ */
+
+:deep(.codex-editor) {
+  padding: 0;
+}
+
+:deep(.codex-editor__redactor) {
+  min-height: 100%;
+  padding-bottom: 40px !important;
+}
+
+:deep(.ce-block__content),
+:deep(.ce-toolbar__content) {
+  max-width: 100%;
+  padding: 0;
+}
+
+:deep(.ce-block__content) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+
+/* ============================================
+   SCROLLBAR SOLO DEL CONTENIDO
+   ============================================ */
+
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.editor-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  :global(#modalNuevoRegistro .modal-dialog) {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    margin: 8px auto;
+  }
+
+  :global(#modalNuevoRegistro .modal-content) {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .form-container-x {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(280px, 1fr);
+    gap: 24px;
+
+    height: calc(100dvh - 130px);
+    max-height: calc(100dvh - 130px);
+  }
+
+  .editor-column {
+    min-height: 280px;
+  }
+
+  .editor-wrapper {
+    min-height: 280px;
+    padding: 16px;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+    margin-top: 16px !important;
+  }
+
+  .actions .btn,
+  .actions .btn-primary,
+  .actions .btn-outline-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .form-container-x {
+    height: calc(100dvh - 115px);
+    max-height: calc(100dvh - 115px);
+  }
+
+  .editor-column {
+    min-height: 240px;
+  }
+
+  .editor-wrapper {
+    min-height: 240px;
+    padding: 14px;
+  }
+}
 </style>

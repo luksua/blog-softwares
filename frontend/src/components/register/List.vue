@@ -281,7 +281,7 @@
             <tbody>
               <tr v-for="item in actualizaciones" :key="item.id" class="fila-registro" @click="verDetalles(item.id)">
                 <td class="cell-titulo" data-label="Título">
-                  <span class="titulo-texto">{{ item.actualizacion_titulo }}</span>
+                  <span class="titulo-texto titulo-tabla">{{ item.actualizacion_titulo }}</span>
                 </td>
 
                 <td v-if="esVistaSupervision" class="cell-autor" data-label="Empleado">
@@ -480,7 +480,7 @@
     </div>
 
     <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-xl">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
@@ -1673,6 +1673,16 @@ defineExpose({ obtenerActualizaciones })
   border-color: transparent;
   transform: scale(1.05);
 }
+
+.titulo-tabla {
+  display: inline-block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
 .base-table tbody tr:hover .badge-estado,
 .base-table tbody tr:hover .btn-icon { transform: scale(1.05); }
 
@@ -1777,7 +1787,6 @@ defineExpose({ obtenerActualizaciones })
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 700;
   color: #1f2937;
 }
 

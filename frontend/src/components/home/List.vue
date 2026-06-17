@@ -146,12 +146,12 @@
 
         <!-- Fechas y limpiar -->
         <div class="filtro-grupo">
-          <label for="fechaDesde" class="filtro-label">Desde</label>
+          <label for="fechaDesde" class="filtro-label">Fecha Desde</label>
           <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
         </div>
 
         <div class="filtro-grupo">
-          <label for="fechaHasta" class="filtro-label">Hasta</label>
+          <label for="fechaHasta" class="filtro-label">Fecha Hasta</label>
           <input id="fechaHasta" v-model="filtros.fechaHasta" type="date" class="filtro-input" />
         </div>
 
@@ -556,13 +556,13 @@ const categoriasConIcono = computed(() => {
   })
 })
 
-const iconoCategoriaSeleccionada = computed(() => {
-  return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
-})
+// const iconoCategoriaSeleccionada = computed(() => {
+//   return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
+// })
 
-const nombreCategoriaSeleccionada = computed(() => {
-  return categoriaSeleccionada.value?.nombre ?? 'Todas las categorías'
-})
+// const nombreCategoriaSeleccionada = computed(() => {
+//   return categoriaSeleccionada.value?.nombre ?? 'Todas las categorías'
+// })
 
 const seleccionarCategoria = (id: number | '') => {
   filtros.value.categoriaId = id
@@ -1086,7 +1086,7 @@ const categoriasFiltradasConIcono = computed(() => {
 
 .resumen {
   font-size: 0.9rem;
-  color: #555;
+  color: #979797;
   line-height: 1.5;
   margin: 0 0 10px 0;
   display: -webkit-box;

@@ -231,17 +231,17 @@ const mostrarSupervision = computed(() => {
   return isLoggedIn.value && puedeSupervisarArea.value && router.hasRoute('supervision')
 })
 
-const estaEnFormularioRegistro = computed(() => {
-  return [
-    'actualizaciones-crear',
-    'actualizaciones-create',
-    'actualizaciones-editar',
-    'actualizaciones-edit',
-    'crear-actualizacion',
-    'editar-actualizacion',
-    'admin-actualizaciones-edit',
-  ].includes(String(route.name))
-})
+// const estaEnFormularioRegistro = computed(() => {
+//   return [
+//     'actualizaciones-crear',
+//     'actualizaciones-create',
+//     'actualizaciones-editar',
+//     'actualizaciones-edit',
+//     'crear-actualizacion',
+//     'editar-actualizacion',
+//     'admin-actualizaciones-edit',
+//   ].includes(String(route.name))
+// })
 
 const normalizarPermisos = (valor: unknown): string[] => {
   if (!Array.isArray(valor)) {
@@ -616,7 +616,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 12px 20px;
+  padding: 22px 20px;
   margin: 4px 12px;
   cursor: pointer;
   border-radius: 12px;

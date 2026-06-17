@@ -64,24 +64,24 @@ return [
     |
     */
 
-    'dev_auth_bypass' => (bool) env(
-        'DEV_AUTH_BYPASS',
-        env('APP_ENV', 'production') === 'local'
-    ),
+    // 'dev_auth_bypass' => (bool) env(
+    //     'DEV_AUTH_BYPASS',
+    //     env('APP_ENV', 'production') === 'local'
+    // ),
 
-    'dev_auth_user' => [
-        'id' => (int) env('DEV_AUTH_USER_ID', 1),
-        'username' => env('DEV_AUTH_USERNAME', 'ADMIN_DEV'),
-        'first_name' => env('DEV_AUTH_FIRST_NAME', 'Admin'),
-        'second_name' => env('DEV_AUTH_SECOND_NAME', ''),
-        'last_name' => env('DEV_AUTH_LAST_NAME', 'Local'),
-        'second_last_name' => env('DEV_AUTH_SECOND_LAST_NAME', ''),
-        'group' => env('DEV_AUTH_GROUP', 'ADMIN'),
-        'area_id' => (int) env('DEV_AUTH_AREA_ID', 1),
-        'area_name' => env('DEV_AUTH_AREA_NAME', 'Desarrollo local'),
-        'cargo_id' => env('DEV_AUTH_CARGO_ID'),
-        'medico_id' => env('DEV_AUTH_MEDICO_ID'),
-    ],
+    // 'dev_auth_user' => [
+    //     'id' => (int) env('DEV_AUTH_USER_ID', 1),
+    //     'username' => env('DEV_AUTH_USERNAME', 'ADMIN_DEV'),
+    //     'first_name' => env('DEV_AUTH_FIRST_NAME', 'Admin'),
+    //     'second_name' => env('DEV_AUTH_SECOND_NAME', ''),
+    //     'last_name' => env('DEV_AUTH_LAST_NAME', 'Local'),
+    //     'second_last_name' => env('DEV_AUTH_SECOND_LAST_NAME', ''),
+    //     'group' => env('DEV_AUTH_GROUP', 'ADMIN'),
+    //     'area_id' => (int) env('DEV_AUTH_AREA_ID', 1),
+    //     'area_name' => env('DEV_AUTH_AREA_NAME', 'Desarrollo local'),
+    //     'cargo_id' => env('DEV_AUTH_CARGO_ID'),
+    //     'medico_id' => env('DEV_AUTH_MEDICO_ID'),
+    // ],
 
     /*
     |--------------------------------------------------------------------------

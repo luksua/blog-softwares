@@ -54,6 +54,9 @@ class UpdateBlogController extends Controller
             ])
             ->with($relaciones);
 
+
+        $orden = $request->input('orden', 'recientes');
+
         /*
         |--------------------------------------------------------------------------
         | Vistas
@@ -112,8 +115,32 @@ class UpdateBlogController extends Controller
                 'actualizacion_usuario_id_autor',
                 $usuario->usuario_id
             );
+
+            // if ($vista === 'mis-registros') {
+            match ($orden) {
+
+                'antiguos' => $query
+                    ->orderBy('actualizacion_fecha_creacion', 'asc')
+                    ->orderBy('id', 'asc'),
+
+                'az' => $query->orderBy('actualizacion_titulo', 'asc'),
+                'za' => $query->orderBy('actualizacion_titulo', 'desc'),
+
+                default => $query
+                    ->orderBy('actualizacion_fecha_creacion', 'desc')
+                    ->orderBy('id', 'desc'),
+            };
+            // } else {
+            //     match ($orden) {
+            //         'antiguos' => $query->oldest('actualizacion_fecha_publicacion'),
+            //         'az' => $query->orderBy('actualizacion_titulo', 'asc'),
+            //         'za' => $query->orderBy('actualizacion_titulo', 'desc'),
+            //         default => $query->latest('actualizacion_fecha_publicacion'),
+            //     };
+            // }
         } elseif ($vista === 'supervision') {
             /*
+
     |--------------------------------------------------------------------------
     | Supervisión
     |--------------------------------------------------------------------------
@@ -201,21 +228,33 @@ class UpdateBlogController extends Controller
             });
         }
 
+        $campoFecha = $vista === 'mis-registros'
+            ? 'actualizacion_fecha_creacion'
+            : 'actualizacion_fecha_publicacion';
+
         if ($request->filled('fecha_desde')) {
-            $query->whereDate(
-                'actualizacion_fecha_publicacion',
-                '>=',
-                $request->input('fecha_desde')
-            );
+            $query->whereDate($campoFecha, '>=', $request->input('fecha_desde'));
         }
 
         if ($request->filled('fecha_hasta')) {
-            $query->whereDate(
-                'actualizacion_fecha_publicacion',
-                '<=',
-                $request->input('fecha_hasta')
-            );
+            $query->whereDate($campoFecha, '<=', $request->input('fecha_hasta'));
         }
+
+        // if ($request->filled('fecha_desde')) {
+        //     $query->whereDate(
+        //         'actualizacion_fecha_publicacion',
+        //         '>=',
+        //         $request->input('fecha_desde')
+        //     );
+        // }
+
+        // if ($request->filled('fecha_hasta')) {
+        //     $query->whereDate(
+        //         'actualizacion_fecha_publicacion',
+        //         '<=',
+        //         $request->input('fecha_hasta')
+        //     );
+        // }
 
         match ($request->input('orden', 'recientes')) {
             'antiguos' => $query->oldest('actualizacion_fecha_publicacion'),
@@ -257,12 +296,20 @@ class UpdateBlogController extends Controller
 
         $this->prepararCategoriaIds($request);
 
+
         $datosValidados = $request->validate([
             'actualizacion_titulo' => ['required', 'string', 'max:255'],
             'actualizacion_version' => ['nullable', 'string', 'max:50'],
             'actualizacion_contenido' => ['required'],
             'actualizacion_resumen' => ['required', 'string'],
             'actualizacion_imagen_destacada' => ['nullable'],
+
+            'actualizacion_area_servicio_id' => [
+                'required',
+                'integer',
+                Rule::exists((new Area)->getTable(), 'area_servicio_id'),
+            ],
+
             'actualizacion_categoria_ids' => ['required', 'array', 'min:1', 'max:3'],
             'actualizacion_categoria_ids.*' => [
                 'required',
@@ -270,10 +317,12 @@ class UpdateBlogController extends Controller
                 'distinct',
                 Rule::exists('act_categorias', 'categoria_actualizacion_id'),
             ],
+
             'actualizacion_estado' => [
                 'nullable',
                 Rule::in($this->estadosPermitidos()),
             ],
+
             'imagenes_quill' => ['nullable', 'string'],
         ]);
 
@@ -302,7 +351,7 @@ class UpdateBlogController extends Controller
                 */
 
                 'actualizacion_usuario_id_autor' => $usuario->usuario_id,
-                'actualizacion_area_servicio_id' => $usuario->area_servicio_id,
+                'actualizacion_area_servicio_id' => $datosValidados['actualizacion_area_servicio_id'],
 
                 'actualizacion_estado' => $estado,
                 'actualizacion_fecha_creacion' => now(),
@@ -662,7 +711,7 @@ class UpdateBlogController extends Controller
     public function getStatus()
     {
         $estados = collect($this->estadosPermitidos())
-            ->map(fn (string $estado) => [
+            ->map(fn(string $estado) => [
                 'id' => $estado,
                 'nombre' => ucfirst($estado),
             ])
@@ -818,8 +867,8 @@ class UpdateBlogController extends Controller
         // }
 
         return collect($areas)
-            ->filter(fn ($areaId) => $areaId !== null && $areaId !== '')
-            ->map(fn ($areaId) => (int) $areaId)
+            ->filter(fn($areaId) => $areaId !== null && $areaId !== '')
+            ->map(fn($areaId) => (int) $areaId)
             ->unique()
             ->values()
             ->all();
@@ -888,8 +937,8 @@ class UpdateBlogController extends Controller
             ->where('jefe_area', $areaId)
             ->pluck('id_usuario')
             ->push($supervisorRevisionId)
-            ->filter(fn ($usuarioId) => (int) $usuarioId > 0)
-            ->map(fn ($usuarioId) => (int) $usuarioId)
+            ->filter(fn($usuarioId) => (int) $usuarioId > 0)
+            ->map(fn($usuarioId) => (int) $usuarioId)
             ->unique()
             ->values();
 
@@ -946,9 +995,9 @@ class UpdateBlogController extends Controller
         }
 
         $ids = collect($ids)
-            ->filter(fn ($id) => $id !== null && $id !== '')
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
+            ->filter(fn($id) => $id !== null && $id !== '')
+            ->map(fn($id) => (int) $id)
+            ->filter(fn(int $id) => $id > 0)
             ->unique()
             ->take(3)
             ->values()
@@ -963,8 +1012,8 @@ class UpdateBlogController extends Controller
     private function sincronizarCategorias(UpdateBlog $actualizacion, array $categoriaIds): void
     {
         $categoriaIds = collect($categoriaIds)
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $id) => $id > 0)
+            ->map(fn($id) => (int) $id)
+            ->filter(fn(int $id) => $id > 0)
             ->unique()
             ->take(3)
             ->values()
