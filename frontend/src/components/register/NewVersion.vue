@@ -755,7 +755,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', cerrarSelectAlClickFuera)
 })
 </script>
-
 <style scoped>
 :root {
   --primary: #077E9D;
@@ -763,14 +762,13 @@ onBeforeUnmount(() => {
   --warning: #FCBB1C;
 }
 
-.text-primary {
-  color: var(--primary) !important;
-}
+/* ─── Colores y utilidades ──────────────────────────────── */
+.text-primary { color: var(--primary) !important; }
 
 .btn-primary {
   background-color: var(--primary);
   border-color: var(--primary);
-  color: white;
+  color: #fff;
   padding: 0.375rem 0.75rem;
   border-radius: 0.375rem;
   transition: all 0.2s ease;
@@ -780,17 +778,14 @@ onBeforeUnmount(() => {
   border-color: var(--secondary);
 }
 
-.btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: white;
-  padding: 0.375rem 0.75rem;
-  border-radius: 0.375rem;
-  transition: all 0.2s ease;
+.btn-outline-secondary {
+  color: var(--secondary);
+  border-color: var(--secondary);
 }
-.btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
+.btn-outline-secondary:hover {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  color: #fff;
 }
 
 .form-control:focus,
@@ -799,44 +794,47 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
 }
 
-:deep(.codex-editor__redactor) {
-  padding-bottom: 40px !important;
-  overflow: hidden;   /* ← AÑADE ESTO */
-}
-
-/* ── Layout de dos columnas ── */
+/* ─── Layout de dos columnas ────────────────────────────── */
 .form-container-x {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0 32px;
-  align-items: stretch; /* ambas columnas misma altura */
+  align-items: stretch;
+  height: calc(100dvh - 150px);
+  max-height: calc(100dvh - 150px);
+  min-height: 0;
+  overflow: hidden;
 }
 
-/* Columna izquierda: todos los campos */
 .left-column {
   display: flex;
   flex-direction: column;
-  gap: 12px; /* separación entre bloques */
-  min-height: 100%; /* para que ocupe toda la celda */
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
-
-/* Los bloques internos ya no necesitan márgenes extra */
 .left-column .mb-3,
-.left-column .row {
-  margin-bottom: 0;
+.left-column .row,
+.left-column .form-group {
+  margin-bottom: 0 !important;
 }
 
-/* Botones al final de la columna izquierda */
 .actions {
-  margin-top: auto !important; /* empuja hacia abajo */
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: auto !important;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
 }
 
-/* ── Columna derecha: editor ── */
+/* ─── Columna del editor ────────────────────────────────── */
 .editor-column {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  min-width: 0;   /* ← CRÍTICO: sin esto, el grid permite que crezca */
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -845,17 +843,47 @@ onBeforeUnmount(() => {
   min-height: 0;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  background: white;
-  overflow-y: auto;
-  overflow-x: hidden;   /* ← AÑADE ESTO */
+  background: #ffffff;
   padding: 20px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .editor-wrapper:focus-within {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
 }
 
-/* ── Barra de autosave ── */
+/* ─── Editor.js interno ────────────────────────────────── */
+:deep(.codex-editor) { padding: 0; }
+:deep(.codex-editor__redactor) {
+  min-height: 100%;
+  padding-bottom: 40px !important;
+}
+:deep(.ce-block__content),
+:deep(.ce-toolbar__content) {
+  max-width: 100%;
+  padding: 0;
+}
+:deep(.ce-block__content) {
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ─── Scrollbar del editor ────────────────────────────── */
+.editor-wrapper::-webkit-scrollbar { width: 8px; }
+.editor-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+.editor-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.editor-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* ─── Barra de autosave ────────────────────────────────── */
 .autosave-bar {
   display: flex;
   justify-content: space-between;
@@ -867,54 +895,28 @@ onBeforeUnmount(() => {
   gap: 12px;
   flex-wrap: wrap;
 }
-
 .autosave-estado {
   font-size: 0.82rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.autosave-guardando {
-  color: #f59e0b;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.autosave-ok {
-  color: #16a34a;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.autosave-vacio {
-  color: #94a3b8;
-}
+.autosave-guardando { color: #f59e0b; display: flex; align-items: center; gap: 6px; }
+.autosave-ok { color: #16a34a; display: flex; align-items: center; gap: 6px; }
+.autosave-vacio { color: #94a3b8; }
 .autosave-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
 }
 .autosave-dot.pulsando {
   background: #f59e0b;
   animation: pulso 1s infinite;
 }
-.autosave-dot.ok {
-  background: #16a34a;
-}
+.autosave-dot.ok { background: #16a34a; }
 @keyframes pulso {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.4;
-    transform: scale(0.8);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
 }
-
 .btn-descartar {
   font-size: 0.8rem;
   padding: 5px 12px;
@@ -931,44 +933,21 @@ onBeforeUnmount(() => {
   border-color: #dc2626;
 }
 
-.btn-primary {
-  background-color: var(--primary);
-  border-color: var(--primary);
-}
-.btn-primary:hover {
-  background-color: var(--secondary);
-  border-color: var(--secondary);
-}
-.btn-outline-secondary {
-  color: var(--secondary);
-  border-color: var(--secondary);
-}
-.btn-outline-secondary:hover {
-  background-color: var(--secondary);
-  border-color: var(--secondary);
-  color: white;
-}
-
-/* ── Select de categorías (sin cambios, solo mantengo estilos) ── */
-.categoria-select-wrapper {
-  position: relative;
-  margin-bottom: 12px;
-}
+/* ─── Select de categorías (custom) ───────────────────── */
+.categoria-select-wrapper { position: relative; margin-bottom: 12px; }
 .categoria-select-trigger {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  background: white;
+  background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: 42px;
 }
-.categoria-select-trigger:hover {
-  border-color: var(--primary);
-}
+.categoria-select-trigger:hover { border-color: var(--primary); }
 .categoria-select-wrapper.open .categoria-select-trigger {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
@@ -980,12 +959,8 @@ onBeforeUnmount(() => {
   color: #94a3b8;
   font-size: 0.85rem;
 }
-.select-placeholder i {
-  font-size: 0.9rem;
-}
-.select-selected {
-  flex: 1;
-}
+.select-placeholder i { font-size: 0.9rem; }
+.select-selected { flex: 1; }
 .selected-tags {
   display: flex;
   flex-wrap: wrap;
@@ -1017,10 +992,10 @@ onBeforeUnmount(() => {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
-  background: white;
+  background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 1000;
   overflow: hidden;
 }
@@ -1031,20 +1006,12 @@ onBeforeUnmount(() => {
   padding: 8px 12px;
   border-bottom: 1px solid #e2e8f0;
 }
-.dropdown-search i {
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
+.dropdown-search i { color: #94a3b8; font-size: 0.85rem; }
 .dropdown-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.85rem;
-  padding: 6px 0;
+  flex: 1; border: none; outline: none;
+  font-size: 0.85rem; padding: 6px 0;
 }
-.dropdown-search input::placeholder {
-  color: #cbd5e1;
-}
+.dropdown-search input::placeholder { color: #cbd5e1; }
 .dropdown-options {
   max-height: 200px;
   overflow-y: auto;
@@ -1061,99 +1028,23 @@ onBeforeUnmount(() => {
   transition: all 0.15s ease;
   text-align: left;
 }
-.dropdown-option:hover:not(.disabled) {
-  background: #f8fafc;
-}
-.dropdown-option.selected {
-  background: rgba(7, 126, 157, 0.08);
-}
-.dropdown-option.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.option-name {
-  font-size: 0.85rem;
-  color: #334155;
-}
+.dropdown-option:hover:not(.disabled) { background: #f8fafc; }
+.dropdown-option.selected { background: rgba(7, 126, 157, 0.08); }
+.dropdown-option.disabled { opacity: 0.5; cursor: not-allowed; }
+.option-name { font-size: 0.85rem; color: #334155; }
 .dropdown-option.selected .option-name {
   color: var(--primary);
   font-weight: 500;
 }
-.option-check i {
-  color: var(--primary);
-  font-size: 0.9rem;
-}
+.option-check i { color: var(--primary); font-size: 0.9rem; }
 .dropdown-empty {
-  padding: 20px;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 0.8rem;
+  padding: 20px; text-align: center;
+  color: #94a3b8; font-size: 0.8rem;
 }
-.dropdown-options::-webkit-scrollbar {
-  width: 6px;
-}
-.dropdown-options::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-.dropdown-options::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-.categorias-seleccionadas {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 0;
-}
-.seleccionadas-label {
-  font-size: 0.7rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.seleccionadas-labels {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.label-categoria {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 6px 3px 8px;
-  background: #f1f5f9;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: #334155;
-  transition: all 0.2s ease;
-}
-.label-categoria:hover {
-  background: #e2e8f0;
-}
-.label-remove {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-.label-remove i {
-  font-size: 0.6rem;
-  color: #94a3b8;
-}
-.label-remove:hover i {
-  color: #ef4444;
-}
+.dropdown-options::-webkit-scrollbar { width: 6px; }
+.dropdown-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
 .categoria-counter {
   display: flex;
   align-items: center;
@@ -1162,10 +1053,7 @@ onBeforeUnmount(() => {
   padding-top: 6px;
   border-top: 1px solid #f1f5f9;
 }
-.counter-text {
-  font-size: 0.7rem;
-  color: #64748b;
-}
+.counter-text { font-size: 0.7rem; color: #64748b; }
 .counter-warning {
   display: flex;
   align-items: center;
@@ -1176,109 +1064,25 @@ onBeforeUnmount(() => {
   padding: 2px 8px;
   border-radius: 12px;
 }
-.counter-warning i {
-  font-size: 0.65rem;
-}
+.counter-warning i { font-size: 0.65rem; }
 
-@media (max-width: 640px) {
-  .categorias-seleccionadas {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .selected-tags {
-    max-width: 200px;
-  }
-  .selected-tag {
-    font-size: 0.65rem;
-  }
-}
-
-/* ── Responsive: una columna en móvil ── */
-@media (max-width: 768px) {
-  .form-container-x {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  .left-column {
-    order: 1;
-  }
-  .editor-column {
-    order: 2;
-    min-height: 400px; /* altura mínima en móvil */
-  }
-  .editor-wrapper {
-    min-height: 300px;
-  }
-  .actions {
-    margin-top: 16px !important;
-  }
-}
-
-/* ── Columna derecha: editor ── */
-.editor-column {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
-
-.editor-wrapper {
-  flex: 1;
-  min-height: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: white;
-  overflow-y: auto;
-  padding: 20px 24px; /* ← AQUÍ: más espacio interno */
-}
-
-.editor-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
-}
-
-/* Ajustes internos para que el contenido use todo el ancho y sin padding extra */
-:deep(.codex-editor) {
-  padding: 0;
-}
-
-:deep(.ce-block__content) {
-  max-width: 100%;
-  padding: 0;
-  word-break: break-word;   /* ← AÑADE ESTO */
-  overflow-wrap: break-word; /* ← Y ESTO */
-}
-
-:deep(.ce-toolbar__content) {
-  padding: 0;
-}
-
-/* ============================================
-   MODAL NUEVO REGISTRO: tamaño máximo pantalla
-   ============================================ */
-
+/* ─── MODAL (global) ───────────────────────────────────── */
 :global(#modalNuevoRegistro .modal-dialog) {
   width: min(1400px, calc(100vw - 24px));
   max-width: min(1400px, calc(100vw - 24px));
   margin: 12px auto;
 }
-
 :global(#modalNuevoRegistro .modal-content) {
   max-height: calc(100dvh - 24px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-
 :global(#modalNuevoRegistro .modal-body) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
-
-
-/* ============================================
-   CONTENEDOR DEL COMPONENTE
-   ============================================ */
 
 .new-version-container {
   width: 100%;
@@ -1287,153 +1091,36 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-
-/* ============================================
-   LAYOUT DOS COLUMNAS
-   ============================================ */
-
-.form-container-x {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0 32px;
-  align-items: stretch;
-
-  height: calc(100dvh - 150px);
-  max-height: calc(100dvh - 150px);
-  min-height: 0;
-
-  overflow: hidden;
+/* ─── RESPONSIVE: TABLET (768px – 1024px) ────────────── */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .form-container-x {
+    gap: 0 20px;
+    height: calc(100dvh - 130px);
+    max-height: calc(100dvh - 130px);
+  }
+  .editor-wrapper {
+    padding: 16px 20px;
+  }
+  .left-column {
+    gap: 10px;
+  }
+  :global(#modalNuevoRegistro .modal-dialog) {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    margin: 16px auto;
+  }
+  :global(#modalNuevoRegistro .modal-content) {
+    max-height: calc(100dvh - 32px);
+  }
 }
 
-
-/* ============================================
-   COLUMNA IZQUIERDA: CAMPOS
-   ============================================ */
-
-.left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  min-width: 0;
-  min-height: 0;
-
-  overflow: hidden;
-}
-
-.left-column .mb-3,
-.left-column .row,
-.left-column .form-group {
-  margin-bottom: 0 !important;
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-
-  margin-top: auto !important;
-  padding-top: 1.5rem;
-
-  border-top: 1px solid #e2e8f0;
-}
-
-
-/* ============================================
-   COLUMNA DERECHA: EDITOR
-   Aquí es donde SÍ debe haber scroll
-   ============================================ */
-
-.editor-column {
-  display: flex;
-  flex-direction: column;
-
-  min-width: 0;
-  min-height: 0;
-
-  overflow: hidden;
-}
-
-.editor-wrapper {
-  flex: 1;
-  min-height: 0;
-
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-
-  padding: 20px 24px;
-
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.editor-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
-}
-
-
-/* ============================================
-   EDITOR.JS
-   Evita desbordes horizontales
-   ============================================ */
-
-:deep(.codex-editor) {
-  padding: 0;
-}
-
-:deep(.codex-editor__redactor) {
-  min-height: 100%;
-  padding-bottom: 40px !important;
-}
-
-:deep(.ce-block__content),
-:deep(.ce-toolbar__content) {
-  max-width: 100%;
-  padding: 0;
-}
-
-:deep(.ce-block__content) {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-
-/* ============================================
-   SCROLLBAR SOLO DEL CONTENIDO
-   ============================================ */
-
-.editor-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.editor-wrapper::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 999px;
-}
-
-.editor-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
-
-.editor-wrapper::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
-
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-
+/* ─── RESPONSIVE: MÓVIL (< 768px) ────────────────────── */
 @media (max-width: 768px) {
   :global(#modalNuevoRegistro .modal-dialog) {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
     margin: 8px auto;
   }
-
   :global(#modalNuevoRegistro .modal-content) {
     max-height: calc(100dvh - 16px);
   }
@@ -1441,16 +1128,14 @@ onBeforeUnmount(() => {
   .form-container-x {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(280px, 1fr);
-    gap: 24px;
-
-    height: calc(100dvh - 130px);
-    max-height: calc(100dvh - 130px);
+    gap: 20px;
+    height: calc(100dvh - 120px);
+    max-height: calc(100dvh - 120px);
   }
 
   .editor-column {
     min-height: 280px;
   }
-
   .editor-wrapper {
     min-height: 280px;
     padding: 16px;
@@ -1461,28 +1146,56 @@ onBeforeUnmount(() => {
     gap: 10px;
     margin-top: 16px !important;
   }
-
   .actions .btn,
   .actions .btn-primary,
   .actions .btn-outline-secondary {
     width: 100%;
     justify-content: center;
   }
+
+  .autosave-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .btn-descartar {
+    align-self: flex-end;
+  }
+
+  /* Ajustes de fuente y padding en campos */
+  .form-label {
+    font-size: 0.9rem;
+  }
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+  .left-column {
+    gap: 10px;
+  }
 }
 
-@media (max-width: 576px) {
+/* ─── MÓVIL MUY PEQUEÑO (< 480px) ────────────────────── */
+@media (max-width: 480px) {
   .form-container-x {
-    height: calc(100dvh - 115px);
-    max-height: calc(100dvh - 115px);
+    height: calc(100dvh - 100px);
+    max-height: calc(100dvh - 100px);
+    gap: 16px;
   }
-
   .editor-column {
-    min-height: 240px;
+    min-height: 200px;
   }
-
   .editor-wrapper {
-    min-height: 240px;
-    padding: 14px;
+    min-height: 200px;
+    padding: 12px;
+  }
+  .autosave-estado {
+    font-size: 0.75rem;
+  }
+  .btn-descartar {
+    font-size: 0.7rem;
+    padding: 4px 10px;
   }
 }
 </style>
