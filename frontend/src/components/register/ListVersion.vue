@@ -273,7 +273,6 @@ watch(
   padding: 60px 40px;
   background: white;
   border-radius: 20px;
-  box-shadow: var(--shadow-sm);
   color: #6b7280;
   max-width: 800px;
   margin: 40px auto;
