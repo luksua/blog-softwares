@@ -1,5 +1,6 @@
 <template>
   <div class="contenedor-lista">
+    <!-- Hero -->
     <div class="row justify-content-center align-items-center mb-4 titulo">
       <div class="supervision-hero">
         <div>
@@ -10,6 +11,7 @@
       </div>
     </div>
 
+    <!-- Estados de carga / error / vacío -->
     <div v-if="cargando && actualizaciones.length === 0" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -60,7 +62,7 @@
           </div>
         </div>
 
-        <!-- ======= ÁREA (selector moderno) ======= -->
+        <!-- Área -->
         <div class="filtro-grupo">
           <label class="filtro-label">Área / Servicio</label>
           <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
@@ -98,7 +100,7 @@
           </div>
         </div>
 
-        <!-- ======= CATEGORÍA (selector moderno) ======= -->
+        <!-- Categoría -->
         <div class="filtro-grupo">
           <label class="filtro-label">Categoría</label>
           <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
@@ -144,7 +146,7 @@
           </div>
         </div>
 
-        <!-- Fechas y limpiar -->
+        <!-- Fechas -->
         <div class="filtro-grupo">
           <label for="fechaDesde" class="filtro-label">Fecha Desde</label>
           <input id="fechaDesde" v-model="filtros.fechaDesde" type="date" class="filtro-input" />
@@ -163,18 +165,19 @@
         </div>
       </div>
 
+      <!-- Contenido principal: lista de tarjetas (se oculta en móvil) -->
       <div v-if="actualizaciones.length === 0 && hayFiltrosActivos" class="estado-mensaje vacio">
         <div class="empty-icon">🔎</div>
         <h3>Sin resultados</h3>
         <p>No se encontraron actualizaciones con los filtros aplicados.</p>
       </div>
 
-      <div v-else>
+      <div v-else class="lista-tarjetas-wrapper">
         <div class="row lista-feed g-3 g-md-4">
           <div v-for="item in actualizaciones" :key="item.id" class="col-12 col-sm-6 col-lg-4 col-xl-3">
             <div class="tarjeta-changelog h-100">
 
-              <!-- ── CABECERA: Imagen + overlay inferior izquierdo ── -->
+              <!-- CABECERA -->
               <div class="tarjeta-header">
                 <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
                   <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
@@ -192,19 +195,16 @@
                 </div>
               </div>
 
-              <!-- ── CUERPO ── -->
+              <!-- CUERPO -->
               <div class="tarjeta-cuerpo" @click="verDetalle(item.id)">
                 <div class="metadatos-top">
                   <span class="fecha">
                     {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
                   </span>
-
                   <span class="separador">|</span>
-
                   <span class="version-number">
                     v{{ item.actualizacion_version || '0.0' }}
                   </span>
-
                   <span class="views-badge" title="Visualizaciones">
                     <i class="bi bi-eye-fill"></i>
                     {{ formatearNumero(item.actualizacion_lecturas || 0) }}
@@ -214,17 +214,16 @@
                 <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
                 <p class="resumen">{{ item.actualizacion_resumen }}</p>
 
-                <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
+                <!-- Iconos de categoría -->
                 <div class="categorias-iconos">
                   <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
                     <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
                     <span class="ico-label">{{ cat.nombre }}</span>
                   </div>
                 </div>
-
               </div>
 
-              <!-- ── FOOTER: solo bookmark y ver más ── -->
+              <!-- FOOTER tarjeta -->
               <div class="tarjeta-pie">
                 <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)" @click.stop="toggleBookmark(item.id)"
                   :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'">
@@ -262,6 +261,80 @@
               </li>
             </ul>
           </nav>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- FOOTER MÓVIL (solo visible en pantallas < 768px)           -->
+    <!-- ========================================================== -->
+    <footer class="footer-movil d-md-none">
+      <button class="btn-footer" @click="abrirModalIndice">
+        <i class="bi bi-list-ul"></i>
+        <span>Índice</span>
+      </button>
+      <button class="btn-footer" @click="abrirModalResumen">
+        <i class="bi bi-file-text"></i>
+        <span>Resumen</span>
+      </button>
+    </footer>
+
+    <!-- ========================================================== -->
+    <!-- MODAL ÍNDICE                                               -->
+    <!-- ========================================================== -->
+    <div v-if="mostrarModalIndice" class="modal-overlay" @click.self="cerrarModalIndice">
+      <div class="modal-contenido">
+        <header class="modal-header">
+          <h3><i class="bi bi-list-ul"></i> Índice de actualizaciones</h3>
+          <button class="btn-cerrar" @click="cerrarModalIndice">&times;</button>
+        </header>
+        <div class="modal-body">
+          <div v-if="actualizaciones.length === 0" class="text-center text-muted py-4">
+            No hay actualizaciones.
+          </div>
+          <ul class="lista-indice">
+            <li v-for="item in actualizaciones" :key="item.id" @click="irADetalle(item.id)">
+              <span class="indice-titulo">{{ item.actualizacion_titulo }}</span>
+              <span class="indice-meta">
+                {{ formatearFecha(item.actualizacion_fecha_publicacion) }}
+                <span class="indice-version">v{{ item.actualizacion_version }}</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- MODAL RESUMEN                                              -->
+    <!-- ========================================================== -->
+    <div v-if="mostrarModalResumen" class="modal-overlay" @click.self="cerrarModalResumen">
+      <div class="modal-contenido">
+        <header class="modal-header">
+          <h3><i class="bi bi-file-text"></i> Resumen</h3>
+          <button class="btn-cerrar" @click="cerrarModalResumen">&times;</button>
+        </header>
+        <div class="modal-body">
+          <div v-if="!primeraActualizacion" class="text-center text-muted py-4">
+            No hay actualizaciones disponibles.
+          </div>
+          <template v-else>
+            <h4>{{ primeraActualizacion.actualizacion_titulo }}</h4>
+            <div class="resumen-metadata">
+              <span class="badge-version">v{{ primeraActualizacion.actualizacion_version }}</span>
+              <span class="badge-fecha">{{ formatearFecha(primeraActualizacion.actualizacion_fecha_publicacion) }}</span>
+            </div>
+            <p class="resumen-texto">{{ primeraActualizacion.actualizacion_resumen }}</p>
+            <div v-if="primeraActualizacion.actualizacion_resumen" class="resumen-contenido">
+              <hr />
+              <div v-html="obtenerContenidoHtml(primeraActualizacion.actualizacion_resumen)"></div>
+            </div>
+            <div class="text-end mt-3">
+              <button class="btn-ver-detalle" @click="irADetalle(primeraActualizacion.id)">
+                Ver completo <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -345,6 +418,23 @@ const paginasMostradas = computed(() => {
 
   return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
+
+// ── Modales móviles ──────────────────────────────────────────────
+const mostrarModalIndice = ref(false)
+const mostrarModalResumen = ref(false)
+
+const primeraActualizacion = computed(() => actualizaciones.value[0] || null)
+
+const abrirModalIndice = () => { mostrarModalIndice.value = true }
+const cerrarModalIndice = () => { mostrarModalIndice.value = false }
+const abrirModalResumen = () => { mostrarModalResumen.value = true }
+const cerrarModalResumen = () => { mostrarModalResumen.value = false }
+
+const irADetalle = (id: number) => {
+  cerrarModalIndice()
+  cerrarModalResumen()
+  router.push({ name: 'actualizaciones-show', params: { id } })
+}
 
 // ── API ───────────────────────────────────────────────────────────
 const obtenerCatalogosFiltros = async () => {
@@ -571,25 +661,11 @@ const categoriasConIcono = computed(() => {
   })
 })
 
-// const iconoCategoriaSeleccionada = computed(() => {
-//   return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
-// })
-
-// const nombreCategoriaSeleccionada = computed(() => {
-//   return categoriaSeleccionada.value?.nombre ?? 'Todas las categorías'
-// })
-
 const seleccionarCategoria = (id: number | '') => {
   filtros.value.categoriaId = id
   categoriaDropdownAbierto.value = false
 }
 
-/**
- * Normaliza las categorías de un item, soportando:
- * - item.categorias → array (relación hasMany)
- * - item.categoria  → objeto único (relación belongsTo)
- * - ninguno         → fallback "Sin categoría"
- */
 const obtenerCategorias = (item: Version): { id: string | number; nombre: string }[] => {
   if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
     return (item as any).categorias.map((c: any) => ({
@@ -644,10 +720,8 @@ const seleccionarArea = (id: number) => {
   busquedaArea.value = ''
 }
 
-// ── Categoría (reutilizamos el dropdown existente pero con nuevo trigger) ──
+// ── Categoría ──
 const busquedaCategoria = ref('')
-// Nota: ya tienes 'categoriaDropdownAbierto' y 'seleccionarCategoria'
-// Solo necesitas el computed para la selección actual y el filtrado con íconos
 
 const categoriaSeleccionada = computed(() => {
   if (!filtros.value.categoriaId) return null
@@ -662,6 +736,28 @@ const categoriasFiltradasConIcono = computed(() => {
   )
 })
 
+// ── Contenido HTML para el modal de resumen ──────────────────────
+const obtenerContenidoHtml = (contenido: any): string => {
+  if (!contenido) return ''
+  try {
+    const parsed = typeof contenido === 'string' ? JSON.parse(contenido) : contenido
+    if (parsed.blocks && Array.isArray(parsed.blocks)) {
+      return parsed.blocks.map((block: any) => {
+        if (block.type === 'paragraph') return `<p>${block.data.text}</p>`
+        if (block.type === 'header') return `<h${block.data.level}>${block.data.text}</h${block.data.level}>`
+        if (block.type === 'list') {
+          const items = block.data.items.map((i: string) => `<li>${i}</li>`).join('')
+          return block.data.style === 'ordered' ? `<ol>${items}</ol>` : `<ul>${items}</ul>`
+        }
+        if (block.type === 'image') return `<img src="${block.data.file.url}" alt="${block.data.caption || ''}" style="max-width:100%;border-radius:8px;" />`
+        return ''
+      }).join('')
+    }
+    return ''
+  } catch (e) {
+    return ''
+  }
+}
 </script>
 
 <style scoped>
@@ -679,11 +775,14 @@ const categoriasFiltradasConIcono = computed(() => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 16px;
+  padding-bottom: 80px;
+  /* espacio para el footer móvil */
 }
 
 @media (min-width: 768px) {
   .contenedor-lista {
     padding: 0 24px;
+    padding-bottom: 0;
   }
 }
 
@@ -923,6 +1022,16 @@ const categoriasFiltradasConIcono = computed(() => {
 }
 
 /* ── Tarjetas ─────────────────────────────────────────── */
+.lista-tarjetas-wrapper {
+  /* La lista se oculta en móvil, la mostramos solo en desktop */
+}
+
+@media (max-width: 767px) {
+  .lista-tarjetas-wrapper {
+    display: none;
+  }
+}
+
 .lista-feed {
   margin-top: 4px;
 }
@@ -933,7 +1042,6 @@ const categoriasFiltradasConIcono = computed(() => {
   background-color: white;
   transition: var(--transition);
   overflow: visible;
-  /* visible para que el chip no se corte */
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -981,10 +1089,6 @@ const categoriasFiltradasConIcono = computed(() => {
   }
 }
 
-/*
-  OVERLAY: degradado de transparente → negro
-  origen en la esquina inferior DERECHA, con label de área
-*/
 .imagen-overlay {
   position: absolute;
   inset: 0;
@@ -1116,7 +1220,7 @@ const categoriasFiltradasConIcono = computed(() => {
   }
 }
 
-/* ── ICONOS DE CATEGORÍA → texto al hover ─────────────── */
+/* ── ICONOS DE CATEGORÍA ─────────────────────────────── */
 .categorias-iconos {
   display: flex;
   gap: 8px;
@@ -1126,7 +1230,6 @@ const categoriasFiltradasConIcono = computed(() => {
 }
 
 .icono-categoria {
-  /* Dimensiones base: cuadrado del tamaño del ícono */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1138,7 +1241,6 @@ const categoriasFiltradasConIcono = computed(() => {
   border: 1px solid transparent;
   overflow: hidden;
   cursor: default;
-  /* Animar width/max-width y colores */
   transition:
     max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.22s ease,
@@ -1147,7 +1249,6 @@ const categoriasFiltradasConIcono = computed(() => {
   padding: 0 7px;
 }
 
-/* Al hover: expande horizontalmente para mostrar el texto */
 .icono-categoria:hover {
   max-width: 200px;
   background: rgba(7, 126, 157, 0.10);
@@ -1155,12 +1256,10 @@ const categoriasFiltradasConIcono = computed(() => {
   padding: 0 10px;
 }
 
-/* El ícono: visible por defecto → se oculta en hover */
 .icono-categoria .ico-icon {
   font-size: 16px;
   color: var(--secondary);
   flex-shrink: 0;
-  /* ancho fijo → colapsa */
   width: 16px;
   opacity: 1;
   transition:
@@ -1175,13 +1274,11 @@ const categoriasFiltradasConIcono = computed(() => {
   margin: 0;
 }
 
-/* El texto: oculto por defecto → aparece en hover */
 .icono-categoria .ico-label {
   font-size: 11px;
   font-weight: 700;
   color: var(--primary);
   white-space: nowrap;
-  /* colapsa cuando no hay hover */
   max-width: 0;
   opacity: 0;
   overflow: hidden;
@@ -1195,7 +1292,7 @@ const categoriasFiltradasConIcono = computed(() => {
   opacity: 1;
 }
 
-/* ── FOOTER ──────────────────────────────────────────── */
+/* ── FOOTER TARJETA ──────────────────────────────────────────── */
 .tarjeta-pie {
   display: flex;
   justify-content: space-between;
@@ -1446,166 +1543,7 @@ const categoriasFiltradasConIcono = computed(() => {
   text-transform: uppercase;
 }
 
-.select-categoria-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.select-categoria-icon {
-  position: absolute;
-  left: 12px;
-  z-index: 1;
-  pointer-events: none;
-  font-size: 1rem;
-}
-
-.filtro-input-con-icono {
-  padding-left: 38px;
-}
-
-.categoria-dropdown {
-  position: relative;
-  width: 100%;
-}
-
-.categoria-dropdown-btn {
-  width: 100%;
-  min-height: 42px;
-  border: 1px solid #d7dde8;
-  border-radius: 10px;
-  background: #fff;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.categoria-dropdown-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.categoria-dropdown-seleccion {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.categoria-dropdown-seleccion span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.categoria-dropdown-seleccion i {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.categoria-dropdown-flecha {
-  font-size: 0.85rem;
-  transition: transform 0.2s ease;
-}
-
-.categoria-dropdown.abierto .categoria-dropdown-flecha {
-  transform: rotate(180deg);
-}
-
-.categoria-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 30;
-  background: #fff;
-  border: 1px solid #d7dde8;
-  border-radius: 12px;
-  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.14);
-  padding: 6px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.categoria-dropdown-item {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 10px 12px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.categoria-dropdown-item:hover {
-  background: #f3f6fb;
-}
-
-.categoria-dropdown-item.activo {
-  background: #eaf1ff;
-  font-weight: 600;
-}
-
-.categoria-dropdown-item i {
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-/* ── Select de Área con apariencia igual al dropdown de Categoría ── */
-.filtro-grupo select.filtro-input {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-
-  /* misma altura y forma que .categoria-dropdown-btn */
-  min-height: 42px;
-  height: auto;
-  border: 1px solid #d7dde8;
-  border-radius: 10px;
-  background-color: #fff;
-  padding: 0 36px 0 12px;
-
-  /* flecha manual igual a bi-chevron-down */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 14px;
-
-  font-size: 0.95rem;
-  color: #374151;
-  cursor: pointer;
-  width: 100%;
-  transition: var(--transition);
-}
-
-.filtro-grupo select.filtro-input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
-}
-
-.filtro-grupo select.filtro-input:disabled {
-  background-color: #f9fafb;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Hover solo en desktop */
-@media (min-width: 768px) {
-  .filtro-grupo select.filtro-input:hover:not(:disabled) {
-    border-color: var(--primary);
-  }
-}
-
-/* ============================================================
-   SELECTORES MODERNOS (Área y Categoría) – igual que en el modal
-   ============================================================ */
+/* ── Selectores modernos (área / categoría) ──────────── */
 .categoria-select-wrapper {
   position: relative;
   margin-bottom: 0;
@@ -1664,7 +1602,6 @@ const categoriasFiltradasConIcono = computed(() => {
   transition: transform 0.2s ease;
 }
 
-/* Dropdown (igual que en el modal) */
 .categoria-select-dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -1751,21 +1688,6 @@ const categoriasFiltradasConIcono = computed(() => {
   font-size: 0.8rem;
 }
 
-/* Contador (igual que en el modal) */
-.categoria-counter {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.counter-text {
-  font-size: 0.7rem;
-  color: #64748b;
-}
-
 .views-badge {
   display: inline-flex;
   align-items: center;
@@ -1782,5 +1704,328 @@ const categoriasFiltradasConIcono = computed(() => {
 
 .views-badge i {
   font-size: 0.85rem;
+}
+
+/* =============================================================
+   FOOTER MÓVIL (fijo abajo, visible solo en móvil)
+   ============================================================= */
+.footer-movil {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 10px 16px;
+  padding-bottom: env(safe-area-inset-bottom, 10px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  z-index: 900;
+}
+
+.btn-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: #4b5563;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 20px;
+  border-radius: 40px;
+  transition: var(--transition);
+  cursor: pointer;
+  flex: 1;
+  max-width: 140px;
+}
+
+.btn-footer i {
+  font-size: 1.6rem;
+  color: var(--secondary);
+  transition: var(--transition);
+}
+
+.btn-footer span {
+  letter-spacing: 0.02em;
+}
+
+.btn-footer:active {
+  transform: scale(0.94);
+}
+
+.btn-footer:hover i {
+  color: var(--primary);
+}
+
+/* =============================================================
+   MODALES PERSONALIZADOS (overlay + panel)
+   ============================================================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-contenido {
+  background: white;
+  border-radius: 24px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eef2f6;
+  flex-shrink: 0;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-header h3 i {
+  color: var(--primary);
+}
+
+.btn-cerrar {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 6px;
+  transition: var(--transition);
+}
+
+.btn-cerrar:hover {
+  color: #1f2937;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Lista del índice ── */
+.lista-indice {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-indice li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.lista-indice li:active {
+  transform: scale(0.97);
+}
+
+.lista-indice li:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.indice-titulo {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9rem;
+  flex: 1;
+  margin-right: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.indice-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.indice-version {
+  background: #eef2f6;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  font-family: monospace;
+}
+
+/* ── Resumen ── */
+.resumen-metadata {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 8px 0 16px;
+}
+
+.badge-version {
+  background: rgba(7, 126, 157, 0.12);
+  color: var(--primary);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.badge-fecha {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.resumen-texto {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #374151;
+  margin: 12px 0 0;
+}
+
+.resumen-contenido {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: #1f2937;
+}
+
+.resumen-contenido hr {
+  margin: 16px 0;
+  border-color: #e5e7eb;
+}
+
+.resumen-contenido img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.btn-ver-detalle {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ver-detalle:active {
+  transform: scale(0.96);
+}
+
+.btn-ver-detalle:hover {
+  background: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 400px) {
+  .modal-contenido {
+    max-width: 100%;
+    margin: 10px;
+    border-radius: 20px;
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .lista-indice li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .indice-meta {
+    font-size: 0.7rem;
+  }
+
+  .btn-footer {
+    font-size: 0.65rem;
+    padding: 4px 12px;
+  }
+
+  .btn-footer i {
+    font-size: 1.4rem;
+  }
 }
 </style>
