@@ -15,6 +15,7 @@ class Category extends Model
         'categoria_actualizacion_nombre',
         'categoria_actualizacion_activa',
         'categoria_actualizacion_orden',
+        'categoria_actualizacion_icono',
     ];
 
     public function actualizaciones()

@@ -483,7 +483,6 @@ onMounted(() => {
   padding: 56px 24px;
   background: white;
   border-radius: 20px;
-  box-shadow: var(--shadow-sm);
   color: #6b7280;
   /* border-top: 3px solid var(--warning); */
 }

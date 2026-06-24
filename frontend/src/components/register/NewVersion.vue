@@ -21,12 +21,8 @@
             </span>
           </div>
 
-          <button
-            v-if="hayBorradorGuardado"
-            type="button"
-            class="btn-descartar"
-            @click="descartarBorrador(true); limpiarFormulario()"
-          >
+          <button v-if="hayBorradorGuardado" type="button" class="btn-descartar"
+            @click="descartarBorrador(true); limpiarFormulario()">
             Descartar borrador
           </button>
         </div>
@@ -37,15 +33,8 @@
             Título <span class="text-danger">*</span>
           </label>
 
-          <input
-            ref="tituloInput"
-            type="text"
-            id="titulo"
-            class="form-control"
-            v-model="registro.titulo"
-            placeholder="Ingrese el título de la actualización"
-            required
-          />
+          <input ref="tituloInput" type="text" id="titulo" class="form-control" v-model="registro.titulo"
+            placeholder="Ingrese el título de la actualización" required />
         </div>
 
         <!-- Versión y portada -->
@@ -55,14 +44,8 @@
               Número de Versión
             </label>
 
-            <input
-              type="text"
-              id="version"
-              class="form-control"
-              v-model="registro.version"
-              placeholder="Ej: 1.0.0"
-              required
-            />
+            <input type="text" id="version" class="form-control" v-model="registro.version" placeholder="Ej: 1.0.0"
+              required />
           </div>
 
           <div class="col-12 col-sm-6 mb-3">
@@ -70,21 +53,11 @@
               Portada
             </label>
 
-            <input
-              type="file"
-              id="miniatura"
-              class="form-control"
-              accept="image/*"
-              @change="manejarArchivoMiniatura"
-            />
+            <input type="file" id="miniatura" class="form-control" accept="image/*" @change="manejarArchivoMiniatura" />
 
             <div v-if="previewMiniatura" class="mt-2 text-center">
-              <img
-                :src="previewMiniatura"
-                alt="Vista previa"
-                class="img-thumbnail"
-                style="max-height: 120px; border-radius: 8px;"
-              />
+              <img :src="previewMiniatura" alt="Vista previa" class="img-thumbnail"
+                style="max-height: 120px; border-radius: 8px;" />
             </div>
           </div>
         </div>
@@ -94,17 +67,18 @@
           <label for="resumen" class="form-label fw-bold text-primary">
             Resumen
           </label>
+          <textarea id="resumen" class="form-control" :class="{ 'is-invalid': resumenExcedeLimite }"
+            v-model="registro.resumen" rows="2"  placeholder="Breve descripción de la actualización..."
+            required></textarea>
 
-          <textarea
-            id="resumen"
-            class="form-control"
-            v-model="registro.resumen"
-            rows="2"
-            placeholder="Breve descripción de la actualización..."
-            required
-          ></textarea>
+          <div v-if="resumenExcedeLimite" class="invalid-feedback d-block">
+            El resumen no puede superar los {{ LIMITE_RESUMEN }} caracteres.
+          </div>
+
+          <div class="form-text text-end" :class="{ 'text-danger fw-bold': registro.resumen.length > 800 }">
+            {{ registro.resumen.length }}/800 caracteres
+          </div>
         </div>
-
         <!-- Categorías y Área -->
         <div class="row">
           <!-- Área -->
@@ -113,69 +87,44 @@
               Área <span class="text-danger">*</span>
             </label>
 
-            <select
-              id="area_servicio"
-              class="form-select"
-              v-model="registro.area_servicio_id"
-              required
-            >
+            <select id="area_servicio" class="form-select" v-model="registro.area_servicio_id" required>
               <option value="" disabled>Selecciona un área...</option>
 
-              <option
-                v-for="area in listaAreas"
-                :key="area.area_servicio_id"
-                :value="area.area_servicio_id"
-              >
+              <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
                 {{ area.area_servicio_nombre }}
               </option>
             </select>
           </div>
-                    <!-- Categorías -->
+          <!-- Categorías -->
           <div class="col-12 col-md-6 mb-3">
             <label class="form-label fw-bold text-primary">
               Categorías <span class="text-danger">*</span>
               <small class="text-muted">(máximo 3)</small>
             </label>
 
-            <div
-              class="categoria-select-wrapper"
-              :class="{
-                open: selectAbierto,
-                'has-selection': categoriasSeleccionadas.length > 0
-              }"
-            >
-              <div class="categoria-select-trigger" @click="toggleSelect">
-                <div
-                  v-if="categoriasSeleccionadas.length === 0"
-                  class="select-placeholder"
-                >
+            <div ref="categoriaSelectRef" class="categoria-select-wrapper" :class="{
+              open: selectAbierto,
+              'has-selection': categoriasSeleccionadas.length > 0
+            }" @click.stop>
+              <div class="categoria-select-trigger" @click.stop="toggleSelect">
+                <div v-if="categoriasSeleccionadas.length === 0" class="select-placeholder">
                   <i class="bi bi-tag"></i>
                   <span>Selecciona hasta 3 categorías</span>
                 </div>
 
                 <div v-else class="select-selected">
                   <div class="selected-tags">
-                    <span
-                      v-for="cat in categoriasSeleccionadas.slice(0, 2)"
-                      :key="cat.id"
-                      class="selected-tag"
-                    >
+                    <span v-for="cat in categoriasSeleccionadas.slice(0, 2)" :key="cat.id" class="selected-tag">
                       {{ cat.nombre }}
                     </span>
 
-                    <span
-                      v-if="categoriasSeleccionadas.length > 2"
-                      class="selected-more"
-                    >
+                    <span v-if="categoriasSeleccionadas.length > 2" class="selected-more">
                       +{{ categoriasSeleccionadas.length - 2 }}
                     </span>
                   </div>
                 </div>
 
-                <i
-                  class="bi"
-                  :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"
-                ></i>
+                <i class="bi" :class="selectAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               </div>
 
               <!-- Dropdown de opciones -->
@@ -183,41 +132,26 @@
                 <div class="dropdown-search" v-if="listaCategorias.length > 5">
                   <i class="bi bi-search"></i>
 
-                  <input
-                    type="text"
-                    v-model="busquedaCategoria"
-                    placeholder="Buscar categoría..."
-                    @click.stop
-                  />
+                  <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
                 </div>
 
                 <div class="dropdown-options">
-                  <button
-                    type="button"
-                    v-for="categoria in categoriasFiltradas"
-                    :key="categoria.categoria_actualizacion_id"
-                    class="dropdown-option"
-                    :class="{
+                  <button type="button" v-for="categoria in categoriasFiltradas"
+                    :key="categoria.categoria_actualizacion_id" class="dropdown-option" :class="{
                       selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
                       disabled:
                         !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
                         categoriasSeleccionadas.length >= 3
-                    }"
-                    :disabled="
-                      !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                    }" :disabled="!categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
                       categoriasSeleccionadas.length >= 3
-                    "
-                    @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
-                  >
+                      " @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))">
                     <span class="option-name">
                       {{ categoria.categoria_actualizacion_nombre }}
                     </span>
 
                     <span class="option-check">
-                      <i
-                        v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
-                        class="bi bi-check-lg"
-                      ></i>
+                      <i v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
+                        class="bi bi-check-lg"></i>
                     </span>
                   </button>
 
@@ -234,10 +168,7 @@
                 {{ categoriasSeleccionadas.length }}/3 categorías
               </span>
 
-              <span
-                v-if="categoriasSeleccionadas.length >= 3"
-                class="counter-warning"
-              >
+              <span v-if="categoriasSeleccionadas.length >= 3" class="counter-warning">
                 <i class="bi bi-exclamation-triangle-fill"></i>
                 Límite alcanzado
               </span>
@@ -252,17 +183,8 @@
               Estado
             </label>
 
-            <select
-              id="estado"
-              class="form-select"
-              v-model="registro.estado"
-              required
-            >
-              <option
-                v-for="estado in listaEstados"
-                :key="estado.id"
-                :value="estado.id"
-              >
+            <select id="estado" class="form-select" v-model="registro.estado" required>
+              <option v-for="estado in listaEstados" :key="estado.id" :value="estado.id">
                 {{ estado.nombre }}
               </option>
             </select>
@@ -273,65 +195,14 @@
               Fecha
             </label>
 
-            <input
-              type="date"
-              id="fecha_publicacion"
-              class="form-control"
-              v-model="registro.fecha_publicacion"
-              required
-              disabled
-            />
+            <input type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion" required
+              disabled />
           </div>
         </div>
 
         <!-- Usuario oculto -->
-        <input
-          type="number"
-          id="usuario_id_autor"
-          class="form-control"
-          v-model="registro.usuario_id_autor"
-          disabled
-          hidden
-          required
-        />
-
-        <!-- Botones de acción -->
-        <!-- <div class="d-flex justify-content-end gap-2 mt-4 actions">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle me-1"></i> Cancelar
-          </button>
-          <button type="submit" class="btn-primary" :disabled="enviando">
-            {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
-          </button>
-        </div> -->
-        
-        <div class="d-flex justify-content-end gap-2 mt-4 actions">
-          <button
-            type="button"
-            class="btn btn-outline-secondary"
-            data-bs-dismiss="modal"
-            @click="emit('cerrar')"
-          >
-            <i class="bi bi-x-circle me-1"></i>
-            Cancelar
-          </button>
-
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="enviando"
-          >
-            <span
-              v-if="enviando"
-              class="spinner-border spinner-border-sm me-2"
-              role="status"
-            ></span>
-
-            <i v-else class="bi bi-send-check me-1"></i>
-
-            {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
-          </button>
-        </div>
+        <input type="number" id="usuario_id_autor" class="form-control" v-model="registro.usuario_id_autor" disabled
+          hidden required />
       </div>
 
       <!-- COLUMNA DERECHA: editor de contenido -->
@@ -343,6 +214,22 @@
         <div class="editor-wrapper">
           <div id="editorjs"></div>
         </div>
+      </div>
+
+      <!-- Barra final de acciones: siempre al final del formulario -->
+      <div class="actions">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" @click="emit('cerrar')">
+          <i class="bi bi-x-circle me-1"></i>
+          Cancelar
+        </button>
+
+        <button type="submit" class="btn btn-primary" :disabled="enviando">
+          <span v-if="enviando" class="spinner-border spinner-border-sm me-2" role="status"></span>
+
+          <i v-else class="bi bi-send-check me-1"></i>
+
+          {{ enviando ? 'Guardando...' : 'Publicar Registro' }}
+        </button>
       </div>
     </form>
   </div>
@@ -385,6 +272,7 @@ const manejarArchivoMiniatura = (event: Event) => {
 
 // ── Registro ──────────────────────────────────────────────────────
 const idUsuarioLogueado = 1
+const errores = ref<Record<string, string[]>>({})
 
 const registroVacio = () => ({
   titulo: '',
@@ -453,6 +341,16 @@ const cargarBorrador = () => {
     console.warn('No se pudo restaurar el borrador:', e)
   }
 }
+
+const LIMITE_RESUMEN = 800
+
+const resumenExcedeLimite = computed(() => {
+  return registro.resumen.length > LIMITE_RESUMEN
+})
+
+const resumenCaracteresRestantes = computed(() => {
+  return LIMITE_RESUMEN - registro.resumen.length
+})
 
 const guardarBorrador = async () => {
   autoguardando.value = true
@@ -541,7 +439,14 @@ onMounted(async () => {
 
   try {
     const resCategorias = await api.get('/categorias')
-    listaCategorias.value = resCategorias.data.data
+
+    listaCategorias.value = Array.isArray(resCategorias.data?.data)
+      ? resCategorias.data.data
+      : Array.isArray(resCategorias.data)
+        ? resCategorias.data
+        : []
+
+    console.log('Categorías cargadas en form:', listaCategorias.value)
   } catch (error) {
     console.error('Error al cargar las categorías:', error)
   }
@@ -609,6 +514,11 @@ onBeforeUnmount(() => {
 
 // ── Guardar registro ──────────────────────────────────────────────
 const guardarRegistro = async () => {
+  if (registro.resumen.length  > LIMITE_RESUMEN) {
+    errores.value.resumen = [`El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`]
+    return
+  }
+
   let outputData
 
   if (editorInstance.value) {
@@ -694,13 +604,22 @@ const limpiarFormulario = () => {
 
 const selectAbierto = ref(false)
 const busquedaCategoria = ref('')
+const categoriaSelectRef = ref<HTMLElement | null>(null)
 
 // Categorías filtradas por búsqueda
 const categoriasFiltradas = computed(() => {
-  if (!busquedaCategoria.value) return listaCategorias.value
-  const busqueda = busquedaCategoria.value.toLowerCase()
-  return listaCategorias.value.filter(cat =>
-    cat.categoria_actualizacion_nombre.toLowerCase().includes(busqueda)
+  const categorias = listaCategorias.value || []
+
+  if (!busquedaCategoria.value.trim()) {
+    return categorias
+  }
+
+  const busqueda = busquedaCategoria.value.toLowerCase().trim()
+
+  return categorias.filter((cat: any) =>
+    String(cat.categoria_actualizacion_nombre || cat.nombre || '')
+      .toLowerCase()
+      .includes(busqueda)
   )
 })
 
@@ -740,8 +659,12 @@ const toggleCategoria = (categoriaId: number) => {
 
 // Cerrar select al hacer click fuera
 const cerrarSelectAlClickFuera = (event: MouseEvent) => {
-  const wrapper = document.querySelector('.categoria-select-wrapper')
-  if (wrapper && !wrapper.contains(event.target as Node)) {
+  const target = event.target as Node
+
+  if (
+    categoriaSelectRef.value &&
+    !categoriaSelectRef.value.contains(target)
+  ) {
     selectAbierto.value = false
     busquedaCategoria.value = ''
   }
@@ -763,7 +686,9 @@ onBeforeUnmount(() => {
 }
 
 /* ─── Colores y utilidades ──────────────────────────────── */
-.text-primary { color: var(--primary) !important; }
+.text-primary {
+  color: var(--primary) !important;
+}
 
 .btn-primary {
   background-color: var(--primary);
@@ -773,6 +698,7 @@ onBeforeUnmount(() => {
   border-radius: 0.375rem;
   transition: all 0.2s ease;
 }
+
 .btn-primary:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
@@ -782,6 +708,7 @@ onBeforeUnmount(() => {
   color: var(--secondary);
   border-color: var(--secondary);
 }
+
 .btn-outline-secondary:hover {
   background-color: var(--secondary);
   border-color: var(--secondary);
@@ -794,11 +721,16 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
 }
 
-/* ─── Layout de dos columnas ────────────────────────────── */
+/* ─── Layout principal: campos | editor + acciones al final ───────────────── */
 .form-container-x {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0 32px;
+  grid-template-columns: minmax(390px, 0.92fr) minmax(460px, 1.08fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "left editor"
+    "actions actions";
+  column-gap: 32px;
+  row-gap: 18px;
   align-items: stretch;
   height: calc(100dvh - 150px);
   max-height: calc(100dvh - 150px);
@@ -807,27 +739,86 @@ onBeforeUnmount(() => {
 }
 
 .left-column {
+  grid-area: left;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  padding-right: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
 .left-column .mb-3,
 .left-column .row,
 .left-column .form-group {
   margin-bottom: 0 !important;
 }
 
+.left-column::-webkit-scrollbar {
+  width: 6px;
+}
+
+.left-column::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 999px;
+}
+
+.left-column::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+.left-column::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
 .actions {
+  grid-area: actions;
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 12px;
-  margin-top: auto !important;
-  padding-top: 1.5rem;
+  margin-top: 0 !important;
+  padding: 14px 0 0;
   border-top: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), #ffffff 42%);
 }
+
+.actions .btn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Columna del editor ────────────────────────────────── */
+.editor-column {
+  grid-area: editor;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-wrapper {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 20px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
+}
+
 
 /* ─── Columna del editor ────────────────────────────────── */
 .editor-column {
@@ -848,40 +839,52 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
 .editor-wrapper:focus-within {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
 }
 
 /* ─── Editor.js interno ────────────────────────────────── */
-:deep(.codex-editor) { padding: 0; }
+:deep(.codex-editor) {
+  padding: 0;
+}
+
 :deep(.codex-editor__redactor) {
   min-height: 100%;
   padding-bottom: 40px !important;
 }
+
 :deep(.ce-block__content),
 :deep(.ce-toolbar__content) {
   max-width: 100%;
   padding: 0;
 }
+
 :deep(.ce-block__content) {
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
 /* ─── Scrollbar del editor ────────────────────────────── */
-.editor-wrapper::-webkit-scrollbar { width: 8px; }
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
 .editor-wrapper::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 999px;
 }
+
 .editor-wrapper::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 999px;
 }
+
 .editor-wrapper::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
+
 
 /* ─── Barra de autosave ────────────────────────────────── */
 .autosave-bar {
@@ -895,28 +898,63 @@ onBeforeUnmount(() => {
   gap: 12px;
   flex-wrap: wrap;
 }
+
 .autosave-estado {
   font-size: 0.82rem;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.autosave-guardando { color: #f59e0b; display: flex; align-items: center; gap: 6px; }
-.autosave-ok { color: #16a34a; display: flex; align-items: center; gap: 6px; }
-.autosave-vacio { color: #94a3b8; }
-.autosave-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  display: inline-block; flex-shrink: 0;
+
+.autosave-guardando {
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.autosave-ok {
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.autosave-vacio {
+  color: #94a3b8;
+}
+
+.autosave-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .autosave-dot.pulsando {
   background: #f59e0b;
   animation: pulso 1s infinite;
 }
-.autosave-dot.ok { background: #16a34a; }
-@keyframes pulso {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+
+.autosave-dot.ok {
+  background: #16a34a;
 }
+
+@keyframes pulso {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+}
+
 .btn-descartar {
   font-size: 0.8rem;
   padding: 5px 12px;
@@ -928,13 +966,18 @@ onBeforeUnmount(() => {
   transition: all 0.2s;
   white-space: nowrap;
 }
+
 .btn-descartar:hover {
   background: #fee2e2;
   border-color: #dc2626;
 }
 
 /* ─── Select de categorías (custom) ───────────────────── */
-.categoria-select-wrapper { position: relative; margin-bottom: 12px; }
+.categoria-select-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
 .categoria-select-trigger {
   display: flex;
   align-items: center;
@@ -947,11 +990,16 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
   min-height: 42px;
 }
-.categoria-select-trigger:hover { border-color: var(--primary); }
+
+.categoria-select-trigger:hover {
+  border-color: var(--primary);
+}
+
 .categoria-select-wrapper.open .categoria-select-trigger {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
 }
+
 .select-placeholder {
   display: flex;
   align-items: center;
@@ -959,13 +1007,21 @@ onBeforeUnmount(() => {
   color: #94a3b8;
   font-size: 0.85rem;
 }
-.select-placeholder i { font-size: 0.9rem; }
-.select-selected { flex: 1; }
+
+.select-placeholder i {
+  font-size: 0.9rem;
+}
+
+.select-selected {
+  flex: 1;
+}
+
 .selected-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
+
 .selected-tag {
   background: rgba(7, 126, 157, 0.1);
   color: var(--primary);
@@ -974,6 +1030,7 @@ onBeforeUnmount(() => {
   font-size: 0.7rem;
   font-weight: 500;
 }
+
 .selected-more {
   background: #e2e8f0;
   color: #475569;
@@ -982,11 +1039,13 @@ onBeforeUnmount(() => {
   font-size: 0.7rem;
   font-weight: 500;
 }
+
 .categoria-select-trigger .bi-chevron-down,
 .categoria-select-trigger .bi-chevron-up {
   color: #94a3b8;
   transition: transform 0.2s ease;
 }
+
 .categoria-select-dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -995,10 +1054,11 @@ onBeforeUnmount(() => {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1060;
   overflow: hidden;
 }
+
 .dropdown-search {
   display: flex;
   align-items: center;
@@ -1006,16 +1066,29 @@ onBeforeUnmount(() => {
   padding: 8px 12px;
   border-bottom: 1px solid #e2e8f0;
 }
-.dropdown-search i { color: #94a3b8; font-size: 0.85rem; }
-.dropdown-search input {
-  flex: 1; border: none; outline: none;
-  font-size: 0.85rem; padding: 6px 0;
+
+.dropdown-search i {
+  color: #94a3b8;
+  font-size: 0.85rem;
 }
-.dropdown-search input::placeholder { color: #cbd5e1; }
+
+.dropdown-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.85rem;
+  padding: 6px 0;
+}
+
+.dropdown-search input::placeholder {
+  color: #cbd5e1;
+}
+
 .dropdown-options {
   max-height: 200px;
   overflow-y: auto;
 }
+
 .dropdown-option {
   display: flex;
   align-items: center;
@@ -1028,22 +1101,55 @@ onBeforeUnmount(() => {
   transition: all 0.15s ease;
   text-align: left;
 }
-.dropdown-option:hover:not(.disabled) { background: #f8fafc; }
-.dropdown-option.selected { background: rgba(7, 126, 157, 0.08); }
-.dropdown-option.disabled { opacity: 0.5; cursor: not-allowed; }
-.option-name { font-size: 0.85rem; color: #334155; }
+
+.dropdown-option:hover:not(.disabled) {
+  background: #f8fafc;
+}
+
+.dropdown-option.selected {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+.dropdown-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option-name {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
 .dropdown-option.selected .option-name {
   color: var(--primary);
   font-weight: 500;
 }
-.option-check i { color: var(--primary); font-size: 0.9rem; }
-.dropdown-empty {
-  padding: 20px; text-align: center;
-  color: #94a3b8; font-size: 0.8rem;
+
+.option-check i {
+  color: var(--primary);
+  font-size: 0.9rem;
 }
-.dropdown-options::-webkit-scrollbar { width: 6px; }
-.dropdown-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-.dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.dropdown-empty {
+  padding: 20px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
 
 .categoria-counter {
   display: flex;
@@ -1053,7 +1159,12 @@ onBeforeUnmount(() => {
   padding-top: 6px;
   border-top: 1px solid #f1f5f9;
 }
-.counter-text { font-size: 0.7rem; color: #64748b; }
+
+.counter-text {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
 .counter-warning {
   display: flex;
   align-items: center;
@@ -1064,7 +1175,10 @@ onBeforeUnmount(() => {
   padding: 2px 8px;
   border-radius: 12px;
 }
-.counter-warning i { font-size: 0.65rem; }
+
+.counter-warning i {
+  font-size: 0.65rem;
+}
 
 /* ─── MODAL (global) ───────────────────────────────────── */
 :global(#modalNuevoRegistro .modal-dialog) {
@@ -1072,12 +1186,14 @@ onBeforeUnmount(() => {
   max-width: min(1400px, calc(100vw - 24px));
   margin: 12px auto;
 }
+
 :global(#modalNuevoRegistro .modal-content) {
   max-height: calc(100dvh - 24px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
+
 :global(#modalNuevoRegistro .modal-body) {
   flex: 1 1 auto;
   min-height: 0;
@@ -1091,26 +1207,60 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
-/* ─── RESPONSIVE: TABLET (768px – 1024px) ────────────── */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .form-container-x {
-    gap: 0 20px;
-    height: calc(100dvh - 130px);
-    max-height: calc(100dvh - 130px);
-  }
-  .editor-wrapper {
-    padding: 16px 20px;
-  }
-  .left-column {
-    gap: 10px;
-  }
+/* ─── RESPONSIVE: TABLET Y LAPTOP PEQUEÑA (769px – 1180px) ────────────── */
+@media (max-width: 1180px) and (min-width: 769px) {
   :global(#modalNuevoRegistro .modal-dialog) {
     width: calc(100vw - 32px);
     max-width: calc(100vw - 32px);
     margin: 16px auto;
   }
+
   :global(#modalNuevoRegistro .modal-content) {
     max-height: calc(100dvh - 32px);
+  }
+
+  :global(#modalNuevoRegistro .modal-body) {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .new-version-container {
+    height: auto;
+    overflow: visible;
+  }
+
+  .form-container-x {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .left-column {
+    order: 1;
+    gap: 12px;
+    padding-right: 0;
+    overflow: visible;
+  }
+
+  .editor-column {
+    order: 2;
+    min-height: 420px;
+  }
+
+  .editor-wrapper {
+    min-height: 420px;
+    max-height: none;
+    padding: 16px 20px;
+  }
+
+  .actions {
+    order: 3;
+    justify-content: flex-end;
+    padding: 16px 0 2px;
+    background: #ffffff;
   }
 }
 
@@ -1121,31 +1271,58 @@ onBeforeUnmount(() => {
     max-width: calc(100vw - 16px);
     margin: 8px auto;
   }
+
   :global(#modalNuevoRegistro .modal-content) {
     max-height: calc(100dvh - 16px);
   }
 
+  :global(#modalNuevoRegistro .modal-body) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 12px;
+  }
+
+  .new-version-container {
+    height: auto;
+    overflow: visible;
+  }
+
   .form-container-x {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(280px, 1fr);
-    gap: 20px;
-    height: calc(100dvh - 120px);
-    max-height: calc(100dvh - 120px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .left-column {
+    order: 1;
+    gap: 10px;
+    padding-right: 0;
+    overflow: visible;
   }
 
   .editor-column {
-    min-height: 280px;
+    order: 2;
+    min-height: 320px;
   }
+
   .editor-wrapper {
-    min-height: 280px;
+    min-height: 320px;
     padding: 16px;
   }
 
   .actions {
-    flex-direction: column-reverse;
+    order: 3;
+    flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-    margin-top: 16px !important;
+    margin-top: 0 !important;
+    padding: 16px 0 calc(8px + env(safe-area-inset-bottom));
+    background: #ffffff;
   }
+
   .actions .btn,
   .actions .btn-primary,
   .actions .btn-outline-secondary {
@@ -1158,6 +1335,7 @@ onBeforeUnmount(() => {
     align-items: stretch;
     gap: 8px;
   }
+
   .btn-descartar {
     align-self: flex-end;
   }
@@ -1166,33 +1344,33 @@ onBeforeUnmount(() => {
   .form-label {
     font-size: 0.9rem;
   }
+
   .form-control,
   .form-select {
     font-size: 0.9rem;
     padding: 0.4rem 0.6rem;
-  }
-  .left-column {
-    gap: 10px;
   }
 }
 
 /* ─── MÓVIL MUY PEQUEÑO (< 480px) ────────────────────── */
 @media (max-width: 480px) {
   .form-container-x {
-    height: calc(100dvh - 100px);
-    max-height: calc(100dvh - 100px);
     gap: 16px;
   }
+
   .editor-column {
-    min-height: 200px;
+    min-height: 260px;
   }
+
   .editor-wrapper {
-    min-height: 200px;
+    min-height: 260px;
     padding: 12px;
   }
+
   .autosave-estado {
     font-size: 0.75rem;
   }
+
   .btn-descartar {
     font-size: 0.7rem;
     padding: 4px 10px;

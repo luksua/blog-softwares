@@ -22,7 +22,7 @@ class UpdateBlogAdminController extends Controller
             'actualizacion_titulo'            => 'required|string|max:255',
             'actualizacion_version'           => 'required|string|max:255',
             'actualizacion_contenido'         => 'required|string', // Aquí viene el JSON de Editor.js como string
-            'actualizacion_resumen'           => 'required|string',
+            'actualizacion_resumen'           => 'required|string|max:800',
 
             'actualizacion_imagen_destacada'  => 'nullable|image|mimes:jpeg,png,jpg,webp,gif|max:2048',
 
@@ -142,7 +142,7 @@ class UpdateBlogAdminController extends Controller
 
     public function getCategorias()
     {
-        $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre')
+        $categorias = Category::select('categoria_actualizacion_id', 'categoria_actualizacion_nombre', 'categoria_actualizacion_icono')
             ->where('categoria_actualizacion_activa', true)
             ->orderBy('categoria_actualizacion_orden', 'asc')
             ->orderBy('categoria_actualizacion_nombre', 'asc')

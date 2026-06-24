@@ -1,6 +1,5 @@
 <template>
   <div class="vista-detalle-container">
-    <!-- Estado de carga -->
     <div v-if="cargando" class="estado-carga">
       <div class="spinner-border text-primary mb-3" role="status">
         <span class="visually-hidden">Cargando...</span>
@@ -8,29 +7,29 @@
       <p>Cargando actualización...</p>
     </div>
 
-    <!-- Contenido principal -->
     <article v-else-if="actualizacion" class="detalle-card">
-      <!-- Hero Banner -->
       <header class="hero-banner" :class="{ 'sin-imagen': !actualizacion.actualizacion_imagen_destacada }">
-        <button class="btn-volver hero-btn-pos" @click="volver" aria-label="Volver atrás">
+        <button class="btn-volver hero-btn-pos" type="button" @click="volver" aria-label="Volver atrás">
           <span class="arrow-icon" aria-hidden="true">←</span>
           Volver
         </button>
-        <img v-if="actualizacion.actualizacion_imagen_destacada"
+
+        <img
+          v-if="actualizacion.actualizacion_imagen_destacada"
           :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)"
-          :alt="actualizacion.actualizacion_titulo" class="hero-image" />
+          :alt="actualizacion.actualizacion_titulo || 'Imagen destacada'"
+          class="hero-image"
+        />
 
         <div class="hero-overlay" aria-hidden="true"></div>
 
         <div class="hero-content">
-          <div class="hero-top-info">
-            <h1 class="hero-titulo">{{ actualizacion.actualizacion_titulo }}</h1>
-          </div>
+          <h1 class="hero-titulo">{{ actualizacion.actualizacion_titulo }}</h1>
 
           <div class="hero-bottom-info">
             <div class="hero-meta-left">
               <span class="version-badge" aria-label="Versión">
-                v{{ actualizacion.actualizacion_version }}
+                v{{ actualizacion.actualizacion_version || '0.0' }}
               </span>
               <time class="fecha-texto" :datetime="actualizacion.actualizacion_fecha_publicacion">
                 Publicado el: {{ formatearFecha(actualizacion.actualizacion_fecha_publicacion) }}
@@ -42,7 +41,6 @@
                 <span class="tag-gris">
                   {{ actualizacion.area_servicio?.area_servicio_nombre || 'Sin área' }}
                 </span>
-
                 <span class="tag-gris">
                   {{ obtenerNombreCategorias(actualizacion) }}
                 </span>
@@ -52,69 +50,79 @@
         </div>
       </header>
 
-      <!-- Contenido del artículo con índice lateral -->
       <div class="contenido-principal">
         <div class="contenido-wrapper">
-
-          <!-- Índice lateral (Sidebar) -->
           <aside class="indice-sidebar" aria-label="Índice del documento">
             <div class="indice-header">
               <span class="indice-icon" aria-hidden="true">☰</span>
               <h2 class="indice-titulo">Índice</h2>
             </div>
+
             <nav class="indice-nav">
               <ul class="indice-lista">
                 <li v-if="actualizacion.actualizacion_resumen" class="indice-item">
-                  <a href="#resumen" @click.prevent="scrollToElement('resumen')" class="indice-link indice-nivel-fijo"
-                    :class="{ activo: headingActivo === 'resumen' }">
+                  <a
+                    href="#resumen"
+                    class="indice-link indice-nivel-fijo"
+                    :class="{ activo: headingActivo === 'resumen' }"
+                    @click.prevent="irAHeading('resumen')"
+                  >
                     <span class="indice-bullet">•</span>
-                    Resumen
+                    <span>Resumen</span>
                   </a>
                 </li>
 
                 <li v-for="heading in headings" :key="heading.id" class="indice-item">
-                  <a :href="`#${heading.id}`" @click.prevent="irAHeading(heading.id)" class="indice-link"
-                    :class="[`indice-nivel-${heading.level}`, { activo: headingActivo === heading.id }]">
+                  <a
+                    :href="`#${heading.id}`"
+                    class="indice-link"
+                    :class="[`indice-nivel-${heading.level}`, { activo: headingActivo === heading.id }]"
+                    @click.prevent="irAHeading(heading.id)"
+                  >
                     <span class="indice-bullet">•</span>
                     <span v-html="heading.text"></span>
                   </a>
                 </li>
 
-                <li v-if="headings.length === 0" class="indice-vacio">
+                <li v-if="!actualizacion.actualizacion_resumen && headings.length === 0" class="indice-vacio">
                   <span>Sin secciones</span>
                 </li>
               </ul>
             </nav>
           </aside>
 
-          <!-- Columna principal del artículo -->
-          <div class="contenido-columna">
-            <section class="contenido-container" aria-label="Contenido completo">
-              <div ref="contenidoRef" class="editorjs-editor" v-html="actualizacion.actualizacion_contenido_html"></div>
-            </section>
-          </div>
+          <main class="contenido-columna">
+            <span v-if="actualizacion.actualizacion_resumen" id="resumen" class="resumen-anchor" aria-hidden="true"></span>
 
-          <aside class="indice-resumen" aria-label="Resumen del documento">
-            <!-- Header igual al índice -->
+            <section class="contenido-container" aria-label="Contenido completo">
+              <div
+                v-if="actualizacion.actualizacion_contenido_html"
+                ref="contenidoRef"
+                class="editorjs-editor"
+                v-html="actualizacion.actualizacion_contenido_html"
+              ></div>
+              <p v-else class="contenido-vacio">No hay contenido disponible para esta actualización.</p>
+            </section>
+          </main>
+
+          <aside v-if="actualizacion.actualizacion_resumen" class="indice-resumen" aria-label="Resumen del documento">
             <div class="indice-header">
               <h2 class="indice-titulo">Resumen</h2>
             </div>
 
-            <section id="resumen" class="resumen-container" aria-label="Resumen del artículo">
+            <section class="resumen-container" aria-label="Resumen del artículo">
               <p class="resumen-texto">{{ actualizacion.actualizacion_resumen }}</p>
             </section>
           </aside>
         </div>
 
-        <!-- Sección "También te puede interesar" -->
-        <div class="relacionados-footer">
+        <section class="relacionados-footer" aria-labelledby="relacionados-titulo">
           <div class="relacionados-footer-wrapper">
             <div class="relacionados-footer-header">
               <span class="relacionados-footer-icon" aria-hidden="true">✦</span>
-              <h2 class="relacionados-footer-titulo">También te puede interesar</h2>
+              <h2 id="relacionados-titulo" class="relacionados-footer-titulo">También te puede interesar</h2>
             </div>
 
-            <!-- Skeleton loader -->
             <div v-if="cargandoRelacionados" class="relacionados-footer-grid">
               <div v-for="n in 3" :key="n" class="skeleton-card-footer" aria-hidden="true">
                 <div class="skeleton-img-footer"></div>
@@ -126,125 +134,139 @@
               </div>
             </div>
 
-            <!-- Sin resultados -->
             <div v-else-if="relacionados.length === 0" class="relacionados-footer-vacio">
               <p>No hay otras publicaciones disponibles.</p>
             </div>
 
-            <!-- Grid de 3 cards -->
             <div v-else class="relacionados-footer-grid">
-              <div v-for="item in relacionados" :key="item.id" class="tarjeta-changelog">
-                <div class="tarjeta-changelog h-100">
-
-                  <!-- ── CABECERA: Imagen + overlay inferior izquierdo ── -->
-                  <div class="tarjeta-header">
-                    <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                      <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" alt="Imagen destacada"
-                        class="imagen-destacada" loading="lazy" />
-                      <div class="imagen-overlay">
-                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
-                      </div>
-                    </div>
-                    <div v-else class="sin-imagen">
-                      <span class="sin-imagen-icono">🖼️</span>
-                      <p>Sin imagen destacada</p>
-                      <div class="imagen-overlay">
-                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- ── CUERPO ── -->
-                  <div class="tarjeta-cuerpo" @click="irA(item.id)">
-                    <div class="metadatos-top">
-                      <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
-                      <span class="separador">|</span>
-                      <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
-                    </div>
-
-                    <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
-                    <p class="resumen">{{ item.actualizacion_resumen }}</p>
-
-                    <!-- Iconos de categoría: icono por defecto, texto al hover (soporta una o varias) -->
-                    <div class="categorias-iconos">
-                      <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
-                        <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)"></i>
-                        <span class="ico-label">{{ cat.nombre }}</span>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  <!-- ── FOOTER: solo bookmark y ver más ── -->
-                  <div class="tarjeta-pie">
-                    <!-- <button class="btn-icon" :disabled="bookmarkEnProceso(item.id)"
-                      @click.stop="toggleBookmark(item.id)"
-                      :title="isBookmarked(item.id) ? 'Quitar de guardados' : 'Guardar'">
-                      <i class="bi" :class="isBookmarked(item.id) ? 'bi-bookmark-check-fill' : 'bi-bookmark'"></i>
-                    </button> -->
-                    <button class="btn-enlace" @click.stop="irA(item.id)">
-                      Ver más
-                      <i class="bi bi-arrow-right"></i>    
-                    </button>
-                  </div>
-                </div>
-                <!-- <div class="tarjeta-header">
+              <article
+                v-for="item in relacionados"
+                :key="item.id"
+                class="tarjeta-changelog"
+                tabindex="0"
+                @click="irA(item.id)"
+                @keyup.enter="irA(item.id)"
+              >
+                <div class="tarjeta-header">
                   <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                    <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)" :alt="item.actualizacion_titulo"
-                      class="imagen-destacada" loading="lazy" />
+                    <img
+                      :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
+                      :alt="item.actualizacion_titulo || 'Imagen destacada'"
+                      class="imagen-destacada"
+                      loading="lazy"
+                    />
+                    <div class="imagen-overlay">
+                      <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                    </div>
                   </div>
-                  <div v-else class="sin-imagen">
-                    <span>🖼️</span>
+
+                  <div v-else class="sin-imagen-card">
+                    <span class="sin-imagen-icono">🖼️</span>
                     <p>Sin imagen destacada</p>
+                    <div class="imagen-overlay">
+                      <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div class="tarjeta-cuerpo" @click="irA(item.id)">
+                <div class="tarjeta-cuerpo">
                   <div class="metadatos-top">
                     <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
                     <span class="separador">|</span>
                     <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
                   </div>
-                  <h2 class="titulo-version">{{ item.actualizacion_titulo }}</h2>
-                  <p class="resumen">{{ item.actualizacion_resumen }}</p>
+
+                  <h3 class="titulo-version">{{ item.actualizacion_titulo }}</h3>
+                  <p class="resumen">{{ item.actualizacion_resumen || 'Sin resumen disponible.' }}</p>
+
+                  <div class="categorias-iconos" aria-label="Categorías">
+                    <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
+                      <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)" aria-hidden="true"></i>
+                      <span class="ico-label">{{ cat.nombre }}</span>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="tarjeta-pie">
-                  <div class="tags-container">
-                    <span class="tag-gris">
-                      {{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}
-                    </span>
-
-                    <span class="tag-gris">
-                      {{ obtenerNombreCategorias(item) }}
-                    </span>
-                  </div>
-                  <div class="tags-right">
-                    <button class="btn-enlace" @click.stop="irA(item.id)">
-                      Ver más
-                      <i class="bi bi-arrow-right"></i>
-                    </button>
-                  </div>
-                </div> -->
-              </div>
+                  <button class="btn-enlace" type="button" @click.stop="irA(item.id)">
+                    Ver más
+                    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </article>
             </div>
-
           </div>
-        </div>
+        </section>
       </div>
     </article>
 
-    <!-- Estado de error -->
     <div v-else class="error-container">
       <div class="error-icon" aria-hidden="true">⚠️</div>
       <p>No se pudo cargar la información de esta actualización.</p>
-      <button class="btn-retry" @click="volver">Volver al inicio</button>
+      <button class="btn-retry" type="button" @click="volver">Volver al inicio</button>
+    </div>
+
+    <footer v-if="actualizacion && !cargando" class="footer-movil" aria-label="Acciones móviles">
+      <button class="btn-footer" type="button" @click="abrirModalIndice">
+        <i class="bi bi-list-ul" aria-hidden="true"></i>
+        <span>Índice</span>
+      </button>
+      <button class="btn-footer" type="button" @click="abrirModalResumen">
+        <i class="bi bi-file-text" aria-hidden="true"></i>
+        <span>Resumen</span>
+      </button>
+    </footer>
+
+    <div v-if="mostrarModalIndice && actualizacion" class="modal-overlay" @click.self="cerrarModalIndice">
+      <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modal-indice-titulo">
+        <header class="modal-header">
+          <h3 id="modal-indice-titulo"><i class="bi bi-list-ul" aria-hidden="true"></i> Índice del documento</h3>
+          <button class="btn-cerrar" type="button" @click="cerrarModalIndice" aria-label="Cerrar índice">&times;</button>
+        </header>
+
+        <div class="modal-body">
+          <div v-if="!actualizacion.actualizacion_resumen && headings.length === 0" class="text-center text-muted py-4">
+            No hay secciones disponibles.
+          </div>
+
+          <ul v-else class="lista-indice">
+            <li v-if="actualizacion.actualizacion_resumen" @click="abrirResumenDesdeIndice">
+              <span class="indice-titulo-lista">Resumen</span>
+              <!-- <span class="indice-meta">Vista rápida</span> -->
+            </li>
+
+            <li v-for="heading in headings" :key="heading.id" @click="irAHeading(heading.id, true)">
+              <span class="indice-titulo-lista" v-html="heading.text"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="mostrarModalResumen && actualizacion" class="modal-overlay" @click.self="cerrarModalResumen">
+      <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modal-resumen-titulo">
+        <header class="modal-header">
+          <h3 id="modal-resumen-titulo"><i class="bi bi-file-text" aria-hidden="true"></i> Resumen</h3>
+          <button class="btn-cerrar" type="button" @click="cerrarModalResumen" aria-label="Cerrar resumen">&times;</button>
+        </header>
+
+        <div class="modal-body">
+          <div v-if="!actualizacion.actualizacion_resumen" class="text-center text-muted py-4">
+            No hay resumen disponible.
+          </div>
+
+          <template v-else>
+            <!-- <h4>{{ actualizacion.actualizacion_titulo }}</h4> -->
+            <p class="resumen-texto">{{ actualizacion.actualizacion_resumen }}</p>
+          </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../../api/api'
 import type { Version } from '../../types/version'
@@ -255,18 +277,16 @@ const props = defineProps<{
 
 const router = useRouter()
 
-const actualizacion = ref<any>(null)
+const actualizacion = ref<any | null>(null)
 const cargando = ref(true)
 const relacionados = ref<any[]>([])
 const cargandoRelacionados = ref(false)
 const contenidoRef = ref<HTMLElement | null>(null)
-const headingActivo = ref<string>('resumen')
+const headingActivo = ref('resumen')
+const mostrarModalIndice = ref(false)
+const mostrarModalResumen = ref(false)
 
-// ── Obtener el contenedor scrolleable (.content del MainLayout) ───
-// window.scrollTo no funciona porque el scroll real está en .content
-const getScrollContainer = (): HTMLElement => {
-  return document.querySelector('.content') as HTMLElement || document.documentElement
-}
+let observer: IntersectionObserver | null = null
 
 interface Heading {
   id: string
@@ -274,79 +294,123 @@ interface Heading {
   level: number
 }
 
+interface CategoriaNormalizada {
+  id: string | number
+  nombre: string
+}
+
 const headings = computed<Heading[]>(() => {
   const contenido = actualizacion.value?.actualizacion_contenido
   if (!contenido) return []
+
   try {
     const parsed = typeof contenido === 'string' ? JSON.parse(contenido) : contenido
+
     return (parsed.blocks ?? [])
       .filter((block: any) => block.type === 'header')
-      .map((block: any) => ({
-        id: `heading-${block.id}`,
-        text: block.data.text ?? '',
-        level: block.data.level ?? 2,
+      .map((block: any, index: number) => ({
+        id: `heading-${block.id ?? index}`,
+        text: block.data?.text ?? '',
+        level: Math.min(Math.max(Number(block.data?.level ?? 2), 1), 6),
       }))
-  } catch {
+  } catch (error) {
+    console.warn('No se pudo procesar el índice del contenido:', error)
     return []
   }
 })
 
+const getScrollContainer = (): HTMLElement => {
+  return document.querySelector<HTMLElement>('.content') ?? document.documentElement
+}
+
 const asignarIdsAlHtml = () => {
   if (!contenidoRef.value || headings.value.length === 0) return
-  const nodos = contenidoRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
+
+  const nodos = contenidoRef.value.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6')
   nodos.forEach((nodo, index) => {
     const heading = headings.value[index]
     if (heading) nodo.id = heading.id
   })
 }
 
-let observer: IntersectionObserver | null = null
-
 const iniciarObserver = () => {
-  if (observer) observer.disconnect()
+  observer?.disconnect()
+  observer = null
+
+  const elementosObservables: Element[] = []
+  const resumen = document.getElementById('resumen')
+  if (resumen) elementosObservables.push(resumen)
+
+  if (contenidoRef.value) {
+    elementosObservables.push(...Array.from(contenidoRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6')))
+  }
+
+  if (elementosObservables.length === 0) return
 
   const scrollContainer = getScrollContainer()
-
   observer = new IntersectionObserver(
     (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          headingActivo.value = entry.target.id
-        }
-      }
+      const visibleEntry = entries.find(entry => entry.isIntersecting)
+      if (visibleEntry?.target.id) headingActivo.value = visibleEntry.target.id
     },
     {
-      // Usar el contenedor real de scroll como root
       root: scrollContainer === document.documentElement ? null : scrollContainer,
       rootMargin: '-20% 0px -70% 0px',
       threshold: 0,
-    }
+    },
   )
 
-  const resumen = document.getElementById('resumen')
-  if (resumen) observer.observe(resumen)
-
-  if (contenidoRef.value) {
-    contenidoRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(el => {
-      observer!.observe(el)
-    })
-  }
+  elementosObservables.forEach(element => observer?.observe(element))
 }
 
-// ── Scroll al elemento usando el contenedor real ──────────────────
+const prepararContenido = async () => {
+  await nextTick()
+  asignarIdsAlHtml()
+  iniciarObserver()
+}
+
 const scrollToElement = (elementId: string) => {
   const el = document.getElementById(elementId)
   if (!el) return
 
   const container = getScrollContainer()
   const offset = 90
-
-  // offsetTop relativo al contenedor scrolleable
   const containerRect = container.getBoundingClientRect()
   const elRect = el.getBoundingClientRect()
   const top = container.scrollTop + (elRect.top - containerRect.top) - offset
 
-  container.scrollTo({ top, behavior: 'smooth' })
+  headingActivo.value = elementId
+  container.scrollTo({ top: Math.max(top, 0), behavior: 'smooth' })
+}
+
+const scrollAlTope = () => {
+  getScrollContainer().scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const abrirModalIndice = () => {
+  mostrarModalIndice.value = true
+}
+
+const cerrarModalIndice = () => {
+  mostrarModalIndice.value = false
+}
+
+const abrirModalResumen = () => {
+  mostrarModalResumen.value = true
+}
+
+const cerrarModalResumen = () => {
+  mostrarModalResumen.value = false
+}
+
+const abrirResumenDesdeIndice = () => {
+  cerrarModalIndice()
+  abrirModalResumen()
+}
+
+const irAHeading = (id: string, cerrarModal = false) => {
+  if (cerrarModal) cerrarModalIndice()
+  nextTick(() => scrollToElement(id))
 }
 
 const normalizarTexto = (texto: string): string =>
@@ -360,26 +424,23 @@ const obtenerIconoCategoria = (nombre: string | undefined): string => {
   if (!nombre) return 'bi-tag-fill'
 
   const n = normalizarTexto(nombre)
-
   const mapa: Record<string, string> = {
     'manual de usuario': 'bi-person-lines-fill',
     'manual tecnico': 'bi-tools',
-    'instalador': 'bi-box-arrow-down',
+    instalador: 'bi-box-arrow-down',
     'actualizacion del sistema': 'bi-arrow-repeat',
     'nueva funcionalidad': 'bi-stars',
-    'mejora': 'bi-arrow-up-circle-fill',
+    mejora: 'bi-arrow-up-circle-fill',
     'correccion de errores': 'bi-bug-fill',
     'parche de seguridad': 'bi-shield-fill-check',
     'guia de instalacion': 'bi-journal-arrow-down',
     'guia rapida': 'bi-lightning-charge-fill',
-    'documentacion': 'bi-file-earmark-text-fill',
+    documentacion: 'bi-file-earmark-text-fill',
     'notas de version': 'bi-card-list',
-    'general': 'bi-info-circle-fill',
+    general: 'bi-info-circle-fill',
   }
 
   if (mapa[n]) return mapa[n]
-
-  // Fallback por coincidencias parciales
   if (n.includes('manual')) return 'bi-journal-text'
   if (n.includes('instal')) return 'bi-box-arrow-down'
   if (n.includes('actualizacion')) return 'bi-arrow-repeat'
@@ -395,40 +456,37 @@ const obtenerIconoCategoria = (nombre: string | undefined): string => {
   return 'bi-tag-fill'
 }
 
-const obtenerCategorias = (item: Version): { id: string | number; nombre: string }[] => {
-  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
-    return (item as any).categorias.map((c: any) => ({
-      id: c.categoria_actualizacion_id ?? c.id ?? Math.random(),
-      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+const obtenerCategorias = (item: Version | any): CategoriaNormalizada[] => {
+  if (Array.isArray(item?.categorias) && item.categorias.length > 0) {
+    return item.categorias.map((categoria: any, index: number) => ({
+      id: categoria.categoria_actualizacion_id ?? categoria.id ?? `${item.id ?? 'item'}-cat-${index}`,
+      nombre: categoria.categoria_actualizacion_nombre ?? categoria.nombre ?? 'Sin categoría',
     }))
   }
-  if ((item as any).categoria) {
-    const c = (item as any).categoria
+
+  if (item?.categoria) {
+    const categoria = item.categoria
     return [{
-      id: c.categoria_actualizacion_id ?? c.id ?? 0,
-      nombre: c.categoria_actualizacion_nombre ?? c.nombre ?? 'Sin categoría',
+      id: categoria.categoria_actualizacion_id ?? categoria.id ?? `${item.id ?? 'item'}-cat`,
+      nombre: categoria.categoria_actualizacion_nombre ?? categoria.nombre ?? 'Sin categoría',
     }]
   }
-  return [{ id: 0, nombre: 'Sin categoría' }]
+
+  return [{ id: `${item?.id ?? 'item'}-sin-categoria`, nombre: 'Sin categoría' }]
 }
 
+const obtenerNombreCategorias = (item: any): string => {
+  if (Array.isArray(item?.categorias) && item.categorias.length > 0) {
+    const nombres = item.categorias
+      .map((categoria: any) => categoria.categoria_actualizacion_nombre ?? categoria.nombre)
+      .filter(Boolean)
 
-const irAHeading = (id: string) => {
-  scrollToElement(id)
+    return nombres.length > 0 ? nombres.join(', ') : 'Sin categoría'
+  }
+
+  return item?.categoria?.categoria_actualizacion_nombre ?? item?.categoria?.nombre ?? 'Sin categoría'
 }
 
-watch(contenidoRef, (el) => {
-  if (!el) return
-  asignarIdsAlHtml()
-  iniciarObserver()
-}, { immediate: true })
-
-// ── Scroll al tope usando el contenedor real ──────────────────────
-const scrollAlTope = () => {
-  getScrollContainer().scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// ── Relacionados: siempre completa hasta 3 ────────────────────────
 const obtenerRelacionados = async () => {
   if (!actualizacion.value) return
   cargandoRelacionados.value = true
@@ -440,95 +498,113 @@ const obtenerRelacionados = async () => {
 
     if (areaId) {
       const respArea = await api.get('/actualizaciones', {
-        params: { area_servicio_id: areaId, orden: 'recientes', per_page: 10 }
+        params: { area_servicio_id: areaId, orden: 'recientes', per_page: 10 },
       })
-      resultado = (respArea.data.data as any[]).filter(item => item.id !== currentId)
+      resultado = (respArea.data?.data ?? []).filter((item: any) => Number(item.id) !== currentId)
     }
 
     if (resultado.length < 3) {
-      const idsYaIncluidos = new Set([currentId, ...resultado.map((i: any) => i.id)])
+      const idsYaIncluidos = new Set([currentId, ...resultado.map((item: any) => Number(item.id))])
       const respRecientes = await api.get('/actualizaciones', {
-        params: { orden: 'recientes', per_page: 20 }
+        params: { orden: 'recientes', per_page: 20 },
       })
-      const extras = (respRecientes.data.data as any[]).filter(item => !idsYaIncluidos.has(item.id))
+      const extras = (respRecientes.data?.data ?? []).filter((item: any) => !idsYaIncluidos.has(Number(item.id)))
       resultado = [...resultado, ...extras]
     }
 
     relacionados.value = resultado.slice(0, 3)
-  } catch (err) {
-    console.error('Error al cargar relacionados:', err)
+  } catch (error) {
+    console.error('Error al cargar relacionados:', error)
     relacionados.value = []
   } finally {
     cargandoRelacionados.value = false
   }
 }
 
-
-const obtenerNombreCategorias = (item: any): string => {
-  if (Array.isArray(item?.categorias) && item.categorias.length > 0) {
-    return item.categorias
-      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
-      .filter(Boolean)
-      .join(', ')
-  }
-
-  return item?.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
-}
-
-const irA = (id: number) => {
-  router.push({ name: 'actualizaciones-show', params: { id } })
-  scrollAlTope()
-}
-
 const obtenerDetalle = async () => {
   cargando.value = true
   headingActivo.value = 'resumen'
   relacionados.value = []
+  actualizacion.value = null
+  observer?.disconnect()
 
   try {
     const respuesta = await api.get(`/actualizaciones/${props.id}`)
-    actualizacion.value = respuesta.data.data
-    scrollAlTope()
-    obtenerRelacionados()
+    actualizacion.value = respuesta.data?.data ?? null
   } catch (error) {
     console.error('Error al cargar la actualización:', error)
     actualizacion.value = null
   } finally {
     cargando.value = false
   }
+
+  if (actualizacion.value) {
+    await prepararContenido()
+    scrollAlTope()
+    void obtenerRelacionados()
+  }
+}
+
+const irA = (id: number) => {
+  router.push({ name: 'actualizaciones-show', params: { id } })
 }
 
 const volver = () => {
   router.push({ name: 'actualizaciones' })
 }
 
-const formatearFecha = (fechaString: string) => {
+const formatearFecha = (fechaString?: string) => {
   if (!fechaString) return 'Sin fecha'
-  return new Date(fechaString).toLocaleDateString('es-ES', {
-    year: 'numeric', month: 'long', day: 'numeric'
+
+  const fecha = new Date(fechaString)
+  if (Number.isNaN(fecha.getTime())) return 'Sin fecha'
+
+  return fecha.toLocaleDateString('es-ES', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   })
 }
 
-const obtenerUrlImagen = (ruta: string) => {
+const obtenerUrlImagen = (ruta?: string) => {
   if (!ruta) return ''
   if (ruta.startsWith('http')) return ruta
+
   const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
   return `${baseUrl}/storage/${ruta}`
 }
 
-onMounted(() => { obtenerDetalle() })
-onUnmounted(() => { observer?.disconnect() })
-watch(() => props.id, () => {
-  observer?.disconnect()
-  obtenerDetalle()
+onMounted(() => {
+  void obtenerDetalle()
 })
+
+onUnmounted(() => {
+  observer?.disconnect()
+})
+
+watch(
+  () => props.id,
+  () => {
+    cerrarModalIndice()
+    cerrarModalResumen()
+    void obtenerDetalle()
+  },
+)
+
+watch(
+  () => actualizacion.value?.actualizacion_contenido_html,
+  () => {
+    if (actualizacion.value && !cargando.value) void prepararContenido()
+  },
+  { flush: 'post' },
+)
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
+:global(:root) {
+  --primary: #077e9d;
+  --secondary: #025b7d;
+  --warning: #fcbb1c;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
@@ -541,133 +617,144 @@ watch(() => props.id, () => {
   margin: 0;
 }
 
-/* ── Carga / Error ── */
-.estado-carga {
-  text-align: center;
-  padding: 60px 40px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: var(--shadow-sm);
-  color: #6b7280;
-  max-width: 800px;
-  margin: 40px auto;
-}
-
+.estado-carga,
 .error-container {
-  text-align: center;
-  padding: 60px 40px;
-  background: white;
-  border-radius: 20px;
-  box-shadow: var(--shadow-sm);
   max-width: 800px;
   margin: 40px auto;
+  padding: 60px 40px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 20px;
+  color: #6b7280;
 }
 
 .error-icon {
-  font-size: 48px;
   margin-bottom: 16px;
+  font-size: 48px;
 }
 
-.error-container p {
-  color: #6b7280;
-  margin-bottom: 20px;
-}
-
-.btn-retry {
+.btn-retry,
+.btn-ver-detalle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 10px 24px;
+  color: #ffffff;
+  font-weight: 600;
+  border: 0;
+  border-radius: 999px;
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
   cursor: pointer;
-  font-weight: 500;
   transition: var(--transition);
 }
 
-.btn-retry:hover {
+.btn-retry:hover,
+.btn-ver-detalle:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-/* ── Tarjeta principal ── */
 .detalle-card {
-  background: white;
+  overflow: visible;
+  background: #ffffff;
   border-radius: 0 0 24px 24px;
   box-shadow: var(--shadow-md);
-  overflow: visible;
 }
 
-/* ── Hero Banner ── */
 .hero-banner {
   position: relative;
-  width: 100%;
-  min-height: 300px;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  min-height: 300px;
   overflow: hidden;
-  background-color: var(--secondary);
+  background: var(--secondary);
 }
 
 .hero-banner.sin-imagen {
-  min-height: 200px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  min-height: 220px;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(252, 187, 28, 0.28), transparent 30%),
+    linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+}
+
+.hero-image,
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .hero-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
   z-index: 1;
+  object-fit: cover;
 }
 
 .hero-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 35%, rgba(15, 23, 42, 0) 100%);
   z-index: 2;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.48) 42%, rgba(15, 23, 42, 0.06) 100%);
 }
 
 .hero-content {
   position: relative;
   z-index: 3;
-  padding: 30px 15% 24px 15%;
-  height: 100%;
   display: flex;
+  flex: 1;
   flex-direction: column;
   justify-content: flex-end;
-  flex-grow: 1;
+  padding: 72px 15% 28px;
+}
+
+.hero-titulo {
+  max-width: 980px;
+  margin: 0 0 18px;
+  color: #ffffff;
+  font-size: clamp(1.65rem, 3vw, 2.55rem);
+  font-weight: 760;
+  line-height: 1.12;
+  text-wrap: balance;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
+}
+
+.hero-bottom-info,
+.hero-meta-left,
+.hero-meta-right,
+.tags-container2 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.hero-bottom-info {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-meta-left {
+  gap: 16px;
+}
+
+.tags-container2 {
+  gap: 10px;
 }
 
 .btn-volver {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: none;
-  color: var(--primary);
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
   padding: 8px 16px;
-  border-radius: 10px;
+  color: var(--primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.9);
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
   transition: var(--transition);
-  background: rgba(255, 255, 255, 0.85);
 }
 
 .btn-volver:hover {
-  background: rgba(255, 255, 255, 1);
+  background: #ffffff;
   transform: translateX(-4px);
-}
-
-.arrow-icon {
-  font-size: 1.2rem;
-  transition: var(--transition);
 }
 
 .hero-btn-pos {
@@ -677,194 +764,105 @@ watch(() => props.id, () => {
   z-index: 4;
 }
 
-.version-badge {
+.arrow-icon {
+  font-size: 1.2rem;
+}
+
+.version-badge,
+.version-number {
   display: inline-block;
-  padding: 6px 14px;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  color: white;
-  border-radius: 30px;
-  font-size: 0.85rem;
-  font-weight: 600;
   font-family: 'Courier New', monospace;
-  box-shadow: var(--shadow-sm);
+  font-weight: 700;
+  border-radius: 999px;
 }
 
-.estado-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 30px;
+.version-badge {
+  padding: 6px 14px;
+  color: #ffffff;
   font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: capitalize;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   box-shadow: var(--shadow-sm);
-}
-
-.estado-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.estado-publicado {
-  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-  color: #2e7d32;
-}
-
-.estado-publicado .estado-dot {
-  background: #4caf50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-.estado-borrador {
-  background: linear-gradient(135deg, #fff8e1, #ffecb3);
-  color: #f57c00;
-}
-
-.estado-borrador .estado-dot {
-  background: #ff9800;
-  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
-}
-
-.estado-revision {
-  background: linear-gradient(135deg, #fce4ec, #f8bbd0);
-  color: #c62828;
-}
-
-.estado-revision .estado-dot {
-  background: #f44336;
-  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
-}
-
-.estado-inactivo {
-  background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
-  color: #424242;
-}
-
-.estado-inactivo .estado-dot {
-  background: #757575;
-}
-
-.estado-default {
-  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-  color: #1976d2;
-}
-
-.estado-default .estado-dot {
-  background: #2196f3;
-}
-
-.hero-titulo {
-  color: white;
-  font-size: 2.2rem;
-  font-weight: 700;
-  margin: 0 0 16px 0;
-  line-height: 1.2;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .fecha-texto {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
   font-size: 0.95rem;
-  font-weight: 500;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  font-weight: 600;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.46);
 }
 
-.hero-bottom-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+.tag-gris {
+  padding: 5px 12px;
+  color: #4a5568;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #f4f5f7;
+  border-radius: 999px;
+  transition: var(--transition);
 }
 
-.hero-meta-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+.tag-gris:hover {
+  color: #ffffff;
+  background: var(--primary);
 }
 
-.hero-meta-right {
-  display: flex;
-  align-items: center;
-}
-
-/* ── Layout principal ── */
 .contenido-principal {
   padding: 0 20px;
 }
 
 .contenido-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 48px;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(240px, 300px);
+  gap: clamp(24px, 3vw, 40px);
+  max-width: 1440px;
+  margin: 0 auto;
   padding: 40px 5%;
-  position: relative;
 }
 
-/* ── Índice lateral ── */
-.indice-sidebar {
-  position: sticky;
-  top: 24px;
-  align-self: flex-start;
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-}
-
+.indice-sidebar,
 .indice-resumen {
   position: sticky;
   top: 24px;
-  align-self: flex-end;
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 60px);
+  padding: 20px;
+  overflow-y: auto;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
 }
 
 .indice-header {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 2px solid #e2e8f0;
-  flex-shrink: 0;
 }
 
 .indice-icon {
-  font-size: 1rem;
   color: var(--primary);
+  font-size: 1rem;
 }
 
 .indice-titulo {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #0f172a;
   margin: 0;
-  text-transform: uppercase;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 800;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .indice-nav {
-  overflow-y: auto;
   flex: 1;
-  scrollbar-width: thin;
+  overflow-y: auto;
   scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
 }
 
 .indice-nav::-webkit-scrollbar {
@@ -876,56 +874,50 @@ watch(() => props.id, () => {
   border-radius: 4px;
 }
 
-.indice-lista {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.indice-lista,
+.lista-indice {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.indice-item {
-  width: 100%;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 .indice-link {
   display: flex;
-  align-items: flex-start;
   gap: 8px;
+  align-items: flex-start;
+  padding: 7px 10px;
   color: #64748b;
-  text-decoration: none;
   font-size: 0.82rem;
   line-height: 1.4;
-  padding: 6px 10px;
+  text-decoration: none;
+  border-left: 2px solid transparent;
   border-radius: 8px;
   transition: var(--transition);
-  border-left: 2px solid transparent;
 }
 
-.indice-link:hover {
-  background: #e2e8f0;
+.indice-link:hover,
+.indice-link.activo {
   color: var(--primary);
+  background: rgba(7, 126, 157, 0.08);
   border-left-color: var(--primary);
 }
 
 .indice-link.activo {
-  background: rgba(7, 126, 157, 0.08);
-  color: var(--primary);
-  border-left-color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .indice-bullet {
-  color: var(--primary);
   flex-shrink: 0;
-  margin-top: 1px;
+  color: var(--primary);
 }
 
 .indice-nivel-fijo,
 .indice-nivel-1,
 .indice-nivel-2 {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .indice-nivel-3 {
@@ -935,57 +927,101 @@ watch(() => props.id, () => {
 
 .indice-nivel-4 {
   padding-left: 34px;
-  font-size: 0.77rem;
   color: #94a3b8;
+  font-size: 0.77rem;
 }
 
 .indice-nivel-5,
 .indice-nivel-6 {
   padding-left: 46px;
-  font-size: 0.75rem;
   color: #94a3b8;
+  font-size: 0.75rem;
 }
 
-.indice-vacio {
-  font-size: 0.8rem;
-  color: #94a3b8;
+.indice-vacio,
+.contenido-vacio {
   padding: 8px 10px;
+  color: #94a3b8;
+  font-size: 0.9rem;
   font-style: italic;
 }
 
-/* ── Columna de contenido ── */
 .contenido-columna {
   min-width: 0;
-  max-width: 720px;
-  margin: 0;
-}
-
-.resumen-container {
-  margin: 0 0 32px 0;
-  padding: 24px;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.resumen-texto {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: #334155;
-  margin: 0;
+  max-width: 100%;
 }
 
 .contenido-container {
   max-width: 100%;
-  margin: 0;
-  padding: 0;
 }
 
-/* ── EditorJS ── */
+.resumen-anchor {
+  display: block;
+  height: 1px;
+  scroll-margin-top: 90px;
+}
+
+.resumen-header {
+  margin-bottom: 12px;
+}
+
+.resumen-icon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  color: #ffffff;
+  font-size: 0.78rem;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(7, 126, 157, 0.18);
+}
+
+.resumen-container {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.resumen-meta-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.resumen-meta-mini span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 10px;
+  color: #0f5f78;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  background: rgba(7, 126, 157, 0.08);
+  border: 1px solid rgba(7, 126, 157, 0.12);
+  border-radius: 999px;
+}
+
+.resumen-texto {
+  margin: 0;
+  color: #334155;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.indice-resumen .resumen-texto {
+  color: #243246;
+  font-size: clamp(0.95rem, 0.85rem + 0.25vw, 1.02rem);
+  line-height: 1.72;
+}
+
 .editorjs-editor {
-  font-family: system-ui, -apple-system, sans-serif;
+  color: #334155;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 1.05rem;
   line-height: 1.8;
-  color: #334155;
 }
 
 :deep(.editorjs-editor p) {
@@ -995,7 +1031,9 @@ watch(() => props.id, () => {
 :deep(.editorjs-editor h1),
 :deep(.editorjs-editor h2),
 :deep(.editorjs-editor h3),
-:deep(.editorjs-editor h4) {
+:deep(.editorjs-editor h4),
+:deep(.editorjs-editor h5),
+:deep(.editorjs-editor h6) {
   margin-top: 2rem;
   margin-bottom: 1rem;
   color: #0f172a;
@@ -1012,87 +1050,82 @@ watch(() => props.id, () => {
   margin-bottom: 0.4rem;
 }
 
-:deep(.editorjs-editor .editorjs-checklist) {
-  list-style: none;
-  padding-left: 0;
-}
-
-:deep(.editorjs-editor .editorjs-checklist__item) {
-  margin-bottom: 0.45rem;
-}
-
-:deep(.editorjs-editor .editorjs-checklist__row) {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-}
-
-:deep(.editorjs-editor .editorjs-checklist__checkbox) {
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.38rem;
-  accent-color: #077e9d;
-}
-
-:deep(.editorjs-editor .editorjs-checklist__item.is-checked .editorjs-checklist__content) {
-  color: #64748b;
-  text-decoration: line-through;
-}
-
 :deep(.editorjs-editor img) {
+  display: block;
   max-width: 100%;
   height: auto;
+  margin: 24px auto;
   border-radius: 12px;
   box-shadow: var(--shadow-sm);
-  margin: 24px auto;
-  display: block;
 }
 
 :deep(.editorjs-editor blockquote) {
-  border-left: 4px solid var(--primary);
   padding-left: 20px;
   margin: 20px 0;
   color: #4a5568;
   font-style: italic;
+  border-left: 4px solid var(--primary);
 }
 
 :deep(.editorjs-editor pre) {
-  background: #1e293b;
-  color: #e2e8f0;
   padding: 16px;
-  border-radius: 12px;
-  overflow-x: auto;
   margin: 20px 0;
+  overflow-x: auto;
+  color: #e2e8f0;
+  background: #1e293b;
+  border-radius: 12px;
 }
 
 :deep(.editorjs-editor code) {
-  background: #f1f5f9;
   padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.9em;
   color: #d32f2f;
+  font-size: 0.9em;
+  background: #f1f5f9;
+  border-radius: 6px;
 }
 
-/* ── Relacionados footer ── */
+:deep(.editorjs-checklist) {
+  padding-left: 0;
+  list-style: none;
+}
+
+:deep(.editorjs-checklist__row) {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+:deep(.editorjs-checklist__checkbox) {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.38rem;
+  accent-color: var(--primary);
+}
+
+:deep(.editorjs-checklist__item.is-checked .editorjs-checklist__content) {
+  color: #64748b;
+  text-decoration: line-through;
+}
+
 .relacionados-footer {
+  padding: 48px 0;
+  margin-top: 40px;
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  margin-top: 40px;
-  padding: 48px 0;
 }
 
 .relacionados-footer-wrapper {
   max-width: 1200px;
-  margin: 0 auto;
   padding: 0 5%;
+  margin: 0 auto;
 }
 
 .relacionados-footer-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   margin-bottom: 32px;
-  justify-content: center;
 }
 
 .relacionados-footer-icon {
@@ -1101,99 +1134,125 @@ watch(() => props.id, () => {
 }
 
 .relacionados-footer-titulo {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #0f172a;
   margin: 0;
+  color: #0f172a;
+  font-size: 1.8rem;
+  font-weight: 800;
 }
 
-/* Grid fijo de 3 columnas */
 .relacionados-footer-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
 }
 
-/* ── Cards ── */
 .tarjeta-changelog {
-  border: 1px solid #eaeaea;
-  border-radius: 16px;
-  background-color: white;
-  transition: var(--transition);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #eaeaea;
+  border-radius: 16px;
   cursor: pointer;
+  transition: var(--transition);
 }
 
-.tarjeta-changelog:hover {
+.tarjeta-changelog:hover,
+.tarjeta-changelog:focus-visible {
+  outline: none;
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 
-.tarjeta-header {
+.tarjeta-header,
+.imagen-container,
+.sin-imagen-card {
   position: relative;
-  padding: 0;
-  display: block;
-  border-radius: 16px 16px 0 0;
   overflow: hidden;
 }
 
-.imagen-container {
-  overflow: hidden;
+.imagen-destacada,
+.sin-imagen-card {
   width: 100%;
+  aspect-ratio: 22 / 8;
 }
 
 .imagen-destacada {
-  width: 100%;
-  aspect-ratio: 22 / 8;
-  object-fit: cover;
   display: block;
+  object-fit: cover;
   object-position: center;
   transition: var(--transition);
 }
 
-.imagen-container:hover .imagen-destacada {
-  transform: scale(1.02);
+.tarjeta-changelog:hover .imagen-destacada {
+  transform: scale(1.03);
 }
 
-.sin-imagen {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e1e7f0;
-  color: #9ca3af;
-  width: 100%;
-  aspect-ratio: 22 / 8;
+.sin-imagen-card {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  color: #9ca3af;
   text-align: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e1e7f0;
 }
 
-.sin-imagen span {
-  /* font-size: 32px; */
+.sin-imagen-icono {
   margin-bottom: 8px;
+  font-size: 32px;
 }
 
-.sin-imagen p {
+.sin-imagen-card p {
   margin: 0;
   font-size: 0.85rem;
 }
 
-.tarjeta-cuerpo {
-  padding: 14px 16px;
-  flex-grow: 1;
+.imagen-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 10px 12px;
+  pointer-events: none;
+  background: linear-gradient(to top left, rgba(0, 0, 0, 0.78) 0%, rgba(0, 0, 0, 0.15) 38%, transparent 62%);
+}
+
+.area-label {
+  display: inline-block;
+  padding: 4px 12px;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+
+.tarjeta-cuerpo {
+  display: flex;
+  flex: 1;
   flex-direction: column;
-  cursor: pointer;
+  padding: 14px 16px;
 }
 
 .metadatos-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
-  flex-wrap: wrap;
+}
+
+.fecha {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .separador {
@@ -1201,101 +1260,120 @@ watch(() => props.id, () => {
   font-weight: 300;
 }
 
-.fecha {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
-}
-
 .version-number {
-  display: inline-block;
   padding: 3px 10px;
-  background: white;
   color: var(--primary);
-  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
+  background: #ffffff;
   border: 1px solid #e1e7f0;
 }
 
 .titulo-version {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
-  white-space: nowrap;
+  display: -webkit-box;
+  margin: 0 0 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  color: #1a1a1a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .resumen {
-  font-size: 0.95rem;
-  color: #555;
-  line-height: 1.6;
-  margin: 0;
   display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  margin: 0 0 10px;
   overflow: hidden;
+  color: #555555;
+  font-size: 0.9rem;
+  line-height: 1.5;
   text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.categorias-iconos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: auto;
+}
+
+.icono-categoria {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  max-width: 30px;
+  height: 30px;
+  padding: 0 7px;
+  overflow: hidden;
+  cursor: default;
+  background: #f4f5f7;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1), background 0.22s ease, border-color 0.22s ease, padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.icono-categoria:hover {
+  max-width: 220px;
+  padding: 0 10px;
+  background: rgba(7, 126, 157, 0.1);
+  border-color: rgba(7, 126, 157, 0.25);
+}
+
+.ico-icon {
+  flex-shrink: 0;
+  width: 16px;
+  color: var(--secondary);
+  font-size: 16px;
+  opacity: 1;
+  transition: opacity 0.15s ease, width 0.22s ease, margin 0.22s ease;
+}
+
+.icono-categoria:hover .ico-icon {
+  width: 0;
+  margin: 0;
+  opacity: 0;
+}
+
+.ico-label {
+  max-width: 0;
+  overflow: hidden;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease 0.08s;
+}
+
+.icono-categoria:hover .ico-label {
+  max-width: 190px;
+  opacity: 1;
 }
 
 .tarjeta-pie {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: flex-end;
   padding: 10px 16px;
-  border-top: 1px solid #f0f2f5;
   margin-top: auto;
-}
-
-.tags-container {
-  display: flex;
-  gap: 5px;
-}
-
-.tags-container2 {
-  display: flex;
-  gap: 15px;
-}
-
-.tags-right {
-  gap: 8px;
-  display: flex;
-  align-items: end;
-  flex-shrink: 0;
-}
-
-.tag-gris {
-  background-color: #f4f5f7;
-  color: #4a5568;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 20px;
-  transition: var(--transition);
-}
-
-.tag-gris:hover {
-  background-color: var(--primary);
-  color: white;
+  border-top: 1px solid #f0f2f5;
 }
 
 .btn-enlace {
-  background: none;
-  border: none;
-  color: #1a1a1a;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 10px;
+  color: #1a1a1a;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
   border-radius: 8px;
+  cursor: pointer;
   transition: var(--transition);
-  white-space: nowrap;
 }
 
 .btn-enlace i {
@@ -1312,35 +1390,35 @@ watch(() => props.id, () => {
   transform: translateX(4px);
 }
 
-/* ── Skeletons ── */
 .skeleton-card-footer {
-  border-radius: 16px;
-  border: 1px solid #e1e7f0;
-  background: white;
   overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e1e7f0;
+  border-radius: 16px;
 }
 
 .skeleton-img-footer {
   width: 100%;
   aspect-ratio: 22 / 8;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
 }
 
 .skeleton-body-footer {
-  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 14px 16px;
+}
+
+.skeleton-img-footer,
+.skeleton-line-footer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }
 
 .skeleton-line-footer {
   height: 12px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s infinite;
 }
 
 .skeleton-line-footer.largo {
@@ -1356,56 +1434,290 @@ watch(() => props.id, () => {
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .relacionados-footer-vacio {
   padding: 40px;
-  text-align: center;
   color: #94a3b8;
   font-size: 1rem;
+  text-align: center;
+  background: #ffffff;
   border-radius: 12px;
-  background: white;
 }
 
-/* ── Responsive ── */
-@media (max-width: 1100px) {
-  .relacionados-footer-grid {
-    grid-template-columns: repeat(2, 1fr);
+.footer-movil {
+  display: none;
+}
+
+.btn-footer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  max-width: 140px;
+  gap: 3px;
+  padding: 6px 20px;
+  color: #4b5563;
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-footer i {
+  color: var(--secondary);
+  font-size: 1.55rem;
+  transition: var(--transition);
+}
+
+.btn-footer:active {
+  transform: scale(0.94);
+}
+
+.btn-footer:hover i {
+  color: var(--primary);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.25s ease;
+}
+
+.modal-contenido {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid #eef2f6;
+}
+
+.modal-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.modal-header h3 i {
+  color: var(--primary);
+}
+
+.btn-cerrar {
+  padding: 0 6px;
+  color: #9ca3af;
+  font-size: 2rem;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-cerrar:hover {
+  color: #1f2937;
+  transform: rotate(90deg);
+}
+
+.modal-body {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.lista-indice li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lista-indice li:hover {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.lista-indice li:active {
+  transform: scale(0.97);
+}
+
+.indice-titulo-lista {
+  flex: 1;
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.indice-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.resumen-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.badge-version {
+  padding: 4px 14px;
+  color: var(--primary);
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: rgba(7, 126, 157, 0.12);
+  border-radius: 999px;
+}
+
+.badge-fecha {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 1280px) and (min-width: 992px) {
+  .contenido-wrapper {
+    grid-template-columns: minmax(170px, 220px) minmax(0, 1fr);
+    align-items: start;
+    gap: 28px;
+    padding-inline: 4%;
+  }
+
+  .indice-sidebar {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .indice-resumen {
+    grid-column: 2;
+    grid-row: 1;
+    position: relative;
+    top: auto;
+    max-height: none;
+    padding: 18px 20px 20px 22px;
+    overflow: visible;
+    border-radius: 18px;
+  }
+
+  .contenido-columna {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .indice-resumen .resumen-container {
+    display: grid;
+    gap: 2px;
   }
 }
 
 @media (max-width: 991px) {
   .contenido-wrapper {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 20px;
   }
 
   .indice-sidebar {
     position: relative;
     top: 0;
+    order: 1;
     max-height: 300px;
   }
 
+  .indice-resumen {
+    position: relative;
+    top: 0;
+    order: 2;
+    max-height: none;
+    padding: 20px 22px 22px 24px;
+    overflow: visible;
+    border-radius: 18px;
+  }
+
   .contenido-columna {
-    max-width: 100%;
-    margin: 0 auto;
+    order: 3;
+  }
+
+  .indice-resumen .resumen-texto {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .relacionados-footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .contenido-principal {
-    padding: 0 16px;
+    padding: 0 16px 86px;
   }
 
   .contenido-wrapper {
     padding: 24px 0;
+  }
+
+  .indice-sidebar,
+  .indice-resumen {
+    display: none;
   }
 
   .hero-banner {
@@ -1413,20 +1725,17 @@ watch(() => props.id, () => {
   }
 
   .hero-content {
-    padding: 60px 20px 20px 20px;
-  }
-
-  .hero-titulo {
-    font-size: 1.8rem;
+    padding: 60px 20px 20px;
   }
 
   .hero-btn-pos {
-    left: 20px;
     top: 16px;
+    left: 20px;
   }
 
-  .resumen-container {
-    padding: 16px;
+  .hero-bottom-info {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .relacionados-footer-titulo {
@@ -1436,490 +1745,70 @@ watch(() => props.id, () => {
   .relacionados-footer-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 480px) {
-  .hero-titulo {
-    font-size: 1.5rem;
+  .footer-movil {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.92);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(12px);
   }
-
-  .hero-bottom-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .tarjeta-pie {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .tags-container {
-    justify-content: center;
-  }
-
-  .tags-right {
-    justify-content: center;
-  }
-}
-
-
-/* ── Layout de 3 columnas: índice | contenido | resumen ── */
-.contenido-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 220px 1fr 260px;
-  /* ← era 260px 1fr */
-  gap: 40px;
-  padding: 40px 5%;
-  position: relative;
-}
-
-/* ── Resumen: sticky a la derecha ── */
-.indice-resumen {
-  position: sticky;
-  top: 24px;
-  align-self: flex-start;
-  /* ← era flex-end */
-  background: #f8fafc;
-  border-radius: 16px;
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  order: 3;
-  /* ← asegura que quede al final */
-}
-
-/* El índice queda primero */
-.indice-sidebar {
-  order: 1;
-}
-
-/* El contenido en el medio */
-.contenido-columna {
-  order: 2;
-  min-width: 0;
-  max-width: 100%;
-  /* ← era 720px, ahora usa el grid */
-  margin: 0;
-}
-
-/* ── Resumen interior ── */
-.resumen-container {
-  margin: 0;
-  padding: 10px;
-  background: transparent;
-  /* ← sin fondo propio, el aside ya lo tiene */
-  border-radius: 0;
-  border-bottom: none;
-}
-
-.resumen-texto {
-  font-size: 0.95rem;
-  /* ← ligeramente menor para el aside lateral */
-  line-height: 1.7;
-  color: #334155;
-  margin: 0;
-}
-
-/* ── Título del resumen (añadir header igual al índice) ── */
-.indice-resumen .indice-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-/* ── Responsive: colapsar a 1 columna en tablet ── */
-@media (max-width: 1200px) {
-  .contenido-wrapper {
-    grid-template-columns: 200px 1fr;
-    /* ← quita resumen */
-  }
-
-  .indice-resumen {
-    display: none;
-    /* ← se oculta en tablet/móvil */
-  }
-}
-
-@media (max-width: 991px) {
-  .contenido-wrapper {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .indice-sidebar {
-    position: relative;
-    top: 0;
-    max-height: 300px;
-  }
-
-  .contenido-columna {
-    max-width: 100%;
-  }
-}
-
-
-/*
-  OVERLAY: degradado de transparente → negro
-  origen en la esquina inferior DERECHA, con label de área
-*/
-.imagen-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top left,
-      rgba(0, 0, 0, 0.78) 0%,
-      rgba(0, 0, 0, 0.15) 38%,
-      transparent 62%);
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 10px 12px;
-  pointer-events: none;
-}
-
-.area-label {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 20px;
-  letter-spacing: 0.03em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.sin-imagen {
-  position: relative;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border-bottom: 1px solid #e1e7f0;
-  color: #9ca3af;
-  width: 100%;
-  aspect-ratio: 22/9;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.sin-imagen-icono {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.sin-imagen p {
-  margin: 0;
-  font-size: 0.85rem;
-}
-
-/* ── CUERPO ──────────────────────────────────────────── */
-.tarjeta-cuerpo {
-  padding: 14px 16px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.metadatos-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.separador {
-  color: #a0aec0;
-  font-weight: 300;
-}
-
-.fecha {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
-}
-
-.version-number {
-  display: inline-block;
-  padding: 3px 10px;
-  background: white;
-  color: var(--primary);
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  border: 1px solid #e1e7f0;
-}
-
-.titulo-version {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 @media (min-width: 768px) {
   .titulo-version {
     font-size: 1.2rem;
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
     -webkit-line-clamp: 1;
   }
-}
 
-/* ── CUERPO ──────────────────────────────────────────── */
-.tarjeta-cuerpo {
-  padding: 14px 16px;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.metadatos-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
-}
-
-.separador {
-  color: #a0aec0;
-  font-weight: 300;
-}
-
-.fecha {
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: 500;
-}
-
-.version-number {
-  display: inline-block;
-  padding: 3px 10px;
-  background: white;
-  color: var(--primary);
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  border: 1px solid #e1e7f0;
-}
-
-.titulo-version {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 0 0 8px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-@media (min-width: 768px) {
-  .titulo-version {
-    font-size: 1.2rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    -webkit-line-clamp: 1;
-  }
-}
-
-.resumen {
-  font-size: 0.9rem;
-  color: #555;
-  line-height: 1.5;
-  margin: 0 0 10px 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (min-width: 768px) {
   .resumen {
     -webkit-line-clamp: 2;
   }
 }
 
-/* ── ICONOS DE CATEGORÍA → texto al hover ─────────────── */
-.categorias-iconos {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: auto;
-  padding-top: 8px;
-}
-
-.icono-categoria {
-  /* Dimensiones base: cuadrado del tamaño del ícono */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 30px;
-  min-width: 30px;
-  max-width: 30px;
-  border-radius: 8px;
-  background: #f4f5f7;
-  border: 1px solid transparent;
-  overflow: hidden;
-  cursor: default;
-  /* Animar width/max-width y colores */
-  transition:
-    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.22s ease,
-    border-color 0.22s ease,
-    padding 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 0 7px;
-}
-
-/* Al hover: expande horizontalmente para mostrar el texto */
-.icono-categoria:hover {
-  max-width: 200px;
-  background: rgba(7, 126, 157, 0.10);
-  border-color: rgba(7, 126, 157, 0.25);
-  padding: 0 10px;
-}
-
-/* El ícono: visible por defecto → se oculta en hover */
-.icono-categoria .ico-icon {
-  font-size: 16px;
-  color: var(--secondary);
-  flex-shrink: 0;
-  /* ancho fijo → colapsa */
-  width: 16px;
-  opacity: 1;
-  transition:
-    opacity 0.15s ease,
-    width 0.22s ease,
-    margin 0.22s ease;
-}
-
-.icono-categoria:hover .ico-icon {
-  opacity: 0;
-  width: 0;
-  margin: 0;
-}
-
-/* El texto: oculto por defecto → aparece en hover */
-.icono-categoria .ico-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--primary);
-  white-space: nowrap;
-  /* colapsa cuando no hay hover */
-  max-width: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition:
-    max-width 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.18s ease 0.08s;
-}
-
-.icono-categoria:hover .ico-label {
-  max-width: 180px;
-  opacity: 1;
-}
-
-/* ── FOOTER ──────────────────────────────────────────── */
-.tarjeta-pie {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 16px;
-  border-top: 1px solid #f0f2f5;
-  margin-top: auto;
-}
-
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  transition: var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-icon i {
-  font-size: 1.25rem;
-  color: var(--secondary);
-}
-
-.btn-icon:active {
-  transform: scale(0.9);
-}
-
-.btn-icon:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-@media (min-width: 768px) {
-  .btn-icon:hover:not(:disabled) {
-    background: rgba(7, 126, 157, 0.1);
+@media (max-width: 480px) {
+  .modal-contenido {
+    max-width: 100%;
+    margin: 10px;
+    border-radius: 20px;
   }
 
-  .btn-icon:hover:not(:disabled) i {
-    color: var(--primary);
-  }
-}
-
-.btn-enlace {
-  background: none;
-  border: none;
-  color: #1a1a1a;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  transition: var(--transition);
-}
-
-.btn-enlace i {
-  font-size: 0.9rem;
-  transition: transform 0.3s ease;
-}
-
-.btn-enlace:active {
-  transform: scale(0.95);
-}
-
-@media (min-width: 768px) {
-  .btn-enlace:hover {
-    color: var(--primary);
-    background: rgba(7, 126, 157, 0.08);
+  .modal-header {
+    padding: 14px 16px;
   }
 
-  .btn-enlace:hover i {
-    transform: translateX(4px);
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .lista-indice li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .btn-footer {
+    padding: 4px 12px;
+    font-size: 0.65rem;
+  }
+
+  .btn-footer i {
+    font-size: 1.4rem;
   }
 }
-
 </style>

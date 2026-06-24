@@ -25,14 +25,9 @@
             <label class="form-label fw-bold text-primary">
               Título <span class="text-danger">*</span>
             </label>
-            <input
-              v-model="form.titulo"
-              type="text"
-              class="form-control"
-              :class="{ 'is-invalid': errores.titulo || errores.actualizacion_titulo }"
-              ref="inputTitulo"
-              placeholder="Ingrese el título de la actualización"
-            />
+            <input v-model="form.titulo" type="text" class="form-control"
+              :class="{ 'is-invalid': errores.titulo || errores.actualizacion_titulo }" ref="inputTitulo"
+              placeholder="Ingrese el título de la actualización" />
             <div v-if="errores.titulo || errores.actualizacion_titulo" class="invalid-feedback">
               {{ errores.titulo?.[0] || errores.actualizacion_titulo?.[0] }}
             </div>
@@ -43,13 +38,8 @@
             <!-- Versión -->
             <div class="col-12 col-sm-6 mb-4">
               <label class="form-label fw-bold text-primary">Versión</label>
-              <input
-                v-model="form.version"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': errores.version || errores.actualizacion_version }"
-                placeholder="Ej: 1.0.0"
-              />
+              <input v-model="form.version" type="text" class="form-control"
+                :class="{ 'is-invalid': errores.version || errores.actualizacion_version }" placeholder="Ej: 1.0.0" />
               <div v-if="errores.version || errores.actualizacion_version" class="invalid-feedback">
                 {{ errores.version?.[0] || errores.actualizacion_version?.[0] }}
               </div>
@@ -61,20 +51,12 @@
 
               <div v-if="previewImagen || form.imagen_destacada" class="mb-3">
                 <div class="position-relative d-inline-block">
-                  <img
-                    :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)"
-                    alt="Portada actual"
-                    class="img-thumbnail"
-                    style="max-height: 150px; border-radius: 8px;"
-                  />
+                  <img :src="previewImagen || obtenerUrlImagen(form.imagen_destacada)" alt="Portada actual"
+                    class="img-thumbnail" style="max-height: 150px; border-radius: 8px;" />
 
-                  <button
-                    v-if="previewImagen || form.imagen_destacada"
-                    type="button"
+                  <button v-if="previewImagen || form.imagen_destacada" type="button"
                     class="btn btn-sm btn-danger position-absolute top-0 end-0 rounded-circle"
-                    style="transform: translate(50%, -50%);"
-                    @click="eliminarImagen"
-                  >
+                    style="transform: translate(50%, -50%);" @click="eliminarImagen">
                     <i class="bi bi-x"></i>
                   </button>
                 </div>
@@ -84,13 +66,8 @@
                 </div>
               </div>
 
-              <input
-                type="file"
-                class="form-control"
-                :class="{ 'is-invalid': errores.imagen_destacada }"
-                accept="image/*"
-                @change="manejarImagen"
-              />
+              <input type="file" class="form-control" :class="{ 'is-invalid': errores.imagen_destacada }"
+                accept="image/*" @change="manejarImagen" />
 
               <div v-if="errores.imagen_destacada" class="invalid-feedback">
                 {{ errores.imagen_destacada?.[0] }}
@@ -98,22 +75,23 @@
             </div>
           </div>
 
-           <!-- Resumen -->
-          <div class="form-group mb-4">
-            <label class="form-label fw-bold text-primary">Resumen</label>
-            <textarea
-              v-model="form.resumen"
-              class="form-control"
-              :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen }"
-              rows="3"
-              placeholder="Breve descripción de la actualización..."
-            ></textarea>
+          <!-- Resumen -->
+          <div class="form-group">
+            <label for="resumen" class="form-label fw-bold text-primary">
+              Resumen
+            </label>
+            <textarea v-model="form.resumen" class="form-control"
+              :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen || resumenExcedeLimite }"
+              rows="3" placeholder="Breve descripción de la actualización..."></textarea>
 
-            <div v-if="errores.resumen || errores.actualizacion_resumen" class="invalid-feedback">
-              {{ errores.resumen?.[0] || errores.actualizacion_resumen?.[0] }}
+            <div class="form-text text-end" :class="{ 'text-danger fw-bold': resumenExcedeLimite }">
+              {{ form.resumen.length }}/800 caracteres
+            </div>
+
+            <div v-if="resumenExcedeLimite" class="invalid-feedback d-block">
+              El resumen no puede superar los 800 caracteres.
             </div>
           </div>
-
 
           <!-- Área y categorías -->
           <div class="row">
@@ -123,19 +101,11 @@
                 Área <span class="text-danger">*</span>
               </label>
 
-              <select
-                id="area"
-                class="form-select"
+              <select id="area" class="form-select"
                 :class="{ 'is-invalid': errores.area_servicio_id || errores.actualizacion_area_servicio_id }"
-                v-model="form.area_servicio_id"
-                required
-              >
+                v-model="form.area_servicio_id" required>
                 <option value="" disabled>Selecciona un área...</option>
-                <option
-                  v-for="area in listaAreas"
-                  :key="area.area_servicio_id"
-                  :value="area.area_servicio_id"
-                >
+                <option v-for="area in listaAreas" :key="area.area_servicio_id" :value="area.area_servicio_id">
                   {{ area.area_servicio_nombre }}
                 </option>
               </select>
@@ -152,10 +122,8 @@
                 <small class="text-muted">(máximo 3)</small>
               </label>
 
-              <div
-                class="categoria-select-wrapper"
-                :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }"
-              >
+              <div class="categoria-select-wrapper"
+                :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }">
                 <div class="categoria-select-trigger" @click="toggleSelect">
                   <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
                     <i class="bi bi-tag"></i>
@@ -164,11 +132,7 @@
 
                   <div class="select-selected" v-else>
                     <div class="selected-tags">
-                      <span
-                        v-for="cat in categoriasSeleccionadas.slice(0, 2)"
-                        :key="cat.id"
-                        class="selected-tag"
-                      >
+                      <span v-for="cat in categoriasSeleccionadas.slice(0, 2)" :key="cat.id" class="selected-tag">
                         {{ cat.nombre }}
                       </span>
 
@@ -185,41 +149,26 @@
                 <div v-if="selectAbierto" class="categoria-select-dropdown">
                   <div class="dropdown-search" v-if="listaCategorias.length > 5">
                     <i class="bi bi-search"></i>
-                    <input
-                      type="text"
-                      v-model="busquedaCategoria"
-                      placeholder="Buscar categoría..."
-                      @click.stop
-                    />
+                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
                   </div>
 
                   <div class="dropdown-options">
-                    <button
-                      type="button"
-                      v-for="categoria in categoriasFiltradas"
-                      :key="categoria.categoria_actualizacion_id"
-                      class="dropdown-option"
-                      :class="{
+                    <button type="button" v-for="categoria in categoriasFiltradas"
+                      :key="categoria.categoria_actualizacion_id" class="dropdown-option" :class="{
                         selected: categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)),
                         disabled:
                           !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
                           categoriasSeleccionadas.length >= 3
-                      }"
-                      @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))"
-                      :disabled="
-                        !categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
+                      }" @click="toggleCategoria(Number(categoria.categoria_actualizacion_id))" :disabled="!categoriaSeleccionada(Number(categoria.categoria_actualizacion_id)) &&
                         categoriasSeleccionadas.length >= 3
-                      "
-                    >
+                        ">
                       <span class="option-name">
                         {{ categoria.categoria_actualizacion_nombre }}
                       </span>
 
                       <span class="option-check">
-                        <i
-                          v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
-                          class="bi bi-check-lg"
-                        ></i>
+                        <i v-if="categoriaSeleccionada(Number(categoria.categoria_actualizacion_id))"
+                          class="bi bi-check-lg"></i>
                       </span>
                     </button>
 
@@ -242,16 +191,14 @@
                 </span>
               </div>
 
-              <div
-                v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id"
-                class="invalid-feedback d-block"
-              >
+              <div v-if="errores.actualizacion_categoria_ids || errores.actualizacion_categoria_id"
+                class="invalid-feedback d-block">
                 {{ errores.actualizacion_categoria_ids?.[0] || errores.actualizacion_categoria_id?.[0] }}
               </div>
             </div>
           </div>
 
-         
+
           <!-- Estado y fechas -->
           <div class="row">
             <!-- Estado -->
@@ -259,11 +206,8 @@
               <template v-if="!modoCorreccion">
                 <label class="form-label fw-bold text-primary">Estado</label>
 
-                <select
-                  v-model="form.estado"
-                  class="form-select"
-                  :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }"
-                >
+                <select v-model="form.estado" class="form-select"
+                  :class="{ 'is-invalid': errores.estado || errores.actualizacion_estado }">
                   <option value="borrador">Borrador</option>
                   <option value="revision">Revisión</option>
                   <option value="publicado">Publicado</option>
@@ -288,15 +232,9 @@
             <!-- Fechas -->
             <div class="col-12 col-md-6 mb-4">
               <template v-if="estadoParaVista !== 'publicado'">
-                <label class="form-label fw-bold ">Fecha de creación</label>
+                <label class="form-label fw-bold text-primary">Fecha de creación</label>
 
-                <input
-                  v-model="form.fecha_creacion"
-                  type="date"
-                  class="form-control bg-light"
-                  readonly
-                  disabled
-                />
+                <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
 
                 <div class="form-text text-secondary mt-1">
                   <i class="bi bi-info-circle me-1"></i>
@@ -307,18 +245,12 @@
               <template v-else>
                 <label class="form-label fw-bold text-primary">Fecha de publicación</label>
 
-                <input
-                  v-model="form.fecha_publicacion"
-                  type="date"
-                  class="form-control border-primary bg-light"
+                <input v-model="form.fecha_publicacion" type="date" class="form-control border-primary bg-light"
                   :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
-                  readonly
-                />
+                  readonly />
 
-                <div
-                  v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
-                  class="invalid-feedback"
-                >
+                <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                  class="invalid-feedback">
                   {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
                 </div>
 
@@ -330,61 +262,39 @@
             </div>
           </div>
 
-          <!-- Botones de acción -->
-          <div class="form-actions">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              @click="cerrarModal"
-              :disabled="guardando"
-            >
-              <i class="bi bi-x-circle me-1"></i>
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              class="btn btn-primary"
-              :disabled="guardando || !formularioValido"
-            >
-              <span
-                v-if="guardando"
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-              ></span>
-
-              <i
-                v-else
-                :class="modoCorreccion ? 'bi bi-send-check' : 'bi bi-save'"
-                class="me-1"
-              ></i>
-
-              {{ textoBotonGuardar }}
-            </button>
-          </div>
-
-          <!-- Mensaje de éxito -->
-          <transition name="fade">
-            <div v-if="mensajeOk" class="alert alert-success mt-4 mb-0">
-              <i class="bi bi-check-circle-fill me-2"></i>
-              {{ mensajeOk }}
-            </div>
-          </transition>
         </div>
 
         <!-- COLUMNA DERECHA: editor -->
         <div class="editor-column">
           <label class="form-label fw-bold text-primary">Contenido</label>
           <div class="editor-wrapper">
-          <div ref="editorHolder" id="editorjs" class="editor-container border rounded p-3 bg-white"></div>
+            <div ref="editorHolder" id="editorjs" class="editor-container"></div>
+          </div>
         </div>
-          <!-- <label class="form-label fw-bold text-primary">
-            Contenido
-          </label>
 
-          <div class="editor-wrapper">
-            <div ref="editorHolder" class="editor-container"></div>
-          </div> -->
+        <!-- ACCIONES: fuera de la columna izquierda para que siempre queden al final -->
+        <div class="form-footer">
+          <transition name="fade">
+            <div v-if="mensajeOk" class="alert alert-success form-success-message">
+              <i class="bi bi-check-circle-fill me-2"></i>
+              {{ mensajeOk }}
+            </div>
+          </transition>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-outline-secondary" @click="cerrarModal" :disabled="guardando">
+              <i class="bi bi-x-circle me-1"></i>
+              Cancelar
+            </button>
+
+            <button type="submit" class="btn btn-primary" :disabled="guardando || !formularioValido">
+              <span v-if="guardando" class="spinner-border spinner-border-sm me-2" role="status"></span>
+
+              <i v-else :class="modoCorreccion ? 'bi bi-send-check' : 'bi bi-save'" class="me-1"></i>
+
+              {{ textoBotonGuardar }}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -446,6 +356,12 @@ const form = reactive({
   estado: 'borrador',
   fecha_creacion: '',
   fecha_publicacion: ''
+})
+
+const LIMITE_RESUMEN = 800
+
+const resumenExcedeLimite = computed(() => {
+  return form.resumen.length > LIMITE_RESUMEN
 })
 
 // Computed
@@ -565,6 +481,8 @@ const cerrarSelectAlClickFuera = (event: MouseEvent) => {
 
 const formularioValido = computed(() => {
   return form.titulo.trim() !== '' &&
+    form.resumen.trim().length > 0 &&
+    form.resumen.length <= LIMITE_RESUMEN &&
     form.area_servicio_id !== null &&
     form.categoria_ids.length > 0 &&
     form.categoria_ids.length <= 3
@@ -748,6 +666,11 @@ const cargarRegistro = async () => {
 }
 
 const guardarCambios = async () => {
+  if (form.resumen.length > LIMITE_RESUMEN) {
+    errores.value.resumen = [`El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`]
+    return
+  }
+
   if (!formularioValido.value) return
 
   guardando.value = true
@@ -871,28 +794,44 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 }
 
 /* ─── Colores y utilidades ──────────────────────────────── */
-.text-primary { color: var(--primary) !important; }
-.text-secondary { color: var(--secondary) !important; }
-.text-warning { color: var(--warning) !important; }
-.border-primary { border-color: var(--primary) !important; }
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-secondary {
+  color: var(--secondary) !important;
+}
+
+.text-warning {
+  color: var(--warning) !important;
+}
+
+.border-primary {
+  border-color: var(--primary) !important;
+}
 
 .btn-primary {
   background-color: var(--primary);
   border-color: var(--primary);
   transition: all 0.2s ease;
 }
+
 .btn-primary:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
   transform: translateY(-1px);
 }
-.btn-primary:active { transform: translateY(0); }
+
+.btn-primary:active {
+  transform: translateY(0);
+}
 
 .btn-outline-secondary {
   color: var(--secondary);
   border-color: var(--secondary);
   transition: all 0.2s ease;
 }
+
 .btn-outline-secondary:hover:not(:disabled) {
   background-color: var(--secondary);
   border-color: var(--secondary);
@@ -912,12 +851,18 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   max-width: min(1400px, calc(100vw - 24px));
   margin: 12px auto;
 }
+
+.modal-content {
+  margin: none;
+}
+
 :global(#modalEditarRegistro .modal-content) {
   max-height: calc(100dvh - 24px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
+
 :global(#modalEditarRegistro .modal-body) {
   flex: 1 1 auto;
   min-height: 0;
@@ -930,15 +875,17 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   min-height: 0;
   padding: 0;
 }
+
 .edit-modal-content {
   height: 100%;
   min-height: 0;
 }
 
-/* ─── Grid de dos columnas ───────────────────────────────── */
+/* ─── Grid de dos columnas + footer completo ───────────────── */
 .edit-form-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   gap: 0 32px;
   align-items: stretch;
   height: calc(100dvh - 150px);
@@ -953,22 +900,39 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   gap: 12px;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
 }
+
 .left-column .mb-4,
 .left-column .form-group,
 .left-column .row {
   margin-bottom: 0 !important;
 }
 
-/* Acciones al final */
+.form-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: auto;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  margin-left: auto;
+}
+
+.form-success-message {
+  margin: 0;
+  flex: 1;
 }
 
 /* ─── Columna del editor ────────────────────────────────── */
@@ -979,6 +943,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   min-height: 0;
   overflow: hidden;
 }
+
 .editor-wrapper {
   flex: 1;
   min-height: 0;
@@ -989,10 +954,12 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   overflow-x: hidden;
   padding: 20px 24px;
 }
+
 .editor-wrapper:focus-within {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
 }
+
 .editor-container {
   min-height: 100%;
   border: 0 !important;
@@ -1001,31 +968,41 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 }
 
 /* Editor.js interno */
-:deep(.codex-editor) { padding: 0; }
+:deep(.codex-editor) {
+  padding: 0;
+}
+
 :deep(.codex-editor__redactor) {
   min-height: 100%;
   padding-bottom: 40px !important;
 }
+
 :deep(.ce-block__content),
 :deep(.ce-toolbar__content) {
   max-width: 100%;
   padding: 0;
 }
+
 :deep(.ce-block__content) {
   word-break: break-word;
   overflow-wrap: break-word;
 }
 
 /* Scrollbar del editor */
-.editor-wrapper::-webkit-scrollbar { width: 8px; }
+.editor-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+
 .editor-wrapper::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 999px;
 }
+
 .editor-wrapper::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 999px;
 }
+
 .editor-wrapper::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
@@ -1036,6 +1013,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   margin-bottom: 12px;
   width: 100%;
 }
+
 .categoria-select-trigger {
   display: flex;
   align-items: center;
@@ -1049,11 +1027,16 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   min-height: 42px;
   width: 100%;
 }
-.categoria-select-trigger:hover { border-color: var(--primary); }
+
+.categoria-select-trigger:hover {
+  border-color: var(--primary);
+}
+
 .categoria-select-wrapper.open .categoria-select-trigger {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
 }
+
 .select-placeholder {
   display: flex;
   align-items: center;
@@ -1061,13 +1044,22 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   color: #94a3b8;
   font-size: 0.85rem;
 }
-.select-placeholder i { font-size: 0.9rem; }
-.select-selected { flex: 1; min-width: 0; }
+
+.select-placeholder i {
+  font-size: 0.9rem;
+}
+
+.select-selected {
+  flex: 1;
+  min-width: 0;
+}
+
 .selected-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
+
 .selected-tag {
   background: rgba(7, 126, 157, 0.1);
   color: var(--primary);
@@ -1077,6 +1069,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   font-weight: 500;
   white-space: nowrap;
 }
+
 .selected-more {
   background: #e2e8f0;
   color: #475569;
@@ -1085,6 +1078,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   font-size: 0.7rem;
   font-weight: 500;
 }
+
 .categoria-select-trigger .bi-chevron-down,
 .categoria-select-trigger .bi-chevron-up {
   color: #94a3b8;
@@ -1101,10 +1095,11 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   overflow: hidden;
 }
+
 .dropdown-search {
   display: flex;
   align-items: center;
@@ -1112,7 +1107,12 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   padding: 8px 12px;
   border-bottom: 1px solid #e2e8f0;
 }
-.dropdown-search i { color: #94a3b8; font-size: 0.85rem; }
+
+.dropdown-search i {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 .dropdown-search input {
   flex: 1;
   border: none;
@@ -1121,11 +1121,16 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   padding: 6px 0;
   background: transparent;
 }
-.dropdown-search input::placeholder { color: #cbd5e1; }
+
+.dropdown-search input::placeholder {
+  color: #cbd5e1;
+}
+
 .dropdown-options {
   max-height: 200px;
   overflow-y: auto;
 }
+
 .dropdown-option {
   display: flex;
   align-items: center;
@@ -1138,25 +1143,59 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   transition: all 0.15s ease;
   text-align: left;
 }
-.dropdown-option:hover:not(.disabled) { background: #f8fafc; }
-.dropdown-option.selected { background: rgba(7, 126, 157, 0.08); }
-.dropdown-option.disabled { opacity: 0.5; cursor: not-allowed; }
-.option-name { font-size: 0.85rem; color: #334155; }
+
+.dropdown-option:hover:not(.disabled) {
+  background: #f8fafc;
+}
+
+.dropdown-option.selected {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+.dropdown-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.option-name {
+  font-size: 0.85rem;
+  color: #334155;
+}
+
 .dropdown-option.selected .option-name {
   color: var(--primary);
   font-weight: 500;
 }
-.option-check i { color: var(--primary); font-size: 0.9rem; }
+
+.option-check i {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
 .dropdown-empty {
   padding: 20px;
   text-align: center;
   color: #94a3b8;
   font-size: 0.8rem;
 }
-.dropdown-options::-webkit-scrollbar { width: 6px; }
-.dropdown-options::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
-.dropdown-options::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-.dropdown-options::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
 
 .categoria-counter {
   display: flex;
@@ -1165,7 +1204,12 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   margin-top: 8px;
   border-top: 1px solid #f1f5f9;
 }
-.counter-text { font-size: 0.7rem; color: #64748b; }
+
+.counter-text {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
 .counter-warning {
   display: flex;
   align-items: center;
@@ -1178,58 +1222,160 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
 }
 
 /* ─── Estilos generales ──────────────────────────────────── */
-.form-group { margin-bottom: 1.5rem; }
-.form-label { margin-bottom: 0.5rem; font-size: 0.9rem; }
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
 .form-control:focus,
 .form-select:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 0.2rem rgba(7, 126, 157, 0.25);
 }
+
 .img-thumbnail {
   transition: transform 0.2s ease;
   cursor: pointer;
 }
-.img-thumbnail:hover { transform: scale(1.05); }
 
-.fade-enter-active,
-.fade-leave-active { transition: opacity 0.3s ease; }
-.fade-enter-from,
-.fade-leave-to { opacity: 0; }
-
-/* ─── RESPONSIVE: TABLET (≤1024px) ────────────────────── */
-@media (max-width: 1024px) {
-  .edit-form-grid { gap: 0 20px; }
-  .form-actions { gap: 10px; }
-  .btn { padding: 8px 16px; font-size: 0.9rem; }
+.img-thumbnail:hover {
+  transform: scale(1.05);
 }
 
-/* ─── RESPONSIVE: MÓVIL (<768px) ───────────────────────── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* ─── RESPONSIVE: LAPTOP / TABLET HORIZONTAL (≤1199px) ───── */
+@media (max-width: 1199px) {
+  :global(#modalEditarRegistro .modal-dialog) {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+    margin: 12px auto;
+  }
+
+  :global(#modalEditarRegistro .modal-body) {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .edit-version-container,
+  .edit-modal-content {
+    height: auto;
+    min-height: 0;
+  }
+
+  .edit-form-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 22px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .left-column {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  .editor-column {
+    min-height: 360px;
+    overflow: visible;
+  }
+
+  .editor-wrapper {
+    min-height: 360px;
+    max-height: none;
+  }
+
+  .editor-container {
+    min-height: 320px;
+  }
+
+  .form-footer {
+    margin-top: 0;
+    padding: 16px 0 4px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+}
+
+/* ─── RESPONSIVE: TABLET VERTICAL Y MÓVIL (≤768px) ───────── */
 @media (max-width: 768px) {
   :global(#modalEditarRegistro .modal-dialog) {
     width: calc(100vw - 16px);
     max-width: calc(100vw - 16px);
     margin: 8px auto;
   }
+
   :global(#modalEditarRegistro .modal-content) {
     max-height: calc(100dvh - 16px);
   }
 
   .edit-form-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(280px, 1fr);
-    gap: 24px;
-    height: calc(100dvh - 130px);
-    max-height: calc(100dvh - 130px);
+    gap: 20px;
   }
-  .left-column { overflow: visible; }
-  .editor-column { min-height: 280px; }
+
+  .editor-column {
+    min-height: 300px;
+  }
+
   .editor-wrapper {
-    min-height: 280px;
+    min-height: 300px;
     padding: 16px;
   }
 
-  .form-group { margin-bottom: 1rem; }
-  .form-label { font-size: 0.85rem; }
+  .editor-container {
+    min-height: 280px;
+  }
+
+  .form-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-top: 18px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+
+  .form-actions {
+    width: 100%;
+    flex-direction: column-reverse;
+    gap: 10px;
+    margin-left: 0;
+  }
+
+  .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-success-message {
+    width: 100%;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+  }
+
   .form-control,
   .form-select {
     font-size: 0.9rem;
@@ -1240,113 +1386,179 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
     padding: 8px 12px;
     min-height: 40px;
   }
-  .selected-tag { font-size: 0.65rem; padding: 2px 6px; }
-  .dropdown-option { padding: 8px 12px; }
-  .option-name { font-size: 0.8rem; }
 
-  .form-actions {
-    flex-direction: column-reverse;
-    gap: 10px;
-    margin-top: 16px;
-  }
-  .form-actions .btn {
-    width: 100%;
-    justify-content: center;
+  .selected-tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
   }
 
-  .editor-container { min-height: 280px; }
+  .dropdown-option {
+    padding: 8px 12px;
+  }
+
+  .option-name {
+    font-size: 0.8rem;
+  }
 }
 
 /* ─── MÓVIL PEQUEÑO (<576px) ───────────────────────────── */
 @media (max-width: 576px) {
   .edit-form-grid {
-    height: calc(100dvh - 115px);
-    max-height: calc(100dvh - 115px);
-    gap: 20px;
+    gap: 18px;
   }
-  .editor-column { min-height: 240px; }
+
+  .editor-column {
+    min-height: 250px;
+  }
+
   .editor-wrapper {
-    min-height: 240px;
+    min-height: 250px;
     padding: 14px;
   }
-  .form-label { font-size: 0.8rem; }
+
+  .editor-container {
+    min-height: 230px;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+  }
+
   .form-control,
   .form-select {
     font-size: 0.85rem;
     padding: 6px 10px;
   }
+
   .categoria-select-trigger {
     padding: 8px 10px;
     min-height: 38px;
   }
+
   .select-placeholder {
     font-size: 0.75rem;
   }
-  .select-placeholder i { font-size: 0.8rem; }
+
+  .select-placeholder i {
+    font-size: 0.8rem;
+  }
+
   .selected-tag {
     font-size: 0.6rem;
     padding: 2px 5px;
   }
+
   .selected-more {
     font-size: 0.6rem;
     padding: 2px 5px;
   }
-  .dropdown-option { padding: 8px 10px; }
-  .option-name { font-size: 0.75rem; }
-  .option-check i { font-size: 0.8rem; }
 
-  .categoria-counter { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .counter-warning { align-self: flex-start; }
+  .dropdown-option {
+    padding: 8px 10px;
+  }
+
+  .option-name {
+    font-size: 0.75rem;
+  }
+
+  .option-check i {
+    font-size: 0.8rem;
+  }
+
+  .categoria-counter {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .counter-warning {
+    align-self: flex-start;
+  }
 
   .alert {
     font-size: 0.85rem;
     padding: 10px 12px;
   }
-  .alert i { font-size: 0.9rem; }
-  .btn { font-size: 0.8rem; padding: 6px 12px; }
-  .editor-container { min-height: 220px; }
+
+  .alert i {
+    font-size: 0.9rem;
+  }
+
+  .btn {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
 }
 
 /* ─── MÓVIL MUY PEQUEÑO (<375px) ───────────────────────── */
 @media (max-width: 375px) {
-  .form-label { font-size: 0.75rem; }
+  .form-label {
+    font-size: 0.75rem;
+  }
+
   .form-control,
   .form-select {
     font-size: 0.8rem;
     padding: 6px 8px;
   }
+
   .categoria-select-trigger {
     padding: 6px 8px;
   }
+
   .select-placeholder {
     font-size: 0.7rem;
     gap: 6px;
   }
-  .select-placeholder i { font-size: 0.75rem; }
+
+  .select-placeholder i {
+    font-size: 0.75rem;
+  }
+
   .selected-tag {
     font-size: 0.65rem;
     padding: 1px 4px;
   }
+
   .selected-more {
     font-size: 0.7rem;
     padding: 1px 4px;
   }
-  .dropdown-option { padding: 6px 8px; }
-  .option-name { font-size: 0.7rem; }
-  .option-check i { font-size: 0.8rem; }
+
+  .dropdown-option {
+    padding: 6px 8px;
+  }
+
+  .option-name {
+    font-size: 0.7rem;
+  }
+
+  .option-check i {
+    font-size: 0.8rem;
+  }
+
   .counter-text,
-  .counter-warning { font-size: 0.65rem; }
-  .btn { font-size: 0.8rem; padding: 6px 12px; }
-  .editor-container { min-height: 200px; }
+  .counter-warning {
+    font-size: 0.65rem;
+  }
 }
 
 /* ─── ORIENTACIÓN HORIZONTAL EN MÓVIL ──────────────────── */
 @media (max-width: 768px) and (orientation: landscape) {
-  .edit-form-grid {
-    grid-template-rows: auto minmax(200px, 1fr);
+  .editor-column {
+    min-height: 220px;
   }
-  .editor-column { min-height: 200px; }
-  .editor-wrapper { min-height: 200px; }
-  .dropdown-options { max-height: 150px; }
+
+  .editor-wrapper {
+    min-height: 220px;
+  }
+
+  .editor-container {
+    min-height: 200px;
+  }
+
+  .dropdown-options {
+    max-height: 150px;
+  }
 }
 </style>
