@@ -744,7 +744,8 @@ class UpdateBlogController extends Controller
     {
         $categorias = Category::select(
             'categoria_actualizacion_id',
-            'categoria_actualizacion_nombre'
+            'categoria_actualizacion_nombre',
+            'categoria_actualizacion_icono'
         )
             ->where('categoria_actualizacion_activa', true)
             ->orderBy('categoria_actualizacion_orden', 'asc')

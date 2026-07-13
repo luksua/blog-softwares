@@ -285,8 +285,18 @@
               <label for="busqueda" class="filtro-label">Buscar</label>
               <div class="input-busqueda-wrapper">
                 <i class="bi bi-search icono-busqueda"></i>
+
                 <input id="busqueda" v-model="filtros.busqueda" type="text" class="filtro-input"
-                  placeholder="Título o resumen..." />
+                  placeholder="Título o resumen..." @keydown.enter.prevent="buscarPorTexto" />
+
+                <button v-if="filtros.busqueda" type="button" class="btn-limpiar-busqueda" @click="limpiarBusqueda"
+                  title="Limpiar búsqueda">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+
+                <button type="button" class="btn-ejecutar-busqueda" @click="buscarPorTexto" title="Buscar">
+                  <i class="bi bi-arrow-return-left"></i>
+                </button>
               </div>
             </div>
 
@@ -396,28 +406,117 @@
               </div>
             </div> -->
 
-            <div v-if="!esVistaSupervision" class="filtro-grupo">
-              <label for="area">Área</label>
-              <select id="area" v-model="filtros.areaServicioId" class="filtro-input" :disabled="cargandoFiltros">
-                <option value="">Todas</option>
-                <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
-                  :value="Number(area.area_servicio_id)">
-                  {{ area.area_servicio_nombre }}
-                </option>
-              </select>
-            </div>
 
+            <!-- Área / Servicio -->
             <div class="filtro-grupo">
-              <label for="categoria">Categoría</label>
-              <select id="categoria" v-model="filtros.categoriaId" class="filtro-input" :disabled="cargandoFiltros">
-                <option value="">Todas</option>
-                <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
-                  :value="Number(categoria.categoria_actualizacion_id)">
-                  {{ categoria.categoria_actualizacion_nombre }}
-                </option>
-              </select>
+              <label class="filtro-label">Área / Servicio</label>
+
+              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!areaSeleccionada">
+                    <i class="bi bi-building"></i>
+                    <span>Selecciona un área...</span>
+                  </div>
+
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">
+                      <i class="bi bi-building"></i>
+                      {{ areaSeleccionada.area_servicio_nombre }}
+                    </span>
+                  </div>
+
+                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
+                  </div>
+
+                  <div class="dropdown-options">
+                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
+                      class="dropdown-option" :class="{
+                        selected: Number(areaSeleccionada?.area_servicio_id) === Number(area.area_servicio_id)
+                      }" @click="seleccionarArea(Number(area.area_servicio_id))">
+                      <span class="option-name">
+                        {{ area.area_servicio_nombre }}
+                      </span>
+
+                      <span class="option-check">
+                        <i v-if="Number(areaSeleccionada?.area_servicio_id) === Number(area.area_servicio_id)"
+                          class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+
+                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
+                      No se encontraron áreas
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
+            <!-- Categoría -->
+            <div class="filtro-grupo">
+              <label class="filtro-label">Categoría</label>
+
+              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
+                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
+                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
+                    <i class="bi bi-tags-fill"></i>
+                    <span>Todas las categorías</span>
+                  </div>
+
+                  <div class="select-selected" v-else>
+                    <span class="selected-tag-single">
+                      <i class="bi" :class="categoriaSeleccionada.icono"></i>
+                      {{ categoriaSeleccionada.nombre }}
+                    </span>
+                  </div>
+
+                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+                </div>
+
+                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
+                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
+                    <i class="bi bi-search"></i>
+                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
+                  </div>
+
+                  <div class="dropdown-options">
+                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
+                      @click="seleccionarCategoria('')">
+                      <span class="option-name">
+                        <i class="bi bi-tags-fill" style="margin-right: 8px;"></i>
+                        Todas las categorías
+                      </span>
+
+                      <span class="option-check">
+                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+
+                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
+                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
+                      @click="seleccionarCategoria(cat.id)">
+                      <span class="option-name">
+                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
+                        {{ cat.nombre }}
+                      </span>
+
+                      <span class="option-check">
+                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
+                      </span>
+                    </button>
+
+                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
+                      No se encontraron categorías
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="filtro-acciones">
               <button class="btn-limpiar" @click="limpiarFiltros">
                 Limpiar
@@ -567,147 +666,147 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Modales -->
-    <div class="modal fade" id="modalEliminarRegistro" tabindex="-1" aria-labelledby="modalEliminarLabel"
-      aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalEliminarLabel">
-              ¿Deseas desactivar este registro?
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Al desactivar, ya no aparecerá en las búsquedas activas ni se podrá leer en la página.</p>
-            <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-danger" @click="inactivarActualizacion">Aceptar</button>
-          </div>
+  <!-- Modales -->
+  <div class="modal fade" id="modalEliminarRegistro" tabindex="-1" aria-labelledby="modalEliminarLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEliminarLabel">
+            ¿Deseas desactivar este registro?
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Al desactivar, ya no aparecerá en las búsquedas activas ni se podrá leer en la página.</p>
+          <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" @click="inactivarActualizacion">Aceptar</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal fade" id="modalDesarchivarRegistro" tabindex="-1" aria-labelledby="modalDesarchivarLabel"
-      aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalDesarchivarLabel">¿Deseas activar este registro?</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
-            <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-primary" @click="activarActualizacion">Activar</button>
-          </div>
+  <div class="modal fade" id="modalDesarchivarRegistro" tabindex="-1" aria-labelledby="modalDesarchivarLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalDesarchivarLabel">¿Deseas activar este registro?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>Al activar el registro, se actualizará el estado del registro a <strong>Publicado</strong></p>
+          <strong class="modal-item-title">{{ itemAEliminar?.actualizacion_titulo }}</strong>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" @click="activarActualizacion">Activar</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal fade" id="modalRevisionRegistro" tabindex="-1" aria-labelledby="modalRevisionLabel"
-      aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modalRevisionLabel">¿Deseas marcar este registro como revisión?</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal fade" id="modalRevisionRegistro" tabindex="-1" aria-labelledby="modalRevisionLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalRevisionLabel">¿Deseas marcar este registro como revisión?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>El registro quedará marcado con el estado <strong>Revisión</strong>.</p>
+          <strong class="modal-item-title">{{ itemARevision?.actualizacion_titulo }}</strong>
+          <div class="revision-observacion-group">
+            <label for="observacionRevision" class="form-label">
+              Motivo de revisión <span class="campo-obligatorio">*</span>
+            </label>
+            <textarea id="observacionRevision" v-model.trim="observacionRevision" class="form-control" rows="4"
+              maxlength="2000"
+              placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."></textarea>
+            <small class="form-text text-muted">Este mensaje quedará guardado como soporte de la revisión.</small>
+            <p v-if="errorObservacionRevision" class="revision-observacion-error">
+              {{ errorObservacionRevision }}
+            </p>
           </div>
-          <div class="modal-body">
-            <p>El registro quedará marcado con el estado <strong>Revisión</strong>.</p>
-            <strong class="modal-item-title">{{ itemARevision?.actualizacion_titulo }}</strong>
-            <div class="revision-observacion-group">
-              <label for="observacionRevision" class="form-label">
-                Motivo de revisión <span class="campo-obligatorio">*</span>
-              </label>
-              <textarea id="observacionRevision" v-model.trim="observacionRevision" class="form-control" rows="4"
-                maxlength="2000"
-                placeholder="Explica qué debe revisar o corregir el empleado antes de continuar."></textarea>
-              <small class="form-text text-muted">Este mensaje quedará guardado como soporte de la revisión.</small>
-              <p v-if="errorObservacionRevision" class="revision-observacion-error">
-                {{ errorObservacionRevision }}
-              </p>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="button" class="btn btn-warning" @click="marcarRevisionActualizacion">Marcar revisión</button>
-          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-warning" @click="marcarRevisionActualizacion">Marcar revisión</button>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
-              @click="cerrarModalEdicion"></button>
-          </div>
-          <div class="modal-body">
-            <Edit v-if="idEditando" :key="`${idEditando}-${notificacionCorreccionActual?.id || 'normal'}`"
-              :id="idEditando" :modo-correccion="Boolean(notificacionCorreccionActual) || esCorreccionDesdeListado"
-              @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
-          </div>
+  <div class="modal fade" id="modalEditarRegistro" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalLabel">Editar Actualización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="btnCerrarModal"
+            @click="cerrarModalEdicion"></button>
+        </div>
+        <div class="modal-body">
+          <Edit v-if="idEditando" :key="`${idEditando}-${notificacionCorreccionActual?.id || 'normal'}`"
+            :id="idEditando" :modo-correccion="Boolean(notificacionCorreccionActual) || esCorreccionDesdeListado"
+            @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Offcanvas: Revisiones pendientes (solo mis-registros) -->
-    <Teleport to="body">
-      <template v-if="mostrarAlertaRevision">
-        <!-- Overlay -->
-        <div :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]" @click="offcanvasAbierto = false" />
+  <!-- Offcanvas: Revisiones pendientes (solo mis-registros) -->
+  <Teleport to="body">
+    <template v-if="mostrarAlertaRevision">
+      <!-- Overlay -->
+      <div :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]" @click="offcanvasAbierto = false" />
 
-        <!-- Botón flotante -->
-        <button class="fab-revision" :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
-          @click="offcanvasAbierto = true" aria-label="Ver revisiones pendientes" title="Revisiones pendientes">
-          <i class="bi bi-clipboard-check"></i>
-          <span class="fab-badge">{{ notificacionesRevision.length }}</span>
-        </button>
+      <!-- Botón flotante -->
+      <button class="fab-revision" :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
+        @click="offcanvasAbierto = true" aria-label="Ver revisiones pendientes" title="Revisiones pendientes">
+        <i class="bi bi-clipboard-check"></i>
+        <span class="fab-badge">{{ notificacionesRevision.length }}</span>
+      </button>
 
-        <!-- Panel offcanvas -->
-        <aside :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]" role="dialog" aria-modal="true"
-          aria-label="Revisiones pendientes">
-          <div class="oc-header">
-            <div class="oc-header-left">
-              <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
-              <span class="oc-title">Revisión pendiente</span>
-              <span class="oc-count">{{ notificacionesRevision.length }}</span>
-            </div>
-            <button class="oc-close" @click="offcanvasAbierto = false" aria-label="Cerrar panel de revisiones">
-              <i class="bi bi-x-lg"></i>
-            </button>
+      <!-- Panel offcanvas -->
+      <aside :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]" role="dialog" aria-modal="true"
+        aria-label="Revisiones pendientes">
+        <div class="oc-header">
+          <div class="oc-header-left">
+            <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
+            <span class="oc-title">Revisión pendiente</span>
+            <span class="oc-count">{{ notificacionesRevision.length }}</span>
           </div>
+          <button class="oc-close" @click="offcanvasAbierto = false" aria-label="Cerrar panel de revisiones">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
 
-          <div class="oc-body">
-            <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="oc-item">
-              <div class="oc-item-inner">
-                <div class="oc-item-icon-wrap">
-                  <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
-                </div>
-                <div class="oc-item-content">
-                  <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
-                  <button v-if="notificacion.actualizacion_id" type="button" class="oc-item-btn"
-                    @click="handleCorreccionDesdeOffcanvas(notificacion)">
-                    <i class="bi bi-pencil-square"></i>
-                    Corregir registro
-                  </button>
-                </div>
+        <div class="oc-body">
+          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="oc-item">
+            <div class="oc-item-inner">
+              <div class="oc-item-icon-wrap">
+                <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
+              </div>
+              <div class="oc-item-content">
+                <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
+                <button v-if="notificacion.actualizacion_id" type="button" class="oc-item-btn"
+                  @click="handleCorreccionDesdeOffcanvas(notificacion)">
+                  <i class="bi bi-pencil-square"></i>
+                  Corregir registro
+                </button>
               </div>
             </div>
           </div>
-        </aside>
-      </template>
-    </Teleport>
-  </div>
+        </div>
+      </aside>
+    </template>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -959,6 +1058,7 @@ const obtenerActualizaciones = async (page = 1) => {
   }
 }
 
+
 const limpiarFiltros = () => {
   filtros.value = {
     busqueda: '',
@@ -968,8 +1068,34 @@ const limpiarFiltros = () => {
     areaServicioId: '',
     categoriaId: ''
   }
+
+  if (filtroTimeout) {
+    clearTimeout(filtroTimeout)
+    filtroTimeout = null
+  }
+
+  obtenerActualizaciones(1)
 }
 
+const buscarPorTexto = () => {
+  if (filtroTimeout) {
+    clearTimeout(filtroTimeout)
+    filtroTimeout = null
+  }
+
+  obtenerActualizaciones(1)
+}
+
+const limpiarBusqueda = () => {
+  filtros.value.busqueda = ''
+
+  if (filtroTimeout) {
+    clearTimeout(filtroTimeout)
+    filtroTimeout = null
+  }
+
+  obtenerActualizaciones(1)
+}
 const formatearFecha = (fechaString: string) => {
   if (!fechaString) return 'Sin fecha'
   const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: '2-digit' }
@@ -989,12 +1115,19 @@ const mapearClaseEstado = (estado: string) => {
 let filtroTimeout: ReturnType<typeof setTimeout> | null = null
 
 watch(
-  filtros,
+  () => [
+    filtros.value.fechaDesde,
+    filtros.value.fechaHasta,
+    filtros.value.areaServicioId,
+    filtros.value.categoriaId,
+  ],
   () => {
     if (filtroTimeout) clearTimeout(filtroTimeout)
-    filtroTimeout = setTimeout(() => { obtenerActualizaciones(1) }, 400)
-  },
-  { deep: true }
+
+    filtroTimeout = setTimeout(() => {
+      obtenerActualizaciones(1)
+    }, 250)
+  }
 )
 
 const obtenerNombreArea = (item: Version) => item.area_servicio?.area_servicio_nombre || 'Sin área'
@@ -1213,68 +1346,133 @@ const marcarRevisionActualizacion = async () => {
   }
 }
 
-const normalizarTexto = (texto: string): string =>
-  texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-
-
-const obtenerIconoCategoria = (nombre: string | undefined): string => {
-  if (!nombre) return 'bi-tag-fill'
-
-  const n = normalizarTexto(nombre)
-
-  const mapa: Record<string, string> = {
-    'manual de usuario': 'bi-person-lines-fill',
-    'manual tecnico': 'bi-tools',
-    'instalador': 'bi-box-arrow-down',
-    'actualizacion del sistema': 'bi-arrow-repeat',
-    'nueva funcionalidad': 'bi-stars',
-    'mejora': 'bi-arrow-up-circle-fill',
-    'correccion de errores': 'bi-bug-fill',
-    'parche de seguridad': 'bi-shield-fill-check',
-    'guia de instalacion': 'bi-journal-arrow-down',
-    'guia rapida': 'bi-lightning-charge-fill',
-    'documentacion': 'bi-file-earmark-text-fill',
-    'notas de version': 'bi-card-list',
-    'general': 'bi-info-circle-fill',
-  }
-
-  if (mapa[n]) return mapa[n]
-
-  // Fallback por coincidencias parciales
-  if (n.includes('manual')) return 'bi-journal-text'
-  if (n.includes('instal')) return 'bi-box-arrow-down'
-  if (n.includes('actualizacion')) return 'bi-arrow-repeat'
-  if (n.includes('funcionalidad')) return 'bi-stars'
-  if (n.includes('mejora')) return 'bi-arrow-up-circle-fill'
-  if (n.includes('correccion') || n.includes('error')) return 'bi-bug-fill'
-  if (n.includes('seguridad') || n.includes('parche')) return 'bi-shield-fill-check'
-  if (n.includes('guia')) return 'bi-journal-bookmark-fill'
-  if (n.includes('documentacion')) return 'bi-file-earmark-text-fill'
-  if (n.includes('version')) return 'bi-card-list'
-  if (n.includes('general')) return 'bi-info-circle-fill'
-
-  return 'bi-tag-fill'
-}
-
 const categoriaDropdownAbierto = ref(false)
 
 const categoriasConIcono = computed(() => {
-  return categoriasDisponibles.value.map((categoria) => {
-    const id = Number(categoria.categoria_actualizacion_id)
-    const nombre = categoria.categoria_actualizacion_nombre
+  return categoriasDisponibles.value.map((categoria: any) => {
+    const id = Number(categoria.categoria_actualizacion_id ?? categoria.id)
+    const nombre =
+      categoria.categoria_actualizacion_nombre ??
+      categoria.nombre ??
+      'Sin categoría'
+
+    const icono =
+      categoria.icono ||
+      categoria.categoria_actualizacion_icono ||
+      categoria.actualizacion_categoria_icono ||
+      categoria.icono_categoria ||
+      'bi-tag-fill'
 
     return {
       ...categoria,
       id,
       nombre,
-      icono: obtenerIconoCategoria(nombre),
+      icono: obtenerIconoCategoria(icono),
     }
   })
 })
+
+const obtenerIconoCategoria = (icono?: string): string => {
+  return icono && icono.trim() !== '' ? icono.trim() : 'bi-tag-fill'
+}
+
+const buscarCategoriaEnCatalogo = (id?: string | number, nombre?: string) => {
+  const idNormalizado = Number(id)
+
+  if (Number.isFinite(idNormalizado)) {
+    const porId = categoriasConIcono.value.find(c => Number(c.id) === idNormalizado)
+    if (porId) return porId
+  }
+
+  if (nombre) {
+    const nombreNormalizado = nombre.toLowerCase().trim()
+
+    const porNombre = categoriasConIcono.value.find(c =>
+      c.nombre.toLowerCase().trim() === nombreNormalizado
+    )
+
+    if (porNombre) return porNombre
+  }
+
+  return null
+}
+
+
+const normalizarCategoriaItem = (c: any) => {
+  const id =
+    c?.categoria_actualizacion_id ??
+    c?.actualizacion_categoria_id ??
+    c?.id ??
+    0
+
+  const nombre =
+    c?.categoria_actualizacion_nombre ??
+    c?.actualizacion_categoria_nombre ??
+    c?.nombre ??
+    'Sin categoría'
+
+  const categoriaCatalogo = buscarCategoriaEnCatalogo(id, nombre)
+
+  const icono =
+    c?.icono ||
+    c?.categoria_actualizacion_icono ||
+    c?.actualizacion_categoria_icono ||
+    c?.icono_categoria ||
+    categoriaCatalogo?.icono ||
+    'bi-tag-fill'
+
+  return {
+    id,
+    nombre: categoriaCatalogo?.nombre || nombre,
+    icono: obtenerIconoCategoria(icono),
+  }
+}
+
+const obtenerCategorias = (
+  item: Version
+): { id: string | number; nombre: string; icono: string }[] => {
+  const itemAny = item as any
+
+  if (Array.isArray(itemAny.categorias) && itemAny.categorias.length > 0) {
+    return itemAny.categorias.map((c: any) => normalizarCategoriaItem(c))
+  }
+
+  if (Array.isArray(itemAny.actualizacion_categorias) && itemAny.actualizacion_categorias.length > 0) {
+    return itemAny.actualizacion_categorias.map((c: any) => normalizarCategoriaItem(c))
+  }
+
+  if (itemAny.categoria) {
+    return [normalizarCategoriaItem(itemAny.categoria)]
+  }
+
+  if (itemAny.actualizacion_categoria) {
+    return [normalizarCategoriaItem(itemAny.actualizacion_categoria)]
+  }
+
+  const categoriaId =
+    itemAny.actualizacion_categoria_id ??
+    itemAny.categoria_actualizacion_id
+
+  const categoriaNombre =
+    itemAny.actualizacion_categoria_nombre ??
+    itemAny.categoria_actualizacion_nombre
+
+  if (categoriaId || categoriaNombre) {
+    const categoriaCatalogo = buscarCategoriaEnCatalogo(categoriaId, categoriaNombre)
+
+    return [{
+      id: categoriaId ?? categoriaCatalogo?.id ?? 0,
+      nombre: categoriaCatalogo?.nombre ?? categoriaNombre ?? 'Sin categoría',
+      icono: categoriaCatalogo?.icono ?? 'bi-tag-fill',
+    }]
+  }
+
+  return [{
+    id: 0,
+    nombre: 'Sin categoría',
+    icono: 'bi-tag-fill',
+  }]
+}
 
 // ── Área ──
 const areaDropdownAbierto = ref(false)
@@ -1748,7 +1946,6 @@ defineExpose({ obtenerActualizaciones })
   padding: 60px 40px;
   background: white;
   border-radius: 20px;
-  box-shadow: var(--shadow-sm);
   color: #6b7280;
 }
 
@@ -2322,7 +2519,7 @@ defineExpose({ obtenerActualizaciones })
   }
 
   .filtro-busqueda {
-    grid-column: span 3;
+    grid-column: span 4;
   }
 
   .filtro-grupo:nth-child(2) {
@@ -2338,7 +2535,7 @@ defineExpose({ obtenerActualizaciones })
   }
 
   .filtro-grupo:nth-child(5) {
-    grid-column: span 3;
+    grid-column: span 4;
   }
 
   .filtro-grupo:nth-child(6) {
@@ -2371,9 +2568,7 @@ defineExpose({ obtenerActualizaciones })
 }
 
 /* Modales */
-.modal-content {
-  margin: 16px;
-}
+
 
 @media (min-width: 768px) {
   .modal-content {
@@ -2892,5 +3087,50 @@ defineExpose({ obtenerActualizaciones })
   text-align: center;
   color: #94a3b8;
   font-size: 0.8rem;
+}
+
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+  padding-right: 78px;
+}
+
+.btn-limpiar-busqueda,
+.btn-ejecutar-busqueda {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-limpiar-busqueda {
+  right: 42px;
+}
+
+.btn-ejecutar-busqueda {
+  right: 8px;
+  background: rgba(7, 126, 157, 0.08);
+  color: var(--primary);
+}
+
+.btn-limpiar-busqueda:hover,
+.btn-ejecutar-busqueda:hover {
+  background: rgba(7, 126, 157, 0.14);
+  color: var(--primary);
 }
 </style>
