@@ -12,5 +12,6 @@ export interface NewVersion {
   estado: string;
   fecha_creacion: string;
   fecha_publicacion: string;
+  fecha_programada?: string;
   imagenes_quill?: string[];
 }

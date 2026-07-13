@@ -267,6 +267,7 @@
                   <option value="borrador">Borrador</option>
                   <option value="revision">Revisión</option>
                   <option value="publicado">Publicado</option>
+                  <option value="programado">Programado</option>
                   <option value="inactivo">Inactivo</option>
                 </select>
 
@@ -287,7 +288,34 @@
 
             <!-- Fechas -->
             <div class="col-12 col-md-6 mb-4">
-              <template v-if="estadoParaVista !== 'publicado'">
+              <template v-if="estadoParaVista === 'programado'">
+                <label class="form-label fw-bold text-primary">
+                  Fecha y hora de publicación <span class="text-danger">*</span>
+                </label>
+
+                <input
+                  v-model="form.fecha_programada"
+                  type="datetime-local"
+                  class="form-control border-primary"
+                  :min="fechaMinimaProgramada"
+                  :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
+                  required
+                />
+
+                <div
+                  v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                  class="invalid-feedback"
+                >
+                  {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
+                </div>
+
+                <div class="form-text text-primary fw-bold mt-1">
+                  <i class="bi bi-clock-fill me-1"></i>
+                  El registro se publicará automáticamente en esta fecha y hora.
+                </div>
+              </template>
+
+              <template v-else-if="estadoParaVista !== 'publicado'">
                 <label class="form-label fw-bold ">Fecha de creación</label>
 
                 <input
@@ -445,12 +473,21 @@ const form = reactive({
   usuario_id_autor: null as number | null,
   estado: 'borrador',
   fecha_creacion: '',
-  fecha_publicacion: ''
+  fecha_publicacion: '',
+  fecha_programada: ''
 })
 
 // Computed
 const modoCorreccion = computed(() => props.modoCorreccion)
 const estadoParaVista = computed(() => props.modoCorreccion ? 'publicado' : form.estado)
+
+// Mínimo seleccionable en el datetime-local: el minuto actual (evita programar en el pasado)
+const fechaMinimaProgramada = computed(() => {
+  const ahora = new Date()
+  ahora.setSeconds(0, 0)
+  ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset())
+  return ahora.toISOString().slice(0, 16)
+})
 
 const textoBotonGuardar = computed(() => {
   if (guardando.value) return 'Procesando...'
@@ -622,6 +659,20 @@ const formatearFechaParaInput = (fecha: any) => {
   return isNaN(fechaObj.getTime()) ? '' : fechaObj.toISOString().split('T')[0]
 }
 
+// Igual que formatearFechaParaInput, pero conservando hora:minuto para
+// inputs type="datetime-local" (que esperan la hora en horario local).
+const formatearFechaHoraParaInput = (fecha: any) => {
+  if (!fecha) return ''
+  const fechaObj = typeof fecha === 'number' && fecha < 10000000000
+    ? new Date(fecha * 1000)
+    : new Date(fecha)
+
+  if (isNaN(fechaObj.getTime())) return ''
+
+  const conOffsetLocal = new Date(fechaObj.getTime() - fechaObj.getTimezoneOffset() * 60000)
+  return conOffsetLocal.toISOString().slice(0, 16)
+}
+
 const cargarListas = async () => {
   try {
     const [resAreas, resCategorias] = await Promise.all([
@@ -710,6 +761,9 @@ const cargarRegistro = async () => {
     form.estado = data.actualizacion_estado ?? 'borrador'
     form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
     form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion)
+    form.fecha_programada = form.estado === 'programado'
+      ? formatearFechaHoraParaInput(data.actualizacion_fecha_publicacion)
+      : ''
 
     if (props.modoCorreccion && !form.fecha_publicacion) {
       form.fecha_publicacion = new Date().toISOString().split('T')[0]
@@ -750,6 +804,24 @@ const cargarRegistro = async () => {
 const guardarCambios = async () => {
   if (!formularioValido.value) return
 
+  const estadoAEnviar = props.modoCorreccion ? 'publicado' : form.estado
+
+  if (estadoAEnviar === 'programado') {
+    if (!form.fecha_programada) {
+      errores.value = {
+        actualizacion_fecha_publicacion: ['Debes indicar la fecha y hora en que se publicará el registro.'],
+      }
+      return
+    }
+
+    if (new Date(form.fecha_programada).getTime() <= Date.now()) {
+      errores.value = {
+        actualizacion_fecha_publicacion: ['La fecha programada debe ser posterior al momento actual.'],
+      }
+      return
+    }
+  }
+
   guardando.value = true
   errores.value = {}
   mensajeOk.value = ''
@@ -779,7 +851,9 @@ const guardarCambios = async () => {
     const estadoFinal = props.modoCorreccion ? 'publicado' : form.estado
     const fechaPublicacionFinal = estadoFinal === 'publicado'
       ? (form.fecha_publicacion || new Date().toISOString().split('T')[0])
-      : form.fecha_publicacion
+      : estadoFinal === 'programado'
+        ? form.fecha_programada
+        : form.fecha_publicacion
 
     const payload = {
       actualizacion_titulo: form.titulo,
@@ -853,12 +927,18 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   if (cargando.value) return
 
   if (nuevoEstado === 'publicado') {
-    if (!form.fecha_publicacion || ['inactivo', 'borrador', 'revision'].includes(viejoEstado || '')) {
+    if (!form.fecha_publicacion || ['inactivo', 'borrador', 'revision', 'programado'].includes(viejoEstado || '')) {
       const hoy = new Date()
       form.fecha_publicacion = hoy.toISOString().split('T')[0]
     }
+    form.fecha_programada = ''
+  } else if (nuevoEstado === 'programado') {
+    if (!form.fecha_programada) {
+      form.fecha_programada = fechaMinimaProgramada.value
+    }
   } else if (['inactivo', 'borrador'].includes(nuevoEstado)) {
     form.fecha_publicacion = ''
+    form.fecha_programada = ''
   }
 })
 </script>

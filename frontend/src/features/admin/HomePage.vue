@@ -49,8 +49,7 @@
 
 <script setup lang="ts">
 import { Modal } from 'bootstrap'
-import { computed, nextTick, onMounted, ref } from 'vue'
-import api from '../../api/api'
+import { computed, nextTick, ref } from 'vue'
 import List from '../../components/register/List.vue'
 import Store from '../../components/register/NewVersion.vue'
 
@@ -60,7 +59,6 @@ const props = withDefaults(defineProps<{
   vista: 'mis-registros',
 })
 
-const usuario = ref<any>(null)
 const componenteLista = ref<InstanceType<typeof List> | null>(null)
 const modalNuevoRegistroRef = ref<HTMLElement | null>(null)
 
@@ -89,15 +87,6 @@ const cerrarModalBootstrap = async () => {
     document.body.style.paddingRight = ''
   }, 300)
 }
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/me')
-    usuario.value = response.data.usuario
-  } catch (error) {
-    console.error(error)
-  }
-})
 </script>
 
 <style scoped>

@@ -43,28 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import api from '../../api/api'
 import List from '../../components/register/List.vue'
-
- const usuario = ref<any>(null)
- const puedeSupervisar = ref(false)
- const areasSupervisadas = ref<number[]>([])
-
-onMounted(async () => {
-   try {
-   const response = await api.get('/me')
-   const data = response.data || {}
-
-  usuario.value = data.usuario || data.user || data
-  puedeSupervisar.value = data.puede_supervisar_area === true || data.es_admin_area === true
-  areasSupervisadas.value = Array.isArray(data.areas_supervisadas)
-      ? data.areas_supervisadas.map((area: any) => Number(area)).filter(Boolean)
-       : []
-   } catch (error) {
-     console.error('Error al cargar datos de supervisión:', error)
-}
-})
 </script>
 
 <style scoped>

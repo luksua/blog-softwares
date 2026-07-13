@@ -38,6 +38,7 @@ return [
     'sso' => [
         'secret' => env('SSO_SECRET'),
         'max_age' => env('SSO_MAX_AGE', 300),
+        'allow_local_demo' => env('SSO_ALLOW_LOCAL_DEMO', false),
     ],
 
 ];

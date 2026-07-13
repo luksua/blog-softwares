@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\BlogDashboardController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('usuario.auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -22,7 +22,15 @@ Route::middleware('auth:sanctum')->group(function () {
             'jefaturasActivas.areaServicio',
         ]);
 
-        $permisos = session('tz_permisos', []);
+        $permisos = [];
+
+        if ($request->hasSession()) {
+            $permisos = $request->session()->get('tz_permisos', []);
+        }
+
+        if (! $permisos && isset($usuario->permisos)) {
+            $permisos = $usuario->permisos;
+        }
 
         $esAdminGlobal = $usuario->esAdmin();
         $areasSupervisadas = $usuario->areasSupervisadas();
@@ -42,8 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 'medico_id' => $usuario->medico_id,
                 'area_servicio_id' => $usuario->area_servicio_id,
                 'area_servicio' => $usuario->areaServicio,
-                'area' => $request->session()->get('area'),
-                'nombre' => $request->session()->get('nombre'),
+                'area' => $request->hasSession() ? $request->session()->get('area') : ($usuario->area ?? null),
+                'nombre' => $request->hasSession() ? $request->session()->get('nombre') : ($usuario->nombre ?? null),
                 'permisos' => $permisos,
                 'jefaturas' => $usuario->jefaturasActivas,
                 'areas_supervisadas' => $areasSupervisadas,
@@ -59,10 +67,22 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::post('/logout', function (Request $request) {
+        if (app()->environment('local') && config('services.sso.allow_local_demo')) {
+            if ($request->hasSession()) {
+                $request->session()->forget('demo_user');
+            }
+
+            return response()->json([
+                'success' => true,
+            ]);
+        }
+
         Auth::guard('web')->logout();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'success' => true,

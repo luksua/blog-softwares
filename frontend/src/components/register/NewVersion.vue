@@ -269,11 +269,24 @@
           </div>
 
           <div class="col-12 col-md-6 mb-3">
-            <label for="fecha_publicacion" class="form-label fw-bold text-primary">
+            <label v-if="esProgramado" for="fecha_programada" class="form-label fw-bold text-primary">
+              Fecha y hora de publicación <span class="text-danger">*</span>
+            </label>
+            <label v-else for="fecha_publicacion" class="form-label fw-bold text-primary">
               Fecha
             </label>
 
             <input
+              v-if="esProgramado"
+              type="datetime-local"
+              id="fecha_programada"
+              class="form-control"
+              v-model="registro.fecha_programada"
+              :min="fechaMinimaProgramada"
+              required
+            />
+            <input
+              v-else
               type="date"
               id="fecha_publicacion"
               class="form-control"
@@ -281,6 +294,10 @@
               required
               disabled
             />
+
+            <small v-if="esProgramado" class="form-text text-muted">
+              El registro se publicará automáticamente en la fecha y hora indicadas.
+            </small>
           </div>
         </div>
 
@@ -398,10 +415,27 @@ const registroVacio = () => ({
   estado: 'borrador',
   fecha_creacion: new Date().toISOString().split('T')[0],
   fecha_publicacion: new Date().toISOString().split('T')[0],
+  fecha_programada: '',
   imagenes_quill: []
 })
 
 const registro = reactive<NewVersion>(registroVacio())
+
+const esProgramado = computed(() => registro.estado === 'programado')
+
+// Mínimo seleccionable en el datetime-local: el minuto actual (evita programar en el pasado)
+const fechaMinimaProgramada = computed(() => {
+  const ahora = new Date()
+  ahora.setSeconds(0, 0)
+  ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset())
+  return ahora.toISOString().slice(0, 16)
+})
+
+watch(esProgramado, (activo) => {
+  if (activo && !registro.fecha_programada) {
+    registro.fecha_programada = fechaMinimaProgramada.value
+  }
+})
 
 
 const normalizarCategoriaIds = (valor: any): number[] => {
@@ -439,6 +473,7 @@ const cargarBorrador = () => {
       actualizacion_categoria_ids: normalizarCategoriaIds(draft.actualizacion_categoria_ids || draft.actualizacion_categoria_id),
       estado: draft.estado || 'borrador',
       fecha_publicacion: draft.fecha_publicacion || new Date().toISOString().split('T')[0],
+      fecha_programada: draft.fecha_programada || '',
     })
 
     ultimoGuardado.value = draft.guardadoEn || null
@@ -473,6 +508,7 @@ const guardarBorrador = async () => {
       actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
       estado: registro.estado,
       fecha_publicacion: registro.fecha_publicacion,
+      fecha_programada: registro.fecha_programada,
       editorBlocks,
       guardadoEn: new Date().toLocaleTimeString('es-ES', {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -512,6 +548,7 @@ watch(
     actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
     estado: registro.estado,
     fecha_publicacion: registro.fecha_publicacion,
+    fecha_programada: registro.fecha_programada,
   }),
   () => { programarAutosave() },
   { deep: true }
@@ -644,7 +681,24 @@ const guardarRegistro = async () => {
     })
     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor))
     formData.append('actualizacion_estado', registro.estado)
-    formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
+
+    if (esProgramado.value) {
+      if (!registro.fecha_programada) {
+        toast.warning('Selecciona la fecha y hora en que se publicará el registro.')
+        enviando.value = false
+        return
+      }
+
+      if (new Date(registro.fecha_programada).getTime() <= Date.now()) {
+        toast.warning('La fecha programada debe ser posterior al momento actual.')
+        enviando.value = false
+        return
+      }
+
+      formData.append('actualizacion_fecha_publicacion', registro.fecha_programada)
+    } else {
+      formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
+    }
 
     if (archivoMiniatura.value) {
       formData.append('actualizacion_imagen_destacada', archivoMiniatura.value)

@@ -196,6 +196,7 @@ route: {{ route.name }}
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
+import { cargarAuth, limpiarAuthCache } from '../api/auth'
 import HelpButton from '../components/HelpButton.vue'
 import {
   listarNotificaciones,
@@ -315,8 +316,14 @@ const cargarUsuarioDesdeLocalStorage = () => {
 
 const checkAuth = async () => {
   try {
-    const response = await api.get('/me')
-    aplicarUsuario(response.data)
+    const auth = await cargarAuth()
+
+    if (!auth?.usuario) {
+      limpiarSesionLocal()
+      return
+    }
+
+    aplicarUsuario(auth)
     await cargarNotificaciones()
     iniciarPollingNotificaciones()
   } catch (error) {
@@ -474,6 +481,7 @@ const checkMobile = () => {
 const limpiarSesionLocal = () => {
   localStorage.removeItem('user_data')
   localStorage.removeItem('auth_token')
+  limpiarAuthCache()
 
   detenerPollingNotificaciones()
   notificaciones.value = []

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
+import { BACKEND_URL, INTRANET_ENTRY_URL } from '../api/api.ts'
+import { cargarAuth } from '../api/auth'
 
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
@@ -191,72 +192,8 @@ const router = createRouter({
   ],
 })
 
-let authVerificado: any = null
-let intentoMeRealizado = false
-
-function normalizarPermisos(valor: any): string[] {
-  if (!Array.isArray(valor)) {
-    return []
-  }
-
-  return valor
-    .map((item: any) => {
-      if (typeof item === 'string') return item
-      if (item?.permiso_nombre) return item.permiso_nombre
-      if (item?.nombre) return item.nombre
-      return ''
-    })
-    .filter(Boolean)
-}
-
-async function cargarAuth() {
-  if (authVerificado) {
-    return authVerificado
-  }
-
-  if (intentoMeRealizado) {
-    return null
-  }
-
-  intentoMeRealizado = true
-
-  try {
-    await ensureCsrfCookie()
-
-    const response = await api.get('/me')
-
-    const data = response.data
-    const usuario = data.usuario || data.user || data
-    const permisos = normalizarPermisos(data.permisos || usuario?.permisos || [])
-
-    const grupo = String(usuario.usuario_grupo || '').toUpperCase()
-    const esAdmin = data.es_admin ?? grupo === 'ADMIN'
-    const puedeSupervisarArea =
-      data.puede_supervisar_area ||
-      data.tipo_usuario === 'admin' ||
-      usuario.tipo_usuario === 'admin' ||
-      permisos.includes('blog.supervisar_area')
-
-    authVerificado = {
-      usuario,
-      permisos,
-      es_admin: esAdmin,
-      puede_supervisar_area: puedeSupervisarArea,
-    }
-
-    localStorage.setItem('user_data', JSON.stringify(usuario))
-
-    return authVerificado
-  } catch (error) {
-    console.error(error)
-
-    authVerificado = null
-    localStorage.removeItem('user_data')
-    localStorage.removeItem('auth_token')
-
-    return null
-  }
-}
+const LOCAL_DEMO_LOGIN_ENABLED = import.meta.env.DEV || import.meta.env.VITE_LOCAL_DEMO_LOGIN === 'true'
+const LOCAL_DEMO_USER = import.meta.env.VITE_LOCAL_DEMO_USER || 'ADMIN'
 
 function enviarAIntranet() {
   localStorage.removeItem('user_data')
@@ -275,6 +212,13 @@ function enviarAIntranet() {
   `
 }
 
+function enviarALoginLocal() {
+  localStorage.removeItem('user_data')
+  localStorage.removeItem('auth_token')
+
+  window.location.href = new URL(`/dev-login/${encodeURIComponent(LOCAL_DEMO_USER)}`, BACKEND_URL).toString()
+}
+
 router.beforeEach(async (to) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresSupervisor = to.matched.some(record => record.meta.requiresSupervisor)
@@ -286,6 +230,11 @@ router.beforeEach(async (to) => {
   const auth = await cargarAuth()
 
   if (!auth?.usuario) {
+    if (LOCAL_DEMO_LOGIN_ENABLED) {
+      enviarALoginLocal()
+      return false
+    }
+
     enviarAIntranet()
     return false
   }
@@ -299,4 +248,5 @@ router.beforeEach(async (to) => {
   return true
 })
 
+export { cargarAuth }
 export default router
