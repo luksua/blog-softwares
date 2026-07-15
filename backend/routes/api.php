@@ -24,6 +24,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         $permisos = session('tz_permisos', []);
 
+        if (! $permisos && isset($usuario->permisos)) {
+            $permisos = $usuario->permisos;
+        }
+
         $esAdminGlobal = $usuario->esAdmin();
         $areasSupervisadas = $usuario->areasSupervisadas();
         $esAdminArea = $areasSupervisadas->isNotEmpty();
@@ -42,8 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
                 'medico_id' => $usuario->medico_id,
                 'area_servicio_id' => $usuario->area_servicio_id,
                 'area_servicio' => $usuario->areaServicio,
-                'area' => $request->session()->get('area'),
-                'nombre' => $request->session()->get('nombre'),
+                'area' => $request->hasSession() ? $request->session()->get('area') : ($usuario->area ?? null),
+                'nombre' => $request->hasSession() ? $request->session()->get('nombre') : ($usuario->nombre ?? null),
                 'permisos' => $permisos,
                 'jefaturas' => $usuario->jefaturasActivas,
                 'areas_supervisadas' => $areasSupervisadas,

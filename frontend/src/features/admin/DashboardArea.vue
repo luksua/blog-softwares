@@ -2,16 +2,10 @@
   <section class="blog-dashboard-container container-fluid mt-4">
     <!-- Header -->
     <div class="dashboard-header">
-      <div class="supervision-hero">
-        <div>
-          <span class="eyebrow">Blog</span>
-          <h2>Dashboard de actualizaciones</h2>
-          <p>
-            Consulta el resumen de registros, estados, áreas, autores y lecturas disponibles.
-          </p>
-        </div>
+      <PageHero eyebrow="Blog" titulo="Dashboard de actualizaciones" ancho-completo>
+        Consulta el resumen de registros, estados, áreas, autores y lecturas disponibles.
 
-        <div class="hero-actions">
+        <template #acciones>
           <span v-if="dashboard?.alcance" class="scope-badge">
             <i class="bi bi-funnel-fill"></i>
             {{ dashboard.alcance.descripcion }}
@@ -22,7 +16,7 @@
             class="btn-refresh"
             :disabled="cargando"
             title="Actualizar dashboard"
-            @click="cargarDashboard"
+            @click="cargarDashboard(); cargarProgramados()"
           >
             <span
               v-if="cargando"
@@ -32,8 +26,8 @@
 
             <i v-else class="bi bi-arrow-clockwise"></i>
           </button>
-        </div>
-      </div>
+        </template>
+      </PageHero>
     </div>
 
     <!-- Loading -->
@@ -160,6 +154,48 @@
           </div>
         </article>
 
+        <!-- Publicaciones programadas próximas -->
+        <article class="dashboard-panel">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <i class="bi bi-alarm-fill"></i>
+                Próximas a publicarse
+              </h2>
+
+              <p>Registros programados que se publican en las próximas 24 horas.</p>
+            </div>
+          </div>
+
+          <div v-if="programados.length" class="scheduled-list scroll-area">
+            <div v-for="registro in programados" :key="registro.id" class="scheduled-item">
+              <div class="scheduled-content">
+                <strong class="scheduled-title" :title="registro.titulo">
+                  {{ registro.titulo }}
+                </strong>
+
+                <small>{{ registro.area }}</small>
+              </div>
+
+              <span class="scheduled-countdown">
+                <i class="bi bi-clock-fill"></i>
+                {{ formatearTiempoRestante(registro.fecha_publicacion) }}
+              </span>
+            </div>
+          </div>
+
+          <div v-else class="empty-panel">
+            <i class="bi bi-check2-circle"></i>
+            <p>
+              {{
+                cargandoProgramados
+                  ? 'Consultando publicaciones programadas...'
+                  : 'No hay publicaciones programadas para las próximas 24 horas.'
+              }}
+            </p>
+          </div>
+        </article>
+
         <!-- Registros por área -->
         <!--  <article class="dashboard-panel">
           <div class="panel-header">
@@ -269,7 +305,7 @@
         </article>
 
         <!-- Registros más leídos -->
-        <article class="dashboard-panel featured-panel">
+        <article class="dashboard-panel ">
           <div class="panel-header">
             <div>
               <h2>
@@ -344,6 +380,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import api from '../../api/api'
+import PageHero from '../../components/shared/PageHero.vue'
 
 interface AlcanceDashboard {
   tipo: string
@@ -393,9 +430,66 @@ interface BlogDashboardData {
   lecturas_disponibles: boolean
 }
 
+interface RegistroProgramado {
+  id: number
+  titulo: string
+  fecha_publicacion: string
+  area: string
+}
+
 const dashboard = ref<BlogDashboardData | null>(null)
 const cargando = ref(false)
 const error = ref('')
+
+const programados = ref<RegistroProgramado[]>([])
+const cargandoProgramados = ref(false)
+
+/** Horas hacia adelante dentro de las cuales se considera "próxima a publicarse". */
+const HORAS_PROXIMIDAD = 24
+
+const cargarProgramados = async () => {
+  cargandoProgramados.value = true
+
+  try {
+    const respuesta = await api.get('/actualizaciones?estado=programado&vista=supervision')
+    const registros = respuesta.data?.data || []
+
+    const ahora = Date.now()
+    const limite = ahora + HORAS_PROXIMIDAD * 60 * 60 * 1000
+
+    programados.value = registros
+      .map((registro: any) => ({
+        id: registro.id,
+        titulo: registro.actualizacion_titulo,
+        fecha_publicacion: registro.actualizacion_fecha_publicacion,
+        area: registro.area_servicio?.area_servicio_nombre || 'Sin área',
+      }))
+      .filter((registro: RegistroProgramado) => {
+        const fecha = new Date(registro.fecha_publicacion).getTime()
+        return Number.isFinite(fecha) && fecha >= ahora && fecha <= limite
+      })
+      .sort(
+        (a: RegistroProgramado, b: RegistroProgramado) =>
+          new Date(a.fecha_publicacion).getTime() - new Date(b.fecha_publicacion).getTime()
+      )
+  } catch (err) {
+    console.error('Error al cargar publicaciones programadas:', err)
+  } finally {
+    cargandoProgramados.value = false
+  }
+}
+
+/** Texto tipo "en 3 h" / "en 45 min" a partir de una fecha futura cercana. */
+const formatearTiempoRestante = (fechaIso: string) => {
+  const diffMs = new Date(fechaIso).getTime() - Date.now()
+  if (diffMs <= 0) return 'a punto de publicarse'
+
+  const minutos = Math.round(diffMs / 60000)
+  if (minutos < 60) return `en ${minutos} min`
+
+  const horas = Math.round(minutos / 60)
+  return `en ${horas} h`
+}
 
 const cargarDashboard = async () => {
   cargando.value = true
@@ -459,19 +553,11 @@ const getEstadoLabel = (estado: string) => {
 
 onMounted(() => {
   cargarDashboard()
+  cargarProgramados()
 })
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .text-primary {
   color: var(--primary) !important;
 }
@@ -486,48 +572,8 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-/* Hero */
-.supervision-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: center;
-  width: 100%;
-  margin: 0 auto 20px;
-  padding: 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(252, 187, 28, 0.24), transparent 32%),
-    linear-gradient(135deg, #073b4c 0%, var(--secondary) 100%);
-  color: white;
-  box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
-}
-
-.supervision-hero h2 {
-  margin: 8px 0 6px;
-  font-weight: 800;
-  font-size: clamp(1.5rem, 3vw, 2.25rem);
-}
-
-.supervision-hero p {
-  max-width: 760px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 1rem;
-}
-
-.eyebrow {
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff7d6;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
+/* Hero: base y responsive viven en components/shared/PageHero.vue.
+   Aquí solo lo propio de las acciones de esta página. */
 .hero-actions {
   display: flex;
   align-items: center;
@@ -564,12 +610,6 @@ onMounted(() => {
   transition: var(--transition);
   box-shadow: var(--shadow-sm);
 }
-
-.estado-green { background-color: #e6f7e9; color: #2e7d32; }
-.estado-yellow { background-color: #fef8e3; color: #f9a825; }
-.estado-blue { background-color: #eaf4fd; color: #2f84d3; }
-.estado-dark-gray { background-color: #e5e7eb; color: #374151; }
-.estado-gray { background-color: #f2f4f7; color: #5f6671; }
 
 .btn-refresh:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -791,7 +831,6 @@ onMounted(() => {
 .state-borrador { background-color: #fef8e3; color: #f9a825; }
 .state-revision { background-color: #eaf4fd; color: #2f84d3; }
 .state-inactivo { background-color: #e5e7eb; color: #374151; }
-.estado-gray { background-color: #f2f4f7; color: #5f6671; }
 
 
 .bar-track {
@@ -810,7 +849,8 @@ onMounted(() => {
 /* Área */
 .area-list,
 .user-list,
-.read-list {
+.read-list,
+.scheduled-list {
   padding: 12px;
 }
 
@@ -822,7 +862,8 @@ onMounted(() => {
 
 .area-item,
 .user-item,
-.read-item {
+.read-item,
+.scheduled-item {
   border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 14px;
@@ -831,7 +872,8 @@ onMounted(() => {
 
 .area-item + .area-item,
 .user-item + .user-item,
-.read-item + .read-item {
+.read-item + .read-item,
+.scheduled-item + .scheduled-item {
   margin-top: 10px;
 }
 
@@ -1046,6 +1088,47 @@ onMounted(() => {
   white-space: nowrap;
 }
 
+.scheduled-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scheduled-content {
+  min-width: 0;
+}
+
+.scheduled-title {
+  display: block;
+  max-width: 100%;
+  color: #1e293b;
+  font-size: 0.9rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scheduled-content small {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.scheduled-countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--warning);
+  background: rgba(252, 187, 28, 0.14);
+  border: 1px solid rgba(252, 187, 28, 0.3);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 800;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* Empty */
 .empty-panel {
   min-height: 180px;
@@ -1108,12 +1191,6 @@ onMounted(() => {
     padding: 0 12px 24px;
   }
 
-  .supervision-hero {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 22px;
-  }
-
   .hero-actions {
     width: 100%;
     justify-content: space-between;
@@ -1143,10 +1220,6 @@ onMounted(() => {
 }
 
 @media (max-width: 480px) {
-  .supervision-hero h2 {
-    font-size: 1.45rem;
-  }
-
   .summary-card {
     padding: 16px;
   }

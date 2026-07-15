@@ -452,12 +452,6 @@ const cerrarConEscape = (event: KeyboardEvent) => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-}
-
 /* ── Wrapper ─────────────────────────────────────── */
 .help-wrapper {
   position: relative;

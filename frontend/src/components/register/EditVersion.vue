@@ -122,7 +122,7 @@
                 <small class="text-muted">(máximo 3)</small>
               </label>
 
-              <div class="categoria-select-wrapper"
+              <div ref="categoriaSelectRef" class="categoria-select-wrapper"
                 :class="{ open: selectAbierto, 'has-selection': categoriasSeleccionadas.length > 0 }">
                 <div class="categoria-select-trigger" @click="toggleSelect">
                   <div class="select-placeholder" v-if="categoriasSeleccionadas.length === 0">
@@ -211,6 +211,7 @@
                   <option value="borrador">Borrador</option>
                   <option value="revision">Revisión</option>
                   <option value="publicado">Publicado</option>
+                  <option value="programado">Programado</option>
                   <option value="inactivo">Inactivo</option>
                 </select>
 
@@ -231,8 +232,29 @@
 
             <!-- Fechas -->
             <div class="col-12 col-md-6 mb-4">
-              <template v-if="estadoParaVista !== 'publicado'">
-                <label class="form-label fw-bold text-primary">Fecha de creación</label>
+              <template v-if="estadoParaVista === 'programado'">
+                <label class="form-label fw-bold text-primary">
+                  Fecha y hora de publicación <span class="text-danger">*</span>
+                </label>
+
+                <input v-model="form.fecha_programada" type="datetime-local" class="form-control border-primary"
+                  :min="fechaMinimaProgramada"
+                  :class="{ 'is-invalid': errores.fecha_publicacion || errores.actualizacion_fecha_publicacion }"
+                  required />
+
+                <div v-if="errores.fecha_publicacion || errores.actualizacion_fecha_publicacion"
+                  class="invalid-feedback">
+                  {{ errores.fecha_publicacion?.[0] || errores.actualizacion_fecha_publicacion?.[0] }}
+                </div>
+
+                <div class="form-text text-primary fw-bold mt-1">
+                  <i class="bi bi-clock-fill me-1"></i>
+                  El registro se publicará automáticamente en esta fecha y hora.
+                </div>
+              </template>
+
+              <template v-else-if="estadoParaVista !== 'publicado'">
+                <label class="form-label fw-bold ">Fecha de creación</label>
 
                 <input v-model="form.fecha_creacion" type="date" class="form-control bg-light" readonly disabled />
 
@@ -266,10 +288,39 @@
 
         <!-- COLUMNA DERECHA: editor -->
         <div class="editor-column">
-          <label class="form-label fw-bold text-primary">Contenido</label>
-          <div class="editor-wrapper">
+          <div class="editor-column-header">
+            <label class="form-label fw-bold text-primary mb-0">Contenido</label>
+
+            <div class="pestanas-editor" role="tablist">
+              <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'editor' }"
+                role="tab" :aria-selected="pestanaActiva === 'editor'" @click="pestanaActiva = 'editor'">
+                <i class="bi bi-pencil-square"></i>
+                Editor
+              </button>
+
+              <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'vista-previa' }"
+                role="tab" :aria-selected="pestanaActiva === 'vista-previa'" @click="abrirVistaPrevia">
+                <i class="bi bi-eye"></i>
+                Vista previa
+              </button>
+            </div>
+          </div>
+
+          <div class="editor-wrapper" v-show="pestanaActiva === 'editor'">
             <div ref="editorHolder" id="editorjs" class="editor-container"></div>
           </div>
+
+          <VistaPreviaRegistro
+            v-if="pestanaActiva === 'vista-previa'"
+            :titulo="form.titulo"
+            :version="form.version"
+            :resumen="form.resumen"
+            :area-nombre="areaSeleccionadaNombre"
+            :categorias="categoriasSeleccionadas.map(c => c.nombre)"
+            :imagen-url="imagenUrlPreview"
+            :fecha-texto="fechaTextoPreview"
+            :contenido-html="contenidoPreviewHtml"
+          />
         </div>
 
         <!-- ACCIONES: fuera de la columna izquierda para que siempre queden al final -->
@@ -303,12 +354,17 @@
 
 
 <script setup lang="ts">
-import { computed, reactive, ref, shallowRef, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { computed, reactive, ref, watch, nextTick, onBeforeUnmount, onMounted, toRef } from 'vue'
+import { storeToRefs } from 'pinia'
 import api from '../../api/api'
-import EditorJS from '@editorjs/editorjs'
-import Header from '@editorjs/header'
-import ImageTool from '@editorjs/image'
-import List from '@editorjs/list'
+import { useAreasStore } from '../../stores/areas'
+import { useCategoriasStore } from '../../stores/categorias'
+import { useEditorJS } from '../../composables/useEditorJS'
+import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
+import { useFechaProgramada } from '../../composables/useFechaProgramada'
+import { useImagenDestacada, resolverUrlImagen } from '../../composables/useImagenDestacada'
+import { useVistaPrevia } from '../../composables/useVistaPrevia'
+import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 
 // Props
 const props = withDefaults(defineProps<{
@@ -327,21 +383,17 @@ const emit = defineEmits<{
 // Refs
 const inputTitulo = ref<HTMLInputElement | null>(null)
 const editorHolder = ref<HTMLElement | null>(null)
-const editor = shallowRef<EditorJS | null>(null)
+const { editor, iniciar: iniciarEditor, destruir: destruirEditor } = useEditorJS()
 
 // Estado
 const cargando = ref(true)
 const guardando = ref(false)
 const mensajeOk = ref('')
 const errores = ref<Record<string, string[]>>({})
-const archivoImagen = ref<File | null>(null)
-const previewImagen = ref<string | null>(null)
-const listaAreas = ref<any[]>([])
-const listaCategorias = ref<any[]>([])
-
-// Estado del select de categorías
-const selectAbierto = ref(false)
-const busquedaCategoria = ref('')
+const areasStore = useAreasStore()
+const categoriasStore = useCategoriasStore()
+const { areas: listaAreas } = storeToRefs(areasStore)
+const { categorias: listaCategorias } = storeToRefs(categoriasStore)
 
 // Formulario
 const form = reactive({
@@ -355,7 +407,8 @@ const form = reactive({
   usuario_id_autor: null as number | null,
   estado: 'borrador',
   fecha_creacion: '',
-  fecha_publicacion: ''
+  fecha_publicacion: '',
+  fecha_programada: ''
 })
 
 const LIMITE_RESUMEN = 800
@@ -368,116 +421,32 @@ const resumenExcedeLimite = computed(() => {
 const modoCorreccion = computed(() => props.modoCorreccion)
 const estadoParaVista = computed(() => props.modoCorreccion ? 'publicado' : form.estado)
 
+const { fechaMinimaProgramada, validarFechaProgramada } = useFechaProgramada()
+
+const {
+  archivo: archivoImagen,
+  preview: previewImagen,
+  seleccionarArchivo: manejarImagenBase,
+  quitarImagen: eliminarImagenPreview,
+} = useImagenDestacada({
+  onError: (mensaje) => { errores.value.imagen_destacada = [mensaje] },
+})
+
 const textoBotonGuardar = computed(() => {
   if (guardando.value) return 'Procesando...'
   return props.modoCorreccion ? 'Enviar corrección' : 'Guardar cambios'
 })
 
-// Categorías seleccionadas con detalles
-const categoriasSeleccionadas = computed(() => {
-  return form.categoria_ids
-    .map(id => {
-      const categoria = listaCategorias.value.find(c => Number(c.categoria_actualizacion_id) === id)
-      return categoria ? {
-        id: Number(categoria.categoria_actualizacion_id),
-        nombre: categoria.categoria_actualizacion_nombre
-      } : null
-    })
-    .filter(c => c !== null)
-})
-
-// Categorías filtradas por búsqueda
-const categoriasFiltradas = computed(() => {
-  if (!busquedaCategoria.value) return listaCategorias.value
-  const busqueda = busquedaCategoria.value.toLowerCase()
-  return listaCategorias.value.filter(cat =>
-    cat.categoria_actualizacion_nombre.toLowerCase().includes(busqueda)
-  )
-})
-
-const normalizarCategoriaIds = (valor: any): number[] => {
-  const ids = Array.isArray(valor) ? valor : (valor ? [valor] : [])
-  return ids
-    .map((id) => Number(id))
-    .filter((id, index, array) => Number.isFinite(id) && id > 0 && array.indexOf(id) === index)
-    .slice(0, 3)
-}
-
-const categoriaSeleccionada = (categoriaId: number) => {
-  return form.categoria_ids.includes(categoriaId)
-}
-
-const toggleCategoria = (categoriaId: number) => {
-  const index = form.categoria_ids.indexOf(categoriaId)
-
-  if (index > -1) {
-    form.categoria_ids.splice(index, 1)
-  } else {
-    if (form.categoria_ids.length < 3) {
-      form.categoria_ids.push(categoriaId)
-    }
-  }
-}
-
-const toggleSelect = () => {
-  selectAbierto.value = !selectAbierto.value
-  if (!selectAbierto.value) {
-    busquedaCategoria.value = ''
-  }
-}
-
-// Función para asignar colores según la categoría
-// const getCategoriaColor = (nombre: string) => {
-//   const colorMap: Record<string, string> = {
-//     'inicio': '#077E9D',
-//     'noticias': '#FCBB1C',
-//     'actualizaciones': '#025B7D',
-//     'documentos': '#4F46E5',
-//     'tutoriales': '#10B981',
-//     'eventos': '#F59E0B',
-//     'avisos': '#EF4444',
-//     'novedades': '#8B5CF6'
-//   }
-
-//   const lowerNombre = nombre.toLowerCase()
-//   for (const [key, color] of Object.entries(colorMap)) {
-//     if (lowerNombre.includes(key)) {
-//       return color
-//     }
-//   }
-//   return '#077E9D'
-// }
-
-// Función para asignar iconos según la categoría
-// const getCategoriaIcon = (nombre: string) => {
-//   const iconMap: Record<string, string> = {
-//     'inicio': 'bi bi-house-fill',
-//     'noticias': 'bi bi-megaphone-fill',
-//     'actualizaciones': 'bi bi-arrow-repeat',
-//     'documentos': 'bi bi-file-text-fill',
-//     'tutoriales': 'bi bi-journal-bookmark-fill',
-//     'eventos': 'bi bi-calendar-event-fill',
-//     'avisos': 'bi bi-bell-fill',
-//     'novedades': 'bi bi-star-fill'
-//   }
-
-//   const lowerNombre = nombre.toLowerCase()
-//   for (const [key, icon] of Object.entries(iconMap)) {
-//     if (lowerNombre.includes(key)) {
-//       return icon
-//     }
-//   }
-//   return 'bi bi-tag-fill'
-// }
-
-// Cerrar select al hacer click fuera
-const cerrarSelectAlClickFuera = (event: MouseEvent) => {
-  const wrapper = document.querySelector('.categoria-select-wrapper')
-  if (wrapper && !wrapper.contains(event.target as Node)) {
-    selectAbierto.value = false
-    busquedaCategoria.value = ''
-  }
-}
+const {
+  wrapperRef: categoriaSelectRef,
+  selectAbierto,
+  busquedaCategoria,
+  categoriasFiltradas,
+  categoriasSeleccionadas,
+  categoriaSeleccionada,
+  toggleCategoria,
+  toggleSelect,
+} = useCategoriaSelector(toRef(form, 'categoria_ids'), listaCategorias)
 
 const formularioValido = computed(() => {
   return form.titulo.trim() !== '' &&
@@ -490,46 +459,60 @@ const formularioValido = computed(() => {
 
 // Métodos
 const manejarImagen = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    const file = target.files[0]
-    const maxSize = 5 * 1024 * 1024 // 5MB
-
-    if (file.size > maxSize) {
-      errores.value.imagen_destacada = ['La imagen no debe superar los 5MB']
-      return
-    }
-
-    if (!file.type.startsWith('image/')) {
-      errores.value.imagen_destacada = ['Solo se permiten archivos de imagen']
-      return
-    }
-
-    archivoImagen.value = file
-    previewImagen.value = URL.createObjectURL(file)
+  manejarImagenBase(event)
+  if (archivoImagen.value) {
     delete errores.value.imagen_destacada
-  } else {
-    archivoImagen.value = null
-    previewImagen.value = null
   }
 }
 
 const eliminarImagen = () => {
-  archivoImagen.value = null
-  previewImagen.value = null
+  eliminarImagenPreview()
   form.imagen_destacada = ''
 }
 
-const obtenerUrlImagen = (ruta: string) => {
-  if (!ruta) return ''
-  if (ruta.startsWith('http')) return ruta
+const obtenerUrlImagen = (ruta: string) => resolverUrlImagen(ruta)
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+// ── Vista previa ──────────────────────────────────────────────────
+const { generarHtmlContenido } = useVistaPrevia()
+const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
+const contenidoPreviewHtml = ref('')
 
-  if (ruta.startsWith('/storage/')) return `${backendUrl}${ruta}`
-  if (ruta.startsWith('storage/')) return `${backendUrl}/${ruta}`
+const areaSeleccionadaNombre = computed(() => {
+  const area = listaAreas.value.find(
+    (a) => String(a.area_servicio_id) === String(form.area_servicio_id)
+  )
+  return area?.area_servicio_nombre || ''
+})
 
-  return `${backendUrl}/storage/${ruta}`
+const imagenUrlPreview = computed(() => {
+  return previewImagen.value || (form.imagen_destacada ? obtenerUrlImagen(form.imagen_destacada) : null)
+})
+
+const fechaTextoPreview = computed(() => {
+  if (estadoParaVista.value === 'programado' || form.estado === 'programado') {
+    if (!form.fecha_programada) return 'Se publicará cuando definas una fecha programada'
+    const fecha = new Date(form.fecha_programada)
+    return `Programado para el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} a las ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  if (!form.fecha_publicacion) return 'Sin fecha de publicación definida'
+  const fecha = new Date(form.fecha_publicacion)
+  return `Publicado el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`
+})
+
+/**
+ * Toma el contenido actual del editor (sin guardar los cambios todavía)
+ * y arma el HTML de vista previa, tal cual se vería públicamente.
+ */
+const abrirVistaPrevia = async () => {
+  if (editor.value) {
+    try {
+      const outputData = await editor.value.save()
+      contenidoPreviewHtml.value = generarHtmlContenido(outputData)
+    } catch (error) {
+      console.error('Error al generar la vista previa:', error)
+    }
+  }
+  pestanaActiva.value = 'vista-previa'
 }
 
 const formatearFechaParaInput = (fecha: any) => {
@@ -540,59 +523,36 @@ const formatearFechaParaInput = (fecha: any) => {
   return isNaN(fechaObj.getTime()) ? '' : fechaObj.toISOString().split('T')[0]
 }
 
+// Igual que formatearFechaParaInput, pero conservando hora:minuto para
+// inputs type="datetime-local" (que esperan la hora en horario local).
+const formatearFechaHoraParaInput = (fecha: any) => {
+  if (!fecha) return ''
+  const fechaObj = typeof fecha === 'number' && fecha < 10000000000
+    ? new Date(fecha * 1000)
+    : new Date(fecha)
+
+  if (isNaN(fechaObj.getTime())) return ''
+
+  const conOffsetLocal = new Date(fechaObj.getTime() - fechaObj.getTimezoneOffset() * 60000)
+  return conOffsetLocal.toISOString().slice(0, 16)
+}
+
 const cargarListas = async () => {
   try {
-    const [resAreas, resCategorias] = await Promise.all([
-      api.get('/area-servicio'),
-      api.get('/categorias'),
+    await Promise.all([
+      areasStore.fetchAreas(),
+      categoriasStore.fetchCategorias(),
     ])
-
-    listaAreas.value = resAreas.data?.data || []
-    listaCategorias.value = resCategorias.data?.data || []
   } catch (error) {
     console.error('Error al cargar catálogos:', error)
   }
 }
 
 const initEditor = async (initialData: any = {}) => {
-  if (editor.value) {
-    await editor.value.destroy()
-  }
-
-  editor.value = new EditorJS({
+  await iniciarEditor({
     holder: editorHolder.value!,
     data: initialData,
-    tools: {
-      header: {
-        class: Header as any,
-        inlineToolbar: true,
-        config: {
-          placeholder: 'Escribe un subtítulo',
-          levels: [2, 3, 4],
-          defaultLevel: 2,
-        },
-      },
-      list: List,
-      image: {
-        class: ImageTool,
-        config: {
-          uploader: {
-            async uploadByFile(file: File) {
-              try {
-                const formData = new FormData()
-                formData.append('imagen', file)
-                const respuesta = await api.post('/subir-imagen-blog', formData)
-                return { success: 1, file: { url: respuesta.data.url } }
-              } catch (error) {
-                console.error('Error subiendo imagen:', error)
-                alert('Hubo un error al subir la imagen.')
-                return { success: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
+    headerLevels: [2, 3, 4],
   })
 }
 
@@ -616,6 +576,8 @@ const cargarRegistro = async () => {
   mensajeOk.value = ''
   archivoImagen.value = null
   previewImagen.value = null
+  pestanaActiva.value = 'editor'
+  contenidoPreviewHtml.value = ''
 
   try {
     const respuesta = await api.get(`/actualizaciones/${props.id}`)
@@ -628,6 +590,9 @@ const cargarRegistro = async () => {
     form.estado = data.actualizacion_estado ?? 'borrador'
     form.fecha_publicacion = formatearFechaParaInput(data.actualizacion_fecha_publicacion)
     form.fecha_creacion = formatearFechaParaInput(data.actualizacion_fecha_creacion)
+    form.fecha_programada = form.estado === 'programado'
+      ? formatearFechaHoraParaInput(data.actualizacion_fecha_publicacion)
+      : ''
 
     if (props.modoCorreccion && !form.fecha_publicacion) {
       form.fecha_publicacion = new Date().toISOString().split('T')[0]
@@ -673,6 +638,16 @@ const guardarCambios = async () => {
 
   if (!formularioValido.value) return
 
+  const estadoAEnviar = props.modoCorreccion ? 'publicado' : form.estado
+
+  if (estadoAEnviar === 'programado') {
+    const errorFecha = validarFechaProgramada(form.fecha_programada)
+    if (errorFecha) {
+      errores.value = { actualizacion_fecha_publicacion: [errorFecha] }
+      return
+    }
+  }
+
   guardando.value = true
   errores.value = {}
   mensajeOk.value = ''
@@ -702,7 +677,9 @@ const guardarCambios = async () => {
     const estadoFinal = props.modoCorreccion ? 'publicado' : form.estado
     const fechaPublicacionFinal = estadoFinal === 'publicado'
       ? (form.fecha_publicacion || new Date().toISOString().split('T')[0])
-      : form.fecha_publicacion
+      : estadoFinal === 'programado'
+        ? form.fecha_programada
+        : form.fecha_publicacion
 
     const payload = {
       actualizacion_titulo: form.titulo,
@@ -745,22 +722,13 @@ onMounted(async () => {
   await cargarListas()
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
-  document.addEventListener('click', cerrarSelectAlClickFuera)
 })
 
 onBeforeUnmount(() => {
   const modalEl = document.getElementById('modalEditarRegistro')
   modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
-  document.removeEventListener('click', cerrarSelectAlClickFuera)
 
-  if (editor.value && typeof editor.value.destroy === 'function') {
-    editor.value.destroy()
-  }
-
-  // Limpiar previews de imágenes
-  if (previewImagen.value) {
-    URL.revokeObjectURL(previewImagen.value)
-  }
+  destruirEditor()
 })
 
 // Watchers
@@ -776,23 +744,23 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   if (cargando.value) return
 
   if (nuevoEstado === 'publicado') {
-    if (!form.fecha_publicacion || ['inactivo', 'borrador', 'revision'].includes(viejoEstado || '')) {
+    if (!form.fecha_publicacion || ['inactivo', 'borrador', 'revision', 'programado'].includes(viejoEstado || '')) {
       const hoy = new Date()
       form.fecha_publicacion = hoy.toISOString().split('T')[0]
     }
+    form.fecha_programada = ''
+  } else if (nuevoEstado === 'programado') {
+    if (!form.fecha_programada) {
+      form.fecha_programada = fechaMinimaProgramada.value
+    }
   } else if (['inactivo', 'borrador'].includes(nuevoEstado)) {
     form.fecha_publicacion = ''
+    form.fecha_programada = ''
   }
 })
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-}
-
 /* ─── Colores y utilidades ──────────────────────────────── */
 .text-primary {
   color: var(--primary) !important;
@@ -942,6 +910,53 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+
+.editor-column-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pestanas-editor {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.pestana-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pestana-btn:hover {
+  color: var(--primary);
+}
+
+.pestana-btn.activa {
+  color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.editor-column > :deep(.vista-previa-container) {
+  flex: 1;
+  min-height: 0;
 }
 
 .editor-wrapper {

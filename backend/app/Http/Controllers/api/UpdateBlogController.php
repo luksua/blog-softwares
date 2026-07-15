@@ -345,7 +345,20 @@ class UpdateBlogController extends Controller
                 Rule::in($this->estadosPermitidos()),
             ],
 
+            'actualizacion_fecha_publicacion' => [
+                Rule::requiredIf(fn () => $request->input('actualizacion_estado') === 'programado'),
+                'nullable',
+                'date',
+                Rule::when(
+                    $request->input('actualizacion_estado') === 'programado',
+                    ['after:now'],
+                ),
+            ],
+
             'imagenes_quill' => ['nullable', 'string'],
+        ], [
+            'actualizacion_fecha_publicacion.required' => 'Debes indicar la fecha y hora en que se publicará el registro.',
+            'actualizacion_fecha_publicacion.after' => 'La fecha programada debe ser posterior al momento actual.',
         ]);
 
         try {
@@ -377,9 +390,11 @@ class UpdateBlogController extends Controller
 
                 'actualizacion_estado' => $estado,
                 'actualizacion_fecha_creacion' => now(),
-                'actualizacion_fecha_publicacion' => $estado === 'publicado'
-                    ? now()
-                    : null,
+                'actualizacion_fecha_publicacion' => match (true) {
+                    $estado === 'publicado' => now(),
+                    $estado === 'programado' => $datosValidados['actualizacion_fecha_publicacion'],
+                    default => null,
+                },
             ];
 
             if ($request->hasFile('actualizacion_imagen_destacada')) {
@@ -468,8 +483,19 @@ class UpdateBlogController extends Controller
             ],
             'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
             'actualizacion_estado' => ['sometimes', 'required', Rule::in($this->estadosPermitidos())],
-            'actualizacion_fecha_publicacion' => ['nullable', 'date'],
+            'actualizacion_fecha_publicacion' => [
+                Rule::requiredIf(fn () => $request->input('actualizacion_estado') === 'programado'),
+                'nullable',
+                'date',
+                Rule::when(
+                    $request->input('actualizacion_estado') === 'programado',
+                    ['after:now'],
+                ),
+            ],
             'actualizacion_es_correccion' => ['sometimes', 'boolean'],
+        ], [
+            'actualizacion_fecha_publicacion.required' => 'Debes indicar la fecha y hora en que se publicará el registro.',
+            'actualizacion_fecha_publicacion.after' => 'La fecha programada debe ser posterior al momento actual.',
         ]);
 
         $correccionSolicitada = filter_var(
@@ -789,6 +815,7 @@ class UpdateBlogController extends Controller
             'borrador',
             'revision',
             'publicado',
+            'programado',
             'inactivo',
         ];
     }

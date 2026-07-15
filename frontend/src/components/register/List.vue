@@ -16,6 +16,16 @@
           </div>
 
           <div class="filtro-movil-item">
+            <select v-model="filtros.areaServicioId" class="select-movil">
+              <option value="">Todas las áreas</option>
+              <option v-for="area in areasDisponibles" :key="area.area_servicio_id"
+                :value="Number(area.area_servicio_id)">
+                {{ area.area_servicio_nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filtro-movil-item">
             <select v-model="filtros.categoriaId" class="select-movil">
               <option value="">Todas las categorías</option>
               <option v-for="categoria in categoriasDisponibles" :key="categoria.categoria_actualizacion_id"
@@ -57,178 +67,17 @@
 
       <!-- Lista de tarjetas móvil -->
       <div v-else class="tarjetas-movil">
-        <div v-for="item in actualizaciones" :key="item.id" class="tarjeta-movil" @click="verDetalles(item.id)">
-          <div class="tarjeta-header">
-            <h3 class="tarjeta-titulo">{{ item.actualizacion_titulo }}</h3>
-            <span :class="['estado-badge-movil', mapearClaseEstado(item.actualizacion_estado)]">
-              {{ item.actualizacion_estado }}
-            </span>
-          </div>
-
-          <div class="tarjeta-info">
-            <div class="info-row">
-              <i class="bi bi-tag"></i>
-              <span class="info-label">Versión:</span>
-              <span class="info-value">v{{ item.actualizacion_version }}</span>
-            </div>
-
-            <!-- ======= ÁREA (selector moderno) ======= -->
-            <div class="filtro-grupo info-row">
-              <label class="filtro-label">Área / Servicio</label>
-              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!areaSeleccionada">
-                    <i class="bi bi-building"></i>
-                    <span>Selecciona un área...</span>
-                  </div>
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">{{ areaSeleccionada.area_servicio_nombre }}</span>
-                  </div>
-                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
-                  </div>
-                  <div class="dropdown-options">
-                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
-                      class="dropdown-option"
-                      :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
-                      @click="seleccionarArea(Number(area.area_servicio_id))">
-                      <span class="option-name">{{ area.area_servicio_nombre }}</span>
-                      <span class="option-check">
-                        <i v-if="areaSeleccionada?.area_servicio_id === area.area_servicio_id"
-                          class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
-                      No se encontraron áreas
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- ======= CATEGORÍA (selector moderno) ======= -->
-            <div class="filtro-grupo info-row">
-              <label class="filtro-label">Categoría</label>
-              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
-                    <i class="bi bi-tags-fill"></i>
-                    <span>Todas las categorías</span>
-                  </div>
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">{{ categoriaSeleccionada.nombre }}</span>
-                  </div>
-                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
-                  </div>
-                  <div class="dropdown-options">
-                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
-                      @click="seleccionarCategoria('')">
-                      <span class="option-name">Todas las categorías</span>
-                      <span class="option-check">
-                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
-                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
-                      @click="seleccionarCategoria(cat.id)">
-                      <span class="option-name">
-                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
-                        {{ cat.nombre }}
-                      </span>
-                      <span class="option-check">
-                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
-                      No se encontraron categorías
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-
-            <!-- <div class="info-row">
-              <i class="bi bi-folder"></i>
-              <span class="info-label">Área:</span>
-              <span class="info-value">{{ obtenerNombreArea(item) }}</span>
-            </div> -->
-
-            <!-- <div class="info-row">
-              <i class="bi bi-grid"></i>
-              <span class="info-label">Categorías:</span>
-              <div class="categorias-movil">
-                <span 
-                  v-for="(cat, idx) in obtenerListaCategorias(item)" 
-                  :key="idx"
-                  class="cat-badge-movil"
-                  :style="{ backgroundColor: getCategoriaColor(cat) + '15', color: getCategoriaColor(cat) }"
-                >
-                  {{ cat }}
-                </span>
-                <span v-if="obtenerListaCategorias(item).length === 0" class="cat-vacia">Sin categoría</span>
-              </div>
-            </div> -->
-
-            <div class="info-row">
-              <i class="bi bi-calendar"></i>
-              <span class="info-label">Fecha:</span>
-              <span class="info-value">{{ formatearFecha(item.actualizacion_fecha_publicacion ||
-                item.actualizacion_fecha_creacion) }}</span>
-            </div>
-
-            <div v-if="esVistaSupervision" class="info-row">
-              <i class="bi bi-person"></i>
-              <span class="info-label">Empleado:</span>
-              <span class="info-value">{{ obtenerNombreAutor(item) }}</span>
-            </div>
-          </div>
-
-          <div class="tarjeta-acciones" @click.stop>
-            <button class="accion-movil ver" @click="verDetalles(item.id)">
-              <i class="bi bi-eye"></i>
-              <span>Ver</span>
-            </button>
-
-            <template v-if="esVistaSupervision">
-              <button v-if="item.actualizacion_estado !== 'revision'" class="accion-movil revision"
-                @click="confirmarRevision(item)">
-                <i class="bi bi-clipboard-check"></i>
-                <span>Revisar</span>
-              </button>
-            </template>
-
-            <template v-else>
-              <button class="accion-movil editar" @click="editarActualizacion(item)" data-bs-toggle="modal"
-                data-bs-target="#modalEditarRegistro">
-                <i :class="item.actualizacion_estado === 'revision' ? 'bi bi-send-check' : 'bi bi-pencil-square'"></i>
-                <span>{{ item.actualizacion_estado === 'revision' ? 'Corregir' : 'Editar' }}</span>
-              </button>
-
-              <button v-if="item.actualizacion_estado !== 'inactivo'" class="accion-movil archivar"
-                @click="confirmarEliminar(item)">
-                <i class="bi bi-archive"></i>
-                <span>Archivar</span>
-              </button>
-
-              <button v-else class="accion-movil activar" @click="confirmarActivar(item)">
-                <i class="bi bi-box-arrow-in-up"></i>
-                <span>Activar</span>
-              </button>
-            </template>
-          </div>
-        </div>
+        <TarjetaMovilRegistro
+          v-for="item in actualizaciones"
+          :key="item.id"
+          :item="item"
+          :es-vista-supervision="esVistaSupervision"
+          @ver="verDetalles"
+          @editar="editarActualizacion"
+          @archivar="confirmarEliminar"
+          @activar="confirmarActivar"
+          @revisar="confirmarRevision"
+        />
 
         <div v-if="actualizaciones.length === 0 && !cargando" class="vacio-movil">
           <i class="bi bi-inbox"></i>
@@ -320,202 +169,30 @@
               </select>
             </div>
 
-            <!-- ======= ÁREA (selector moderno) ======= -->
-            <!-- <div v-if="!esVistaSupervision" class="filtro-grupo">
-              <label class="filtro-label">Área / Servicio</label>
-              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!areaSeleccionada">
-                    <i class="bi bi-building"></i>
-                    <span>Selecciona un área...</span>
-                  </div>
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">{{ areaSeleccionada.area_servicio_nombre }}</span>
-                  </div>
-                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
-                  </div>
-                  <div class="dropdown-options">
-                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
-                      class="dropdown-option"
-                      :class="{ selected: areaSeleccionada?.area_servicio_id === area.area_servicio_id }"
-                      @click="seleccionarArea(Number(area.area_servicio_id))">
-                      <span class="option-name">{{ area.area_servicio_nombre }}</span>
-                      <span class="option-check">
-                        <i v-if="areaSeleccionada?.area_servicio_id === area.area_servicio_id"
-                          class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
-                      No se encontraron áreas
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> -->
-
-            <!-- ======= CATEGORÍA (selector moderno) ======= -->
-            <!-- <div class="filtro-grupo">
-              <label class="filtro-label">Categoría</label>
-              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
-                    <i class="bi bi-tags-fill"></i>
-                    <span>Todas las categorías</span>
-                  </div>
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">{{ categoriaSeleccionada.nombre }}</span>
-                  </div>
-                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
-                  </div>
-                  <div class="dropdown-options">
-                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
-                      @click="seleccionarCategoria('')">
-                      <span class="option-name">Todas las categorías</span>
-                      <span class="option-check">
-                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
-                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
-                      @click="seleccionarCategoria(cat.id)">
-                      <span class="option-name">
-                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
-                        {{ cat.nombre }}
-                      </span>
-                      <span class="option-check">
-                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
-                      No se encontraron categorías
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> -->
-
-
-            <!-- Área / Servicio -->
             <div class="filtro-grupo">
               <label class="filtro-label">Área / Servicio</label>
-
-              <div class="categoria-select-wrapper" :class="{ open: areaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="areaDropdownAbierto = !areaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!areaSeleccionada">
-                    <i class="bi bi-building"></i>
-                    <span>Selecciona un área...</span>
-                  </div>
-
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">
-                      <i class="bi bi-building"></i>
-                      {{ areaSeleccionada.area_servicio_nombre }}
-                    </span>
-                  </div>
-
-                  <i class="bi" :class="areaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="areaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="areasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaArea" placeholder="Buscar área..." @click.stop />
-                  </div>
-
-                  <div class="dropdown-options">
-                    <button type="button" v-for="area in areasFiltradas" :key="area.area_servicio_id"
-                      class="dropdown-option" :class="{
-                        selected: Number(areaSeleccionada?.area_servicio_id) === Number(area.area_servicio_id)
-                      }" @click="seleccionarArea(Number(area.area_servicio_id))">
-                      <span class="option-name">
-                        {{ area.area_servicio_nombre }}
-                      </span>
-
-                      <span class="option-check">
-                        <i v-if="Number(areaSeleccionada?.area_servicio_id) === Number(area.area_servicio_id)"
-                          class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-
-                    <div v-if="areasFiltradas.length === 0" class="dropdown-empty">
-                      No se encontraron áreas
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SelectorBusqueda
+                v-model="filtros.areaServicioId"
+                :opciones="areasConOpcion"
+                placeholder="Selecciona un área..."
+                icono-placeholder="bi-building"
+                texto-busqueda="Buscar área..."
+                texto-vacio="No se encontraron áreas"
+              />
             </div>
 
-            <!-- Categoría -->
             <div class="filtro-grupo">
               <label class="filtro-label">Categoría</label>
-
-              <div class="categoria-select-wrapper" :class="{ open: categoriaDropdownAbierto }">
-                <div class="categoria-select-trigger" @click="categoriaDropdownAbierto = !categoriaDropdownAbierto">
-                  <div class="select-placeholder" v-if="!categoriaSeleccionada">
-                    <i class="bi bi-tags-fill"></i>
-                    <span>Todas las categorías</span>
-                  </div>
-
-                  <div class="select-selected" v-else>
-                    <span class="selected-tag-single">
-                      <i class="bi" :class="categoriaSeleccionada.icono"></i>
-                      {{ categoriaSeleccionada.nombre }}
-                    </span>
-                  </div>
-
-                  <i class="bi" :class="categoriaDropdownAbierto ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-                </div>
-
-                <div v-if="categoriaDropdownAbierto" class="categoria-select-dropdown">
-                  <div class="dropdown-search" v-if="categoriasDisponibles.length > 5">
-                    <i class="bi bi-search"></i>
-                    <input type="text" v-model="busquedaCategoria" placeholder="Buscar categoría..." @click.stop />
-                  </div>
-
-                  <div class="dropdown-options">
-                    <button type="button" class="dropdown-option" :class="{ selected: !categoriaSeleccionada }"
-                      @click="seleccionarCategoria('')">
-                      <span class="option-name">
-                        <i class="bi bi-tags-fill" style="margin-right: 8px;"></i>
-                        Todas las categorías
-                      </span>
-
-                      <span class="option-check">
-                        <i v-if="!categoriaSeleccionada" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-
-                    <button type="button" v-for="cat in categoriasFiltradasConIcono" :key="cat.id"
-                      class="dropdown-option" :class="{ selected: categoriaSeleccionada?.id === cat.id }"
-                      @click="seleccionarCategoria(cat.id)">
-                      <span class="option-name">
-                        <i class="bi" :class="cat.icono" style="margin-right: 8px;"></i>
-                        {{ cat.nombre }}
-                      </span>
-
-                      <span class="option-check">
-                        <i v-if="categoriaSeleccionada?.id === cat.id" class="bi bi-check-lg"></i>
-                      </span>
-                    </button>
-
-                    <div v-if="categoriasFiltradasConIcono.length === 0" class="dropdown-empty">
-                      No se encontraron categorías
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <SelectorBusqueda
+                v-model="filtros.categoriaId"
+                :opciones="categoriasConIcono"
+                placeholder="Todas las categorías"
+                icono-placeholder="bi-tags-fill"
+                texto-busqueda="Buscar categoría..."
+                texto-vacio="No se encontraron categorías"
+                mostrar-opcion-todas
+                texto-opcion-todas="Todas las categorías"
+              />
             </div>
             <div class="filtro-acciones">
               <button class="btn-limpiar" @click="limpiarFiltros">
@@ -760,77 +437,41 @@
     </div>
   </div>
 
-  <!-- Offcanvas: Revisiones pendientes (solo mis-registros) -->
-  <Teleport to="body">
-    <template v-if="mostrarAlertaRevision">
-      <!-- Overlay -->
-      <div :class="['oc-overlay', { 'oc-overlay--open': offcanvasAbierto }]" @click="offcanvasAbierto = false" />
-
-      <!-- Botón flotante -->
-      <button class="fab-revision" :class="{ 'fab-revision--pulsing': !offcanvasAbierto }"
-        @click="offcanvasAbierto = true" aria-label="Ver revisiones pendientes" title="Revisiones pendientes">
-        <i class="bi bi-clipboard-check"></i>
-        <span class="fab-badge">{{ notificacionesRevision.length }}</span>
-      </button>
-
-      <!-- Panel offcanvas -->
-      <aside :class="['oc-revision', { 'oc-revision--open': offcanvasAbierto }]" role="dialog" aria-modal="true"
-        aria-label="Revisiones pendientes">
-        <div class="oc-header">
-          <div class="oc-header-left">
-            <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
-            <span class="oc-title">Revisión pendiente</span>
-            <span class="oc-count">{{ notificacionesRevision.length }}</span>
-          </div>
-          <button class="oc-close" @click="offcanvasAbierto = false" aria-label="Cerrar panel de revisiones">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-
-        <div class="oc-body">
-          <div v-for="notificacion in notificacionesRevision" :key="notificacion.id" class="oc-item">
-            <div class="oc-item-inner">
-              <div class="oc-item-icon-wrap">
-                <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
-              </div>
-              <div class="oc-item-content">
-                <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
-                <button v-if="notificacion.actualizacion_id" type="button" class="oc-item-btn"
-                  @click="handleCorreccionDesdeOffcanvas(notificacion)">
-                  <i class="bi bi-pencil-square"></i>
-                  Corregir registro
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </template>
-  </Teleport>
+  <PanelRevisionesPendientes
+    :mostrar="mostrarAlertaRevision"
+    v-model:abierto="offcanvasAbierto"
+    :notificaciones="notificacionesRevision"
+    @corregir="handleCorreccionDesdeOffcanvas"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import api from '../../api/api'
 import type { Version } from '../../types/version';
 import Edit from './EditVersion.vue'
+import SelectorBusqueda from '../shared/SelectorBusqueda.vue'
+import PanelRevisionesPendientes from './PanelRevisionesPendientes.vue'
+import TarjetaMovilRegistro from './TarjetaMovilRegistro.vue'
 import { Modal } from 'bootstrap'
+import { useAreasStore } from '../../stores/areas'
+import { useCategoriasStore } from '../../stores/categorias'
+import {
+  formatearFecha,
+  mapearClaseEstado,
+  obtenerNombreArea,
+  obtenerListaCategorias,
+  getCategoriaColor,
+  getCategoriaIcon,
+  obtenerNombreAutor,
+} from '../../utils/formatoRegistro'
 import {
   listarNotificaciones,
   marcarNotificacionLeida,
   type BlogNotification,
 } from '../../api/notificaciones'
-
-type AreaFiltro = {
-  area_servicio_id: number | string
-  area_servicio_nombre: string
-}
-
-type CategoriaFiltro = {
-  categoria_actualizacion_id: number | string
-  categoria_actualizacion_nombre: string
-}
 
 type EstadoFiltro = {
   id: string
@@ -866,8 +507,6 @@ const textoVacio = computed(() =>
     : 'Aún no se ha registrado ninguna actualización en el sistema.'
 )
 
-const ENDPOINT_AREAS = '/area-servicio'
-const ENDPOINT_CATEGORIAS = '/categorias'
 const ENDPOINT_STATUS = '/estados-actualizacion'
 
 const actualizaciones = ref<Version[]>([])
@@ -906,10 +545,12 @@ const filtros = ref<{
   categoriaId: '',
 })
 
-const areasDisponibles = ref<AreaFiltro[]>([])
-const categoriasDisponibles = ref<CategoriaFiltro[]>([])
+const areasStore = useAreasStore()
+const categoriasStore = useCategoriasStore()
+const { areas: areasDisponibles } = storeToRefs(areasStore)
+const { categorias: categoriasDisponibles } = storeToRefs(categoriasStore)
 const estadosDisponibles = ref<EstadoFiltro[]>([])
-const cargandoFiltros = ref(false)
+const cargandoFiltros = computed(() => areasStore.loading || categoriasStore.loading)
 
 const notificaciones = ref<BlogNotification[]>([])
 const cargandoNotificaciones = ref(false)
@@ -923,13 +564,6 @@ const notificacionesRevision = computed(() => {
 const mostrarAlertaRevision = computed(() => {
   return !esVistaSupervision.value && notificacionesRevision.value.length > 0
 })
-
-// Cierra el offcanvas con Escape
-const onKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && offcanvasAbierto.value) {
-    offcanvasAbierto.value = false
-  }
-}
 
 const cargarNotificacionesRevision = async () => {
   try {
@@ -1008,20 +642,15 @@ const actualizacionGuardada = async () => {
 }
 
 const obtenerCatalogosFiltros = async () => {
-  cargandoFiltros.value = true
   try {
-    const [areasResp, categoriasResp, estadosResp] = await Promise.all([
-      api.get(ENDPOINT_AREAS),
-      api.get(ENDPOINT_CATEGORIAS),
-      api.get(ENDPOINT_STATUS)
+    const [, , estadosResp] = await Promise.all([
+      areasStore.fetchAreas(),
+      categoriasStore.fetchCategorias(),
+      api.get(ENDPOINT_STATUS),
     ])
-    areasDisponibles.value = areasResp.data?.data || []
-    categoriasDisponibles.value = categoriasResp.data?.data || []
     estadosDisponibles.value = estadosResp.data?.data || []
   } catch (err) {
     console.error('Error al cargar catálogos de filtros:', err)
-  } finally {
-    cargandoFiltros.value = false
   }
 }
 
@@ -1096,21 +725,6 @@ const limpiarBusqueda = () => {
 
   obtenerActualizaciones(1)
 }
-const formatearFecha = (fechaString: string) => {
-  if (!fechaString) return 'Sin fecha'
-  const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: '2-digit' }
-  const fechaStr = new Date(fechaString).toLocaleDateString('es-ES', opciones)
-  return fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
-}
-
-const mapearClaseEstado = (estado: string) => {
-  const estadoMin = (estado || '').toLowerCase()
-  if (estadoMin === 'publicado') return 'estado-green'
-  if (estadoMin === 'borrador') return 'estado-yellow'
-  if (estadoMin === 'revision') return 'estado-blue'
-  if (estadoMin === 'inactivo') return 'estado-dark-gray'
-  return 'estado-gray'
-}
 
 let filtroTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -1129,89 +743,6 @@ watch(
     }, 250)
   }
 )
-
-const obtenerNombreArea = (item: Version) => item.area_servicio?.area_servicio_nombre || 'Sin área'
-
-const obtenerListaCategorias = (item: Version): string[] => {
-  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
-    return (item as any).categorias
-      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
-      .filter(Boolean)
-  }
-
-  if (item.categoria?.categoria_actualizacion_nombre) {
-    return [item.categoria.categoria_actualizacion_nombre]
-  }
-
-  return []
-}
-const seleccionarCategoria = (id: number | '') => {
-  filtros.value.categoriaId = id
-  categoriaDropdownAbierto.value = false
-}
-
-const getCategoriaColor = (nombre: string) => {
-  const colorMap: Record<string, string> = {
-    'inicio': '#077E9D',
-    'noticias': '#FCBB1C',
-    'actualizaciones': '#025B7D',
-    'documentos': '#4F46E5',
-    'tutoriales': '#10B981',
-    'eventos': '#F59E0B',
-    'avisos': '#EF4444',
-    'novedades': '#8B5CF6',
-    'seguridad': '#DC2626',
-    'capacitacion': '#14B8A6',
-    'proyectos': '#6366F1'
-  }
-
-  const lowerNombre = nombre.toLowerCase()
-  for (const [key, color] of Object.entries(colorMap)) {
-    if (lowerNombre.includes(key)) {
-      return color
-    }
-  }
-  return '#077E9D'
-}
-
-const getCategoriaIcon = (nombre: string) => {
-  const iconMap: Record<string, string> = {
-    'manual de usuario': 'bi-person-lines-fill',
-    'manual tecnico': 'bi-tools',
-    'instalador': 'bi-box-arrow-down',
-    'actualizacion del sistema': 'bi-arrow-repeat',
-    'nueva funcionalidad': 'bi-stars',
-    'mejora': 'bi-arrow-up-circle-fill',
-    'correccion de errores': 'bi-bug-fill',
-    'parche de seguridad': 'bi-shield-fill-check',
-    'guia de instalacion': 'bi-journal-arrow-down',
-    'guia rapida': 'bi-lightning-charge-fill',
-    'documentacion': 'bi-file-earmark-text-fill',
-    'notas de version': 'bi-card-list',
-    'general': 'bi-info-circle-fill',
-  }
-
-  const lowerNombre = nombre.toLowerCase()
-  for (const [key, icon] of Object.entries(iconMap)) {
-    if (lowerNombre.includes(key)) {
-      return icon
-    }
-  }
-  return 'bi bi-tag-fill'
-}
-
-// const obtenerNombreCategoria = (item: Version) => {
-//   const categorias = obtenerListaCategorias(item)
-//   return categorias.join(', ') || 'Sin categoría'
-// }
-
-const obtenerNombreAutor = (item: any) => {
-  const autor = item.usuario_autor || item.autor || item.usuario
-  if (!autor) return 'Empleado del área'
-  const nombres = [autor.usuario_nombre1, autor.usuario_nombre2, autor.usuario_apellido1, autor.usuario_apellido2]
-    .filter(Boolean).join(' ').trim()
-  return nombres || autor.usuario_nombre || autor.usuario_usuario || autor.usuario_login || 'Empleado del área'
-}
 
 const cambiarPagina = (pagina: number) => {
   if (pagina >= 1 && pagina <= totalPaginas.value && pagina !== paginaActual.value) {
@@ -1346,8 +877,6 @@ const marcarRevisionActualizacion = async () => {
   }
 }
 
-const categoriaDropdownAbierto = ref(false)
-
 const categoriasConIcono = computed(() => {
   return categoriasDisponibles.value.map((categoria: any) => {
     const id = Number(categoria.categoria_actualizacion_id ?? categoria.id)
@@ -1474,45 +1003,12 @@ const obtenerCategorias = (
   }]
 }
 
-// ── Área ──
-const areaDropdownAbierto = ref(false)
-const busquedaArea = ref('')
-
-const areaSeleccionada = computed(() => {
-  if (!filtros.value.areaServicioId) return null
-  return areasDisponibles.value.find(a => Number(a.area_servicio_id) === Number(filtros.value.areaServicioId)) || null
-})
-
-const areasFiltradas = computed(() => {
-  if (!busquedaArea.value) return areasDisponibles.value
-  const q = busquedaArea.value.toLowerCase()
-  return areasDisponibles.value.filter(a =>
-    a.area_servicio_nombre.toLowerCase().includes(q)
-  )
-})
-
-const seleccionarArea = (id: number) => {
-  filtros.value.areaServicioId = id
-  areaDropdownAbierto.value = false
-  busquedaArea.value = ''
-}
-
-// ── Categoría (reutilizamos el dropdown existente pero con nuevo trigger) ──
-const busquedaCategoria = ref('')
-// Nota: ya tienes 'categoriaDropdownAbierto' y 'seleccionarCategoria'
-// Solo necesitas el computed para la selección actual y el filtrado con íconos
-
-const categoriaSeleccionada = computed(() => {
-  if (!filtros.value.categoriaId) return null
-  return categoriasConIcono.value.find(c => c.id === Number(filtros.value.categoriaId)) || null
-})
-
-const categoriasFiltradasConIcono = computed(() => {
-  if (!busquedaCategoria.value) return categoriasConIcono.value
-  const q = busquedaCategoria.value.toLowerCase()
-  return categoriasConIcono.value.filter(c =>
-    c.nombre.toLowerCase().includes(q)
-  )
+// Área mapeada a la forma genérica { id, nombre } que espera <SelectorBusqueda>
+const areasConOpcion = computed(() => {
+  return areasDisponibles.value.map((area: any) => ({
+    id: Number(area.area_servicio_id),
+    nombre: area.area_servicio_nombre,
+  }))
 })
 
 onMounted(async () => {
@@ -1526,30 +1022,16 @@ onMounted(async () => {
   if (!esVistaSupervision.value) {
     cargarNotificacionesRevision()
   }
-
-  window.addEventListener('keydown', onKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  window.removeEventListener('keydown', onKeydown)
 })
 
 defineExpose({ obtenerActualizaciones })
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
 /* Layout */
 .contenedor-lista-tabla {
   width: 100%;
@@ -1689,164 +1171,6 @@ defineExpose({ obtenerActualizaciones })
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.tarjeta-movil {
-  background: white;
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-  border: 1px solid #e2e8f0;
-}
-
-.tarjeta-movil:active {
-  transform: scale(0.99);
-}
-
-.tarjeta-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.tarjeta-titulo {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-  line-height: 1.3;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.estado-badge-movil {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 20px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  white-space: nowrap;
-}
-
-.tarjeta-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.info-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 0.75rem;
-}
-
-.info-row i {
-  color: var(--primary);
-  font-size: 0.7rem;
-  margin-top: 2px;
-  min-width: 16px;
-}
-
-.info-label {
-  color: #64748b;
-  font-weight: 500;
-  min-width: 65px;
-}
-
-.info-value {
-  color: #334155;
-  flex: 1;
-  word-break: break-word;
-}
-
-.categorias-movil {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.cat-badge-movil {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 0.6rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.cat-vacia {
-  font-size: 0.65rem;
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.tarjeta-acciones {
-  display: flex;
-  gap: 8px;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.accion-movil {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 6px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: white;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.accion-movil i {
-  font-size: 0.7rem;
-}
-
-.accion-movil:active {
-  transform: scale(0.97);
-}
-
-.accion-movil.ver {
-  color: var(--primary);
-  border-color: rgba(7, 126, 157, 0.3);
-}
-
-.accion-movil.revision {
-  color: var(--warning);
-  border-color: rgba(252, 187, 28, 0.3);
-}
-
-.accion-movil.editar {
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-.accion-movil.archivar {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-.accion-movil.activar {
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.3);
 }
 
 /* Estado vacío móvil */
@@ -2308,31 +1632,6 @@ defineExpose({ obtenerActualizaciones })
   transition: var(--transition-smooth);
 }
 
-.estado-green {
-  background-color: #e6f7e9;
-  color: #2e7d32;
-}
-
-.estado-yellow {
-  background-color: #fef8e3;
-  color: #f9a825;
-}
-
-.estado-blue {
-  background-color: #eaf4fd;
-  color: #2f84d3;
-}
-
-.estado-dark-gray {
-  background-color: #e5e7eb;
-  color: #374151;
-}
-
-.estado-gray {
-  background-color: #f2f4f7;
-  color: #5f6671;
-}
-
 .icon-group {
   display: flex;
   gap: 15px;
@@ -2619,296 +1918,10 @@ defineExpose({ obtenerActualizaciones })
 }
 </style>
 
-<!-- Estilos globales para los elementos renderizados con Teleport -->
+<!-- Estilos globales para elementos renderizados con Teleport que
+     siguen viviendo en este componente (el panel de revisiones se
+     movió a PanelRevisionesPendientes.vue con su propio <style>). -->
 <style>
-/* Overlay */
-.oc-overlay {
-  position: fixed;
-  inset: 0;
-  background: transparent;
-  z-index: 1040;
-  pointer-events: none;
-  transition: background 0.25s ease;
-}
-
-.oc-overlay--open {
-  background: rgba(0, 0, 0, 0.35);
-  pointer-events: all;
-}
-
-/* Botón flotante */
-.fab-revision {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 1050;
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #077E9D 0%, #025B7D 100%);
-  border: none;
-  cursor: pointer;
-  color: white;
-  font-size: 1.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  outline: none;
-}
-
-.fab-revision:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 8px 28px rgba(7, 126, 157, 0.5);
-}
-
-.fab-revision:active {
-  transform: scale(0.97);
-}
-
-.fab-revision .bi {
-  line-height: 1;
-  display: block;
-}
-
-/* Badge del FAB */
-.fab-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #FCBB1C;
-  color: #7a5a00;
-  font-size: 10px;
-  font-weight: 700;
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  padding: 0 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid white;
-  line-height: 1;
-}
-
-/* Animación de pulso en el FAB cuando está cerrado */
-.fab-revision--pulsing {
-  animation: fab-pulse 2.5s infinite;
-}
-
-@keyframes fab-pulse {
-
-  0%,
-  100% {
-    box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4);
-  }
-
-  50% {
-    box-shadow: 0 4px 20px rgba(7, 126, 157, 0.4), 0 0 0 8px rgba(7, 126, 157, 0.12);
-  }
-}
-
-/* Panel offcanvas */
-.oc-revision {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 390px;
-  max-width: calc(100vw - 40px);
-  height: 100%;
-  background: #ffffff;
-  z-index: 1055;
-  transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  flex-direction: column;
-  box-shadow: -6px 0 32px rgba(0, 0, 0, 0.14);
-}
-
-.oc-revision--open {
-  transform: translateX(0);
-}
-
-/* Header */
-.oc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px 18px;
-  border-bottom: 1px solid #e1e7f0;
-  background: #fffef7;
-  border-left: 4px solid #FCBB1C;
-  flex-shrink: 0;
-}
-
-.oc-header-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.oc-header-icon {
-  color: #FCBB1C;
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.oc-title {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #856404;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.oc-count {
-  background: #FCBB1C;
-  color: #7a5a00;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 10px;
-  line-height: 1.4;
-}
-
-.oc-close {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e1e7f0;
-  background: #f9fafb;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #6b7280;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-.oc-close:hover {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-/* Cuerpo desplazable */
-.oc-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.oc-body::-webkit-scrollbar {
-  width: 4px;
-}
-
-.oc-body::-webkit-scrollbar-track {
-  background: #f9fafb;
-}
-
-.oc-body::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
-}
-
-/* Item de revisión */
-.oc-item {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #f0e0b0;
-  border-left: 3px solid #FCBB1C;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.oc-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
-}
-
-.oc-item-inner {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-}
-
-.oc-item-icon-wrap {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #fef8e3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.oc-item-icon {
-  color: #f59e0b;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.oc-item-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.oc-item-msg {
-  margin: 0;
-  font-size: 0.88rem;
-  color: #374151;
-  line-height: 1.5;
-  word-break: break-word;
-}
-
-.oc-item-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #077E9D;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s;
-  text-align: left;
-}
-
-.oc-item-btn:hover {
-  color: #025B7D;
-  text-decoration: underline;
-}
-
-.oc-item-btn .bi {
-  font-size: 0.82rem;
-  line-height: 1;
-}
-
-/* Responsive móvil */
-@media (max-width: 480px) {
-  .oc-revision {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .fab-revision {
-    bottom: 20px;
-    right: 20px;
-  }
-}
-
 
 .filtro-grupo {
   display: flex;
@@ -2939,155 +1952,6 @@ defineExpose({ obtenerActualizaciones })
   cursor: not-allowed;
 }
 
-
-/* ============================================================
-   SELECTORES MODERNOS (Área y Categoría) – igual que en el modal
-   ============================================================ */
-.categoria-select-wrapper {
-  position: relative;
-  margin-bottom: 0;
-}
-
-.categoria-select-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  min-height: 42px;
-}
-
-.categoria-select-trigger:hover {
-  border-color: var(--primary);
-}
-
-.categoria-select-wrapper.open .categoria-select-trigger {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(7, 126, 157, 0.1);
-}
-
-.select-placeholder {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.select-placeholder i {
-  font-size: 0.9rem;
-}
-
-.select-selected {
-  flex: 1;
-}
-
-.selected-tag-single {
-  background: rgba(7, 126, 157, 0.1);
-  color: var(--primary);
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.categoria-select-trigger .bi-chevron-down,
-.categoria-select-trigger .bi-chevron-up {
-  color: #94a3b8;
-  transition: transform 0.2s ease;
-}
-
-/* Dropdown (igual que en el modal) */
-.categoria-select-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  overflow: hidden;
-}
-
-
-.dropdown-search {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.dropdown-search i {
-  color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.dropdown-search input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.85rem;
-  padding: 6px 0;
-}
-
-.dropdown-search input::placeholder {
-  color: #cbd5e1;
-}
-
-.dropdown-options {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.dropdown-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 10px 12px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: left;
-}
-
-.dropdown-option:hover:not(.disabled) {
-  background: #f8fafc;
-}
-
-.dropdown-option.selected {
-  background: rgba(7, 126, 157, 0.08);
-}
-
-.option-name {
-  font-size: 0.85rem;
-  color: #334155;
-}
-
-.dropdown-option.selected .option-name {
-  color: var(--primary);
-  font-weight: 500;
-}
-
-.option-check i {
-  color: var(--primary);
-  font-size: 0.9rem;
-}
-
-.dropdown-empty {
-  padding: 20px;
-  text-align: center;
-  color: #94a3b8;
-  font-size: 0.8rem;
-}
 
 .input-busqueda-wrapper {
   position: relative;
@@ -3132,5 +1996,69 @@ defineExpose({ obtenerActualizaciones })
 .btn-ejecutar-busqueda:hover {
   background: rgba(7, 126, 157, 0.14);
   color: var(--primary);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
+
+.btn-limpiar-busqueda,
+.btn-ejecutar-busqueda {
+  position: absolute;
+  top: calc(100% + 4px);
+
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+
+.dropdown-search {
+  display: flex;
+  align-items: center;
+}
+
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+  padding-right: 78px;
+}
+
+.btn-limpiar-busqueda,
+.btn-ejecutar-busqueda {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-limpiar-busqueda {
+  right: 42px;
+}
+
+.btn-ejecutar-busqueda {
+  right: 8px;
+  background: rgba(7, 126, 157, 0.08);
+  color: var(--primary);
+}
+
+.btn-limpiar-busqueda:hover,
+.btn-ejecutar-busqueda:hover {
+  background: rgba(7, 126, 157, 0.14);
+  color: var(--primary);
+}
+
 </style>

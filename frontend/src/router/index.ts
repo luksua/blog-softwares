@@ -80,7 +80,6 @@ const router = createRouter({
           component: HomePageAdmin,
           props: true,
           meta: {
-            sinPadding: true,
             requiresAuth: true,
           },
         },
@@ -126,7 +125,6 @@ const router = createRouter({
           name: 'dashboard',
           component: DashboardPage,
           meta: {
-            sinPadding: true,
             requiresAuth: true,
             requiresSupervisor: true,
           },
@@ -137,7 +135,6 @@ const router = createRouter({
           name: 'supervision',
           component: SupervisionPage,
           meta: {
-            sinPadding: true,
             requiresAuth: true,
             requiresSupervisor: true,
           },
@@ -209,6 +206,23 @@ function normalizarPermisos(valor: any): string[] {
     .filter(Boolean)
 }
 
+function enviarAIntranet() {
+  localStorage.removeItem('user_data')
+  localStorage.removeItem('auth_token')
+
+  if (INTRANET_ENTRY_URL) {
+    window.location.href = INTRANET_ENTRY_URL
+    return
+  }
+
+  document.body.innerHTML = `
+    <main style="font-family: Arial, sans-serif; padding: 32px;">
+      <h1>Sesión no iniciada</h1>
+      <p>Este sistema no tiene inicio de sesión propio. Debes ingresar desde el menú de la intranet.</p>
+    </main>
+  `
+}
+
 async function cargarAuth() {
   if (authVerificado) {
     return authVerificado
@@ -256,23 +270,6 @@ async function cargarAuth() {
 
     return null
   }
-}
-
-function enviarAIntranet() {
-  localStorage.removeItem('user_data')
-  localStorage.removeItem('auth_token')
-
-  if (INTRANET_ENTRY_URL) {
-    window.location.href = INTRANET_ENTRY_URL
-    return
-  }
-
-  document.body.innerHTML = `
-    <main style="font-family: Arial, sans-serif; padding: 32px;">
-      <h1>Sesión no iniciada</h1>
-      <p>Este sistema no tiene inicio de sesión propio. Debes ingresar desde el menú de la intranet.</p>
-    </main>
-  `
 }
 
 router.beforeEach(async (to) => {

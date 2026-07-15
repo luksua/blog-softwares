@@ -170,7 +170,6 @@ route: {{ route.name }}
       <main class="content">
         <div :class="[
           'content-card',
-          'content-card-2',
           { 'no-padding': route.meta.sinPadding }
         ]">
           <router-view />
@@ -196,6 +195,7 @@ route: {{ route.name }}
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
+import { cargarAuth, limpiarAuthCache } from '../api/auth'
 import HelpButton from '../components/HelpButton.vue'
 import {
   listarNotificaciones,
@@ -315,8 +315,14 @@ const cargarUsuarioDesdeLocalStorage = () => {
 
 const checkAuth = async () => {
   try {
-    const response = await api.get('/me')
-    aplicarUsuario(response.data)
+    const auth = await cargarAuth()
+
+    if (!auth?.usuario) {
+      limpiarSesionLocal()
+      return
+    }
+
+    aplicarUsuario(auth)
     await cargarNotificaciones()
     iniciarPollingNotificaciones()
   } catch (error) {
@@ -474,6 +480,7 @@ const checkMobile = () => {
 const limpiarSesionLocal = () => {
   localStorage.removeItem('user_data')
   localStorage.removeItem('auth_token')
+  limpiarAuthCache()
 
   detenerPollingNotificaciones()
   notificaciones.value = []
@@ -517,15 +524,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #077e9d;
-  --secondary: #025b7d;
-  --warning: #fcbb1c;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
 .nav-icon-link {
   width: 40px;
   height: 40px;
@@ -825,7 +823,6 @@ onUnmounted(() => {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
 }
 
 .content-card {
