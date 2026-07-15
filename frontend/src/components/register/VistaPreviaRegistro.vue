@@ -5,70 +5,99 @@
       Así se vería este registro publicado. Los cambios no se han guardado todavía.
     </div>
 
-    <DetalleRegistroVisual
-      ref="detalleVisualRef"
-      :titulo="titulo"
-      :version="version"
-      :resumen="resumen"
-      :area-nombre="areaNombre"
-      :categorias="categorias"
-      :imagen-url="imagenUrl"
-      :fecha-texto="fechaTexto"
-      :contenido-html="contenidoHtml"
-      layout="con-indice"
-      contenido-vacio-texto="Todavía no hay contenido escrito en el editor."
+    <!-- Selector de modo de vista previa -->
+    <div class="vista-previa-selector" role="group" aria-label="Ancho de vista previa">
+      <button
+        v-for="modo in MODOS_VISTA"
+        :key="modo.id"
+        type="button"
+        class="vista-previa-modo-btn"
+        :class="{ activo: modoActivo === modo.id }"
+        @click="cambiarModo(modo.id)"
+      >
+        <i :class="modo.icono" aria-hidden="true"></i>
+        <span>{{ modo.etiqueta }}</span>
+      </button>
+    </div>
+
+    <div
+      class="vista-previa-escala-wrapper"
+      :style="{ height: alturaEscalada + 'px' }"
     >
-      <template #indice>
-        <div class="indice-header">
-          <span class="indice-icon" aria-hidden="true">☰</span>
-          <h2 class="indice-titulo">Índice</h2>
-        </div>
+      <div
+        ref="lienzoRef"
+        class="vista-previa-lienzo"
+        :style="{
+          width: anchoLienzoActual + 'px',
+          transform: `scale(${factorEscala})`,
+        }"
+      >
+        <DetalleRegistroVisual
+          ref="detalleVisualRef"
+          :titulo="titulo"
+          :version="version"
+          :resumen="resumen"
+          :area-nombre="areaNombre"
+          :categorias="categorias"
+          :imagen-url="imagenUrl"
+          :fecha-texto="fechaTexto"
+          :contenido-html="contenidoHtml"
+          layout="con-indice"
+          contenido-vacio-texto="Todavía no hay contenido escrito en el editor."
+        >
+          <template #indice>
+            <div class="indice-header">
+              <span class="indice-icon" aria-hidden="true">☰</span>
+              <h2 class="indice-titulo">Índice</h2>
+            </div>
 
-        <nav class="indice-nav" aria-label="Índice de la vista previa">
-          <ul class="indice-lista">
-            <li v-if="resumen" class="indice-item">
-              <a
-                href="#resumen"
-                class="indice-link indice-nivel-fijo"
-                :class="{ activo: headingActivo === 'resumen' }"
-                @click.prevent="scrollToElement('resumen')"
-              >
-                <span class="indice-bullet" aria-hidden="true">•</span>
-                <span>Resumen</span>
-              </a>
-            </li>
+            <nav class="indice-nav" aria-label="Índice de la vista previa">
+              <ul class="indice-lista">
+                <li v-if="resumen" class="indice-item">
+                  
+                    href="#resumen"
+                    class="indice-link indice-nivel-fijo"
+                    :class="{ activo: headingActivo === 'resumen' }"
+                    @click.prevent="scrollToElement('resumen')"
+                  >
+                    <span class="indice-bullet" aria-hidden="true">•</span>
+                    <span>Resumen</span>
+                  </a>
+                </li>
 
-            <li
-              v-for="heading in headings"
-              :key="heading.id"
-              class="indice-item"
-            >
-              <a
-                :href="`#${heading.id}`"
-                class="indice-link"
-                :class="[
-                  `indice-nivel-${heading.level}`,
-                  { activo: headingActivo === heading.id }
-                ]"
-                @click.prevent="scrollToElement(heading.id)"
-              >
-                <span class="indice-bullet" aria-hidden="true">•</span>
-                <span>{{ heading.text }}</span>
-              </a>
-            </li>
+                <li
+                  v-for="heading in headings"
+                  :key="heading.id"
+                  class="indice-item"
+                >
+                  
+                    :href="`#${heading.id}`"
+                    class="indice-link"
+                    :class="[
+                      `indice-nivel-${heading.level}`,
+                      { activo: headingActivo === heading.id }
+                    ]"
+                    @click.prevent="scrollToElement(heading.id)"
+                  >
+                    <span class="indice-bullet" aria-hidden="true">•</span>
+                    <span>{{ heading.text }}</span>
+                  </a>
+                </li>
 
-            <li v-if="headings.length === 0" class="indice-vacio">
-              Sin secciones
-            </li>
-          </ul>
-        </nav>
-      </template>
-    </DetalleRegistroVisual>
+                <li v-if="headings.length === 0" class="indice-vacio">
+                  Sin secciones
+                </li>
+              </ul>
+            </nav>
+          </template>
+        </DetalleRegistroVisual>
+      </div>
+    </div>
   </div>
 </template>
-
 <script setup lang="ts">
 import {
+  computed,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -93,6 +122,13 @@ interface DetalleRegistroVisualExpuesto {
     | null
 }
 
+interface ModoVista {
+  id: 'desktop' | 'tablet' | 'movil'
+  etiqueta: string
+  icono: string
+  ancho: number
+}
+
 const props = withDefaults(defineProps<{
   titulo?: string
   version?: string
@@ -114,6 +150,7 @@ const props = withDefaults(defineProps<{
 })
 
 const vistaPreviaRef = ref<HTMLElement | null>(null)
+const lienzoRef = ref<HTMLElement | null>(null)
 
 const detalleVisualRef =
   ref<DetalleRegistroVisualExpuesto | null>(null)
@@ -121,13 +158,35 @@ const detalleVisualRef =
 const headings = ref<Heading[]>([])
 const headingActivo = ref('resumen')
 
+/*
+ * Anchos de referencia para cada modo. El ancho "desktop" debe
+ * coincidir con el que usaste antes como ANCHO_LIENZO_DESKTOP;
+ * ajústalos si tu diseño ideal usa otras referencias.
+ */
+const MODOS_VISTA: ModoVista[] = [
+  { id: 'desktop', etiqueta: 'Escritorio', icono: 'bi bi-display', ancho: 1200 },
+  { id: 'tablet', etiqueta: 'Tablet', icono: 'bi bi-tablet', ancho: 768 },
+  { id: 'movil', etiqueta: 'Móvil', icono: 'bi bi-phone', ancho: 375 },
+]
+
+const modoActivo = ref<ModoVista['id']>('desktop')
+
+const anchoLienzoActual = computed(() => {
+  return (
+    MODOS_VISTA.find(modo => modo.id === modoActivo.value)?.ancho ??
+    MODOS_VISTA[0].ancho
+  )
+})
+
+const factorEscala = ref(1)
+const alturaEscalada = ref(0)
+
 let observer: IntersectionObserver | null = null
+let resizeObserver: ResizeObserver | null = null
 let temporizadorIndice: ReturnType<typeof setTimeout> | null = null
 
 /**
  * Obtiene el contenedor HTML expuesto por DetalleRegistroVisual.
- * Se contemplan ambas posibilidades porque Vue puede desenvolver
- * automáticamente el ref expuesto por el componente hijo.
  */
 const obtenerContenidoElement = (): HTMLElement | null => {
   const contenidoExpuesto =
@@ -151,6 +210,35 @@ const normalizarId = (texto: string): string => {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+const recalcularEscala = () => {
+  const contenedor = vistaPreviaRef.value
+  const lienzo = lienzoRef.value
+
+  if (!contenedor || !lienzo) {
+    return
+  }
+
+  const anchoDisponible = contenedor.clientWidth
+
+  if (anchoDisponible <= 0) {
+    return
+  }
+
+  const nuevoFactor = anchoDisponible / anchoLienzoActual.value
+  factorEscala.value = nuevoFactor
+
+  alturaEscalada.value = lienzo.scrollHeight * nuevoFactor
+}
+
+const cambiarModo = async (id: ModoVista['id']) => {
+  modoActivo.value = id
+
+  // El ancho del lienzo cambió: esperamos a que el DOM
+  // se reajuste antes de recalcular escala y altura.
+  await nextTick()
+  recalcularEscala()
 }
 
 const generarIndice = async () => {
@@ -206,6 +294,9 @@ const generarIndice = async () => {
   )
 
   iniciarObserver()
+
+  await nextTick()
+  recalcularEscala()
 }
 
 const iniciarObserver = () => {
@@ -296,10 +387,6 @@ const programarGeneracionIndice = () => {
     clearTimeout(temporizadorIndice)
   }
 
-  /*
-   * Evita reconstruir el índice en cada pulsación inmediata
-   * cuando la vista previa está conectada a un editor en vivo.
-   */
   temporizadorIndice = setTimeout(() => {
     void generarIndice()
   }, 80)
@@ -319,10 +406,21 @@ watch(
 
 onMounted(() => {
   programarGeneracionIndice()
+
+  resizeObserver = new ResizeObserver(() => {
+    recalcularEscala()
+  })
+
+  if (vistaPreviaRef.value) {
+    resizeObserver.observe(vistaPreviaRef.value)
+  }
+
+  recalcularEscala()
 })
 
 onBeforeUnmount(() => {
   observer?.disconnect()
+  resizeObserver?.disconnect()
 
   if (temporizadorIndice) {
     clearTimeout(temporizadorIndice)
@@ -331,166 +429,53 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.vista-previa-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.vista-previa-aviso {
+.vista-previa-selector {
   position: sticky;
-  top: 0;
-  z-index: 20;
+  top: 52px;
+  z-index: 19;
   display: flex;
   flex-shrink: 0;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  color: #075985;
-  font-size: 0.82rem;
-  font-weight: 600;
-  background: rgba(240, 249, 255, 0.96);
-  border: 1px solid #bae6fd;
+  gap: 6px;
+  padding: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
-  backdrop-filter: blur(8px);
 }
 
-/* Índice */
-
-.indice-header {
+.vista-previa-modo-btn {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.indice-icon {
-  color: var(--primary);
-  font-size: 1rem;
-}
-
-.indice-titulo {
-  margin: 0;
-  color: #0f172a;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.indice-nav {
-  flex: 1;
-  overflow-y: auto;
-  scrollbar-color: #cbd5e1 transparent;
-  scrollbar-width: thin;
-}
-
-.indice-nav::-webkit-scrollbar {
-  width: 4px;
-}
-
-.indice-nav::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 999px;
-}
-
-.indice-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.indice-item {
-  width: 100%;
-}
-
-.indice-link {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 6px;
+  padding: 6px 12px;
   color: #64748b;
-  font-size: 0.82rem;
-  line-height: 1.4;
-  text-decoration: none;
-  border-left: 2px solid transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: none;
   border-radius: 8px;
   transition:
     color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color 0.2s ease;
 }
 
-.indice-link:hover {
+.vista-previa-modo-btn:hover {
   color: var(--primary);
   background: #e2e8f0;
-  border-left-color: var(--primary);
 }
 
-.indice-link.activo {
-  color: var(--primary);
-  font-weight: 600;
-  background: rgba(7, 126, 157, 0.08);
-  border-left-color: var(--primary);
+.vista-previa-modo-btn.activo {
+  color: #fff;
+  background: var(--primary);
 }
 
-.indice-bullet {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: var(--primary);
-}
-
-.indice-nivel-fijo,
-.indice-nivel-1,
-.indice-nivel-2 {
-  font-weight: 600;
-}
-
-.indice-nivel-3 {
-  padding-left: 22px;
-  font-size: 0.79rem;
-}
-
-.indice-nivel-4 {
-  padding-left: 34px;
-  color: #94a3b8;
-  font-size: 0.77rem;
-}
-
-.indice-nivel-5,
-.indice-nivel-6 {
-  padding-left: 46px;
-  color: #94a3b8;
-  font-size: 0.75rem;
-}
-
-.indice-vacio {
-  padding: 8px 10px;
-  color: #94a3b8;
-  font-size: 0.8rem;
-  font-style: italic;
-}
-
-/*
- * Evita que el ancho natural del contenido fuerce
- * horizontalmente la vista previa.
- */
-.vista-previa-container :deep(.drv-card) {
+.vista-previa-escala-wrapper {
+  position: relative;
   width: 100%;
-  min-width: 0;
+  overflow: hidden;
 }
 
-.vista-previa-container :deep(.drv-contenido-columna) {
-  min-width: 0;
+.vista-previa-lienzo {
+  transform-origin: top left;
 }
 </style>
