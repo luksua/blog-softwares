@@ -168,11 +168,7 @@ route: {{ route.name }}
       </header>
 
       <main class="content">
-        <div :class="[
-          'content-card',
-          'content-card-2',
-          { 'no-padding': route.meta.sinPadding }
-        ]">
+        <div class="content-card">
           <router-view />
         </div>
       </main>
@@ -525,15 +521,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #077e9d;
-  --secondary: #025b7d;
-  --warning: #fcbb1c;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
 .nav-icon-link {
   width: 40px;
   height: 40px;

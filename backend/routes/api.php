@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\BlogDashboardController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
 
-Route::middleware('usuario.auth')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
@@ -22,11 +22,7 @@ Route::middleware('usuario.auth')->group(function () {
             'jefaturasActivas.areaServicio',
         ]);
 
-        $permisos = [];
-
-        if ($request->hasSession()) {
-            $permisos = $request->session()->get('tz_permisos', []);
-        }
+        $permisos = session('tz_permisos', []);
 
         if (! $permisos && isset($usuario->permisos)) {
             $permisos = $usuario->permisos;
@@ -67,22 +63,10 @@ Route::middleware('usuario.auth')->group(function () {
     });
 
     Route::post('/logout', function (Request $request) {
-        if (app()->environment('local') && config('services.sso.allow_local_demo')) {
-            if ($request->hasSession()) {
-                $request->session()->forget('demo_user');
-            }
-
-            return response()->json([
-                'success' => true,
-            ]);
-        }
-
         Auth::guard('web')->logout();
 
-        if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json([
             'success' => true,

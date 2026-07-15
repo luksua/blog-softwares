@@ -68,7 +68,7 @@
             Resumen
           </label>
           <textarea id="resumen" class="form-control" :class="{ 'is-invalid': resumenExcedeLimite }"
-            v-model="registro.resumen" rows="2"  placeholder="Breve descripción de la actualización..."
+            v-model="registro.resumen" rows="2" placeholder="Breve descripción de la actualización..."
             required></textarea>
 
           <div v-if="resumenExcedeLimite" class="invalid-feedback d-block">
@@ -198,24 +198,10 @@
               Fecha
             </label>
 
-            <input
-              v-if="esProgramado"
-              type="datetime-local"
-              id="fecha_programada"
-              class="form-control"
-              v-model="registro.fecha_programada"
-              :min="fechaMinimaProgramada"
-              required
-            />
-            <input
-              v-else
-              type="date"
-              id="fecha_publicacion"
-              class="form-control"
-              v-model="registro.fecha_publicacion"
-              required
-              disabled
-            />
+            <input v-if="esProgramado" type="datetime-local" id="fecha_programada" class="form-control"
+              v-model="registro.fecha_programada" :min="fechaMinimaProgramada" required />
+            <input v-else type="date" id="fecha_publicacion" class="form-control" v-model="registro.fecha_publicacion"
+              required disabled />
 
             <small v-if="esProgramado" class="form-text text-muted">
               El registro se publicará automáticamente en la fecha y hora indicadas.
@@ -230,13 +216,41 @@
 
       <!-- COLUMNA DERECHA: editor de contenido -->
       <div class="editor-column">
-        <label class="form-label fw-bold text-primary">
-          Contenido <span class="text-danger">*</span>
-        </label>
+        <div class="editor-column-header">
+          <label class="form-label fw-bold text-primary mb-0">
+            Contenido <span class="text-danger">*</span>
+          </label>
 
-        <div class="editor-wrapper">
+          <div class="pestanas-editor" role="tablist">
+            <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'editor' }"
+              role="tab" :aria-selected="pestanaActiva === 'editor'" @click="pestanaActiva = 'editor'">
+              <i class="bi bi-pencil-square"></i>
+              Editor
+            </button>
+
+            <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'vista-previa' }"
+              role="tab" :aria-selected="pestanaActiva === 'vista-previa'" @click="abrirVistaPrevia">
+              <i class="bi bi-eye"></i>
+              Vista previa
+            </button>
+          </div>
+        </div>
+
+        <div class="editor-wrapper" v-show="pestanaActiva === 'editor'">
           <div id="editorjs"></div>
         </div>
+
+        <VistaPreviaRegistro
+          v-if="pestanaActiva === 'vista-previa'"
+          :titulo="registro.titulo"
+          :version="registro.version"
+          :resumen="registro.resumen"
+          :area-nombre="areaSeleccionadaNombre"
+          :categorias="categoriasSeleccionadas.map(c => c.nombre)"
+          :imagen-url="previewMiniatura"
+          :fecha-texto="fechaTextoPreview"
+          :contenido-html="contenidoPreviewHtml"
+        />
       </div>
 
       <!-- Barra final de acciones: siempre al final del formulario -->
@@ -259,18 +273,21 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { reactive, ref, onMounted, onBeforeUnmount, watch, nextTick, computed, toRef } from 'vue'
+import { storeToRefs } from 'pinia'
 import api from '../../api/api'
 import type { NewVersion } from '../../types/newVersion'
-import type { Area } from '../../types/areas'
+import { useAreasStore } from '../../stores/areas'
+import { useCategoriasStore } from '../../stores/categorias'
 import { toast } from 'vue-sonner'
 import { Modal } from 'bootstrap'
 
-import EditorJS from '@editorjs/editorjs'
-import Header from '@editorjs/header'
-import ImageTool from '@editorjs/image'
-import List from '@editorjs/list'
-import type { Category } from '../../types/categorias'
+import { useEditorJS } from '../../composables/useEditorJS'
+import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
+import { useFechaProgramada } from '../../composables/useFechaProgramada'
+import { useImagenDestacada } from '../../composables/useImagenDestacada'
+import { useVistaPrevia } from '../../composables/useVistaPrevia'
+import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 
 const tituloInput = ref<HTMLInputElement | null>(null)
 
@@ -278,20 +295,14 @@ const tituloInput = ref<HTMLInputElement | null>(null)
 const DRAFT_KEY = 'draft_nueva_actualizacion'
 
 // ── Archivos ──────────────────────────────────────────────────────
-const archivoMiniatura = ref<File | null>(null)
-const previewMiniatura = ref<string | null>(null)
-
-const manejarArchivoMiniatura = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files.length > 0) {
-    const file = target.files[0]
-    archivoMiniatura.value = file
-    previewMiniatura.value = URL.createObjectURL(file)
-  } else {
-    archivoMiniatura.value = null
-    previewMiniatura.value = null
-  }
-}
+const {
+  archivo: archivoMiniatura,
+  preview: previewMiniatura,
+  seleccionarArchivo: manejarArchivoMiniatura,
+  quitarImagen: quitarImagenMiniatura,
+} = useImagenDestacada({
+  onError: (mensaje) => toast.warning(mensaje),
+})
 
 // ── Registro ──────────────────────────────────────────────────────
 const idUsuarioLogueado = 1
@@ -317,13 +328,7 @@ const registro = reactive<NewVersion>(registroVacio())
 
 const esProgramado = computed(() => registro.estado === 'programado')
 
-// Mínimo seleccionable en el datetime-local: el minuto actual (evita programar en el pasado)
-const fechaMinimaProgramada = computed(() => {
-  const ahora = new Date()
-  ahora.setSeconds(0, 0)
-  ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset())
-  return ahora.toISOString().slice(0, 16)
-})
+const { fechaMinimaProgramada, validarFechaProgramada } = useFechaProgramada()
 
 watch(esProgramado, (activo) => {
   if (activo && !registro.fecha_programada) {
@@ -331,19 +336,6 @@ watch(esProgramado, (activo) => {
   }
 })
 
-
-const normalizarCategoriaIds = (valor: any): number[] => {
-  const ids = Array.isArray(valor) ? valor : (valor ? [valor] : [])
-
-  return ids
-    .map((id) => Number(id))
-    .filter((id, index, array) => Number.isFinite(id) && id > 0 && array.indexOf(id) === index)
-    .slice(0, 3)
-}
-
-const categoriaSeleccionada = (categoriaId: number) => {
-  return registro.actualizacion_categoria_ids.includes(categoriaId)
-}
 
 // ── Autosave ──────────────────────────────────────────────────────
 const hayBorradorGuardado = ref(false)
@@ -459,14 +451,68 @@ watch(
 )
 
 // ── Listas ────────────────────────────────────────────────────────
-const listaAreas = ref<Area[]>([])
-const listaCategorias = ref<Category[]>([])
+const areasStore = useAreasStore()
+const categoriasStore = useCategoriasStore()
+const { areas: listaAreas } = storeToRefs(areasStore)
+const { categorias: listaCategorias } = storeToRefs(categoriasStore)
 const listaEstados = ref<{ id: string; nombre: string }[]>([])
 const enviando = ref(false)
 const emit = defineEmits(['cerrar', 'recargar-lista'])
 
+const {
+  wrapperRef: categoriaSelectRef,
+  selectAbierto,
+  busquedaCategoria,
+  categoriasFiltradas,
+  categoriasSeleccionadas,
+  categoriaSeleccionada,
+  toggleCategoria,
+  toggleSelect,
+} = useCategoriaSelector(toRef(registro, 'actualizacion_categoria_ids'), listaCategorias, {
+  onMaxSeleccionAlcanzado: () => toast.warning('Solo puedes seleccionar máximo 3 categorías'),
+})
+
 // ── Editor.js ─────────────────────────────────────────────────────
-const editorInstance = ref<EditorJS | null>(null)
+const { editor: editorInstance, iniciar: iniciarEditor, destruir: destruirEditor } = useEditorJS()
+
+// ── Vista previa ──────────────────────────────────────────────────
+const { generarHtmlContenido } = useVistaPrevia()
+const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
+const contenidoPreviewHtml = ref('')
+
+const areaSeleccionadaNombre = computed(() => {
+  const area = listaAreas.value.find(
+    (a) => String(a.area_servicio_id) === String(registro.area_servicio_id)
+  )
+  return area?.area_servicio_nombre || ''
+})
+
+const fechaTextoPreview = computed(() => {
+  if (esProgramado.value) {
+    if (!registro.fecha_programada) return 'Se publicará cuando definas una fecha programada'
+    const fecha = new Date(registro.fecha_programada)
+    return `Programado para el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} a las ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
+  }
+  const fecha = new Date(registro.fecha_publicacion)
+  return `Publicado el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`
+})
+
+/**
+ * Toma el contenido actual del editor (sin guardarlo en el backend) y arma
+ * el HTML de vista previa, tal cual se vería públicamente el registro.
+ */
+const abrirVistaPrevia = async () => {
+  if (editorInstance.value) {
+    try {
+      const outputData = await editorInstance.value.save()
+      contenidoPreviewHtml.value = generarHtmlContenido(outputData)
+    } catch (error) {
+      console.error('Error al generar la vista previa:', error)
+      toast.warning('No se pudo generar la vista previa del contenido.')
+    }
+  }
+  pestanaActiva.value = 'vista-previa'
+}
 
 const enfocarTitulo = async () => {
   await nextTick()
@@ -474,25 +520,8 @@ const enfocarTitulo = async () => {
 }
 
 onMounted(async () => {
-  try {
-    const resAreas = await api.get('/area-servicio')
-    listaAreas.value = resAreas.data.data
-  } catch (error) {
-  }
-
-  try {
-    const resCategorias = await api.get('/categorias')
-
-    listaCategorias.value = Array.isArray(resCategorias.data?.data)
-      ? resCategorias.data.data
-      : Array.isArray(resCategorias.data)
-        ? resCategorias.data
-        : []
-
-    console.log('Categorías cargadas en form:', listaCategorias.value)
-  } catch (error) {
-    console.error('Error al cargar las categorías:', error)
-  }
+  areasStore.fetchAreas()
+  categoriasStore.fetchCategorias()
 
   try {
     const resEstados = await api.get('/estados-actualizacion')
@@ -501,45 +530,16 @@ onMounted(async () => {
     console.error('Error al cargar los estados:', error)
   }
 
-  editorInstance.value = new EditorJS({
+  await iniciarEditor({
     holder: 'editorjs',
     placeholder: 'Escribe tu actualización aquí. Puedes arrastrar imágenes...',
+    headerLevels: [2, 3, 4, 5, 6],
     onReady: () => {
       cargarBorrador()
     },
     onChange: () => {
       programarAutosave()
     },
-    tools: {
-      header: {
-        class: Header as any,
-        inlineToolbar: true,
-        config: {
-          placeholder: 'Escribe un subtítulo',
-          levels: [2, 3, 4, 5, 6],
-          defaultLevel: 2,
-        },
-      },
-      list: List,
-      image: {
-        class: ImageTool,
-        config: {
-          uploader: {
-            async uploadByFile(file: File) {
-              try {
-                const formData = new FormData()
-                formData.append('imagen', file)
-                const respuesta = await api.post('/subir-imagen-blog', formData)
-                return { success: 1, file: { url: respuesta.data.url } }
-              } catch (error) {
-                console.error('Error subiendo imagen:', error)
-                return { success: 0 }
-              }
-            }
-          }
-        }
-      }
-    }
   })
   const modalEl = document.getElementById('modalNuevoRegistro')
 
@@ -552,12 +552,12 @@ onBeforeUnmount(() => {
 
   guardarBorrador()
   if (autoguardadoTimeout) clearTimeout(autoguardadoTimeout)
-  if (editorInstance.value) editorInstance.value.destroy()
+  destruirEditor()
 })
 
 // ── Guardar registro ──────────────────────────────────────────────
 const guardarRegistro = async () => {
-  if (registro.resumen.length  > LIMITE_RESUMEN) {
+  if (registro.resumen.length > LIMITE_RESUMEN) {
     errores.value.resumen = [`El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`]
     return
   }
@@ -576,11 +576,13 @@ const guardarRegistro = async () => {
   enviando.value = true
 
   try {
-    const formData = new FormData()
-    formData.append('actualizacion_titulo', registro.titulo)
-    formData.append('actualizacion_version', registro.version)
+const formData = new FormData()
+    
+    // Aseguramos que siempre sea un string con || ''
+    formData.append('actualizacion_titulo', registro.titulo || '')
+    formData.append('actualizacion_version', registro.version || '')
     formData.append('actualizacion_contenido', JSON.stringify(outputData))
-    formData.append('actualizacion_resumen', registro.resumen)
+    formData.append('actualizacion_resumen', registro.resumen || '')
     formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id))
 
     const categoriaIds = registro.actualizacion_categoria_ids.slice(0, 3)
@@ -596,22 +598,18 @@ const guardarRegistro = async () => {
       formData.append('actualizacion_categoria_ids[]', String(categoriaId))
     })
     formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor))
-    formData.append('actualizacion_estado', registro.estado)
+    formData.append('actualizacion_estado', registro.estado || '')
 
     if (esProgramado.value) {
-      if (!registro.fecha_programada) {
-        toast.warning('Selecciona la fecha y hora en que se publicará el registro.')
+      const errorFecha = validarFechaProgramada(registro.fecha_programada)
+      if (errorFecha) {
+        toast.warning(errorFecha)
         enviando.value = false
         return
       }
-
-      if (new Date(registro.fecha_programada).getTime() <= Date.now()) {
-        toast.warning('La fecha programada debe ser posterior al momento actual.')
-        enviando.value = false
-        return
-      }
-
-      formData.append('actualizacion_fecha_publicacion', registro.fecha_programada)
+      
+      // Aquí probablemente estaba el error principal, le agregamos || ''
+      formData.append('actualizacion_fecha_publicacion', registro.fecha_programada || '')
     } else {
       formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
     }
@@ -653,98 +651,18 @@ const guardarRegistro = async () => {
 const limpiarFormulario = () => {
   Object.assign(registro, registroVacio())
 
-  archivoMiniatura.value = null
-  previewMiniatura.value = null
+  pestanaActiva.value = 'editor'
+  contenidoPreviewHtml.value = ''
+
+  quitarImagenMiniatura()
 
   const inputMiniatura = document.getElementById('miniatura') as HTMLInputElement
   if (inputMiniatura) inputMiniatura.value = ''
 
   if (editorInstance.value) editorInstance.value.clear()
 }
-
-const selectAbierto = ref(false)
-const busquedaCategoria = ref('')
-const categoriaSelectRef = ref<HTMLElement | null>(null)
-
-// Categorías filtradas por búsqueda
-const categoriasFiltradas = computed(() => {
-  const categorias = listaCategorias.value || []
-
-  if (!busquedaCategoria.value.trim()) {
-    return categorias
-  }
-
-  const busqueda = busquedaCategoria.value.toLowerCase().trim()
-
-  return categorias.filter((cat: any) =>
-    String(cat.categoria_actualizacion_nombre || cat.nombre || '')
-      .toLowerCase()
-      .includes(busqueda)
-  )
-})
-
-// Computed para obtener las categorías seleccionadas con sus detalles
-const categoriasSeleccionadas = computed(() => {
-  return registro.actualizacion_categoria_ids
-    .map(id => {
-      const categoria = listaCategorias.value.find(c => Number(c.categoria_actualizacion_id) === id)
-      return categoria ? {
-        id: Number(categoria.categoria_actualizacion_id),
-        nombre: categoria.categoria_actualizacion_nombre
-      } : null
-    })
-    .filter(c => c !== null)
-})
-
-const toggleSelect = () => {
-  selectAbierto.value = !selectAbierto.value
-  if (!selectAbierto.value) {
-    busquedaCategoria.value = ''
-  }
-}
-
-const toggleCategoria = (categoriaId: number) => {
-  const index = registro.actualizacion_categoria_ids.indexOf(categoriaId)
-
-  if (index > -1) {
-    registro.actualizacion_categoria_ids.splice(index, 1)
-  } else {
-    if (registro.actualizacion_categoria_ids.length < 3) {
-      registro.actualizacion_categoria_ids.push(categoriaId)
-    } else {
-      toast.warning('Solo puedes seleccionar máximo 3 categorías')
-    }
-  }
-}
-
-// Cerrar select al hacer click fuera
-const cerrarSelectAlClickFuera = (event: MouseEvent) => {
-  const target = event.target as Node
-
-  if (
-    categoriaSelectRef.value &&
-    !categoriaSelectRef.value.contains(target)
-  ) {
-    selectAbierto.value = false
-    busquedaCategoria.value = ''
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', cerrarSelectAlClickFuera)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', cerrarSelectAlClickFuera)
-})
 </script>
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-}
-
 /* ─── Colores y utilidades ──────────────────────────────── */
 .text-primary {
   color: var(--primary) !important;
@@ -863,6 +781,48 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+.editor-column-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pestanas-editor {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.pestana-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pestana-btn:hover {
+  color: var(--primary);
+}
+
+.pestana-btn.activa {
+  color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
 .editor-wrapper {
   flex: 1;
   min-height: 0;
@@ -879,6 +839,10 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
 }
 
+.editor-column > :deep(.vista-previa-container) {
+  flex: 1;
+  min-height: 0;
+}
 
 /* ─── Columna del editor ────────────────────────────────── */
 .editor-column {

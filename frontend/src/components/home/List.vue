@@ -1,14 +1,6 @@
 <template>
   <div class="contenedor-lista">
-    <div class="row justify-content-center align-items-center mb-4 titulo">
-      <div class="supervision-hero">
-        <div>
-          <span class="eyebrow">Blog</span>
-          <h2>Actualizaciones</h2>
-          <p></p>
-        </div>
-      </div>
-    </div>
+    <PageHero eyebrow="Blog" titulo="Actualizaciones" />
 
     <div v-if="cargando && actualizaciones.length === 0" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
@@ -338,21 +330,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import api from '../../api/api'
+import { useAreasStore } from '../../stores/areas'
+import { useCategoriasStore } from '../../stores/categorias'
 import { obtenerIdsBookmarks, guardarBookmark, quitarBookmark } from '../../api/bookmarks'
 import type { Version } from '../../types/version'
 import { toast } from 'vue-sonner'
-
-type AreaFiltro = {
-  area_servicio_id: number | string
-  area_servicio_nombre: string
-}
-
-type CategoriaFiltro = {
-  categoria_actualizacion_id: number | string
-  categoria_actualizacion_nombre: string
-  icono?: string
-}
+import PageHero from '../shared/PageHero.vue'
 
 const router = useRouter()
 
@@ -377,9 +362,10 @@ const filtros = ref({
   orden: 'recientes'
 })
 
-const areasDisponibles = ref<AreaFiltro[]>([])
-const categoriasDisponibles = ref<CategoriaFiltro[]>([])
-const cargandoFiltros = ref(false)
+const areasStore = useAreasStore()
+const categoriasStore = useCategoriasStore()
+const { areas: areasDisponibles } = storeToRefs(areasStore)
+const { categorias: categoriasDisponibles } = storeToRefs(categoriasStore)
 
 const opcionesOrden = [
   { valor: 'recientes', label: 'Más recientes' },
@@ -416,18 +402,13 @@ const paginasMostradas = computed(() => {
 
 // ── API ───────────────────────────────────────────────────────────
 const obtenerCatalogosFiltros = async () => {
-  cargandoFiltros.value = true
   try {
-    const [areasResp, categoriasResp] = await Promise.all([
-      api.get('/area-servicio'),
-      api.get('/categorias')
+    await Promise.all([
+      areasStore.fetchAreas(),
+      categoriasStore.fetchCategorias(),
     ])
-    areasDisponibles.value = areasResp.data?.data || []
-    categoriasDisponibles.value = categoriasResp.data?.data || []
   } catch (err) {
     console.error('Error al cargar catálogos:', err)
-  } finally {
-    cargandoFiltros.value = false
   }
 }
 
@@ -868,16 +849,6 @@ const categoriasFiltradasConIcono = computed(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #077E9D;
-  --secondary: #025B7D;
-  --warning: #FCBB1C;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-smooth: all 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
 .contenedor-lista {
   max-width: 1400px;
   margin: 0 auto;
@@ -1607,46 +1578,6 @@ const categoriasFiltradasConIcono = computed(() => {
 
 .filtros-barra.filtros-visible {
   animation: slideDown 0.3s ease;
-}
-
-/* ── Hero ─────────────────────────────────────────────── */
-.supervision-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: center;
-  max-width: 1500px;
-  margin: 0 auto 20px;
-  padding: 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(252, 187, 28, 0.24), transparent 32%),
-    linear-gradient(135deg, #073b4c 0%, var(--secondary) 100%);
-  color: white;
-  box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
-}
-
-.supervision-hero h2 {
-  font-weight: 700;
-}
-
-.supervision-hero p {
-  max-width: 760px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 1rem;
-}
-
-.eyebrow {
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff7d6;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .select-categoria-wrap {

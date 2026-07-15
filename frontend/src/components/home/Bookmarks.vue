@@ -1,17 +1,8 @@
 <template>
   <div class="contenedor-guardados">
-    <div class="supervision-hero">
-      <div>
-        <span class="eyebrow">Bookmarks</span>
-        <h2>Registros guardados</h2>
-        <p>Consulta las actualizaciones que marcaste para revisar después.</p>
-      </div>
-
-      <!-- <div class="hero-badge">
-        <i class="bi bi-shield-check"></i>
-        <span>Supervisor</span>
-      </div> -->
-    </div>
+    <PageHero eyebrow="Bookmarks" titulo="Registros guardados">
+      Consulta las actualizaciones que marcaste para revisar después.
+    </PageHero>
 
     <div v-if="cargando" class="estado-mensaje">
       <div class="spinner-border text-primary mb-3" role="status">
@@ -173,6 +164,7 @@ import { obtenerBookmarks, quitarBookmark, limpiarBookmarks } from '../../api/bo
 import type { Version } from '../../types/version'
 import { Modal } from 'bootstrap'
 import { toast } from 'vue-sonner'
+import PageHero from '../shared/PageHero.vue'
 
 const router = useRouter()
 
@@ -443,15 +435,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-:root {
-  --primary: #077e9d;
-  --secondary: #025b7d;
-  --warning: #fcbb1c;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --transition: all 0.3s ease;
-}
-
 .contenedor-guardados {
   max-width: 1400px;
   margin: 0 auto;
@@ -778,88 +761,6 @@ onMounted(() => {
   .btn-ver {
     width: 100%;
     justify-content: center;
-  }
-}
-
-.supervision-hero {
-  display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: center;
-  max-width: 1500px;
-  margin: 0 auto 20px;
-  padding: 28px;
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at top right, rgba(252, 187, 28, 0.24), transparent 32%),
-    linear-gradient(135deg, #073b4c 0%, var(--secondary) 100%);
-  color: white;
-  box-shadow: 0 14px 32px rgba(2, 91, 125, 0.22);
-}
-
-.supervision-hero h2 {
-  font-weight: 700;
-}
-
-.supervision-hero p {
-  max-width: 760px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 1rem;
-}
-
-.eyebrow {
-  display: inline-flex;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff7d6;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hero-badge {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-width: 130px;
-  height: 120px;
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-  font-weight: 800;
-}
-
-.hero-badge i {
-  font-size: 2rem;
-  color: var(--warning);
-  margin-bottom: 8px;
-}
-
-@media (max-width: 900px) {
-  .supervision-hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .hero-badge {
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    gap: 10px;
-    padding: 14px;
-  }
-
-  .hero-badge i {
-    margin-bottom: 0;
-  }
-
-  .supervision-resumen {
-    grid-template-columns: 1fr;
   }
 }
 
