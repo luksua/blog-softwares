@@ -291,7 +291,7 @@
           <div class="editor-column-header">
             <label class="form-label fw-bold text-primary mb-0">Contenido</label>
 
-            <div class="pestanas-editor" role="tablist">
+            <!-- <div class="pestanas-editor" role="tablist">
               <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'editor' }"
                 role="tab" :aria-selected="pestanaActiva === 'editor'" @click="pestanaActiva = 'editor'">
                 <i class="bi bi-pencil-square"></i>
@@ -303,7 +303,7 @@
                 <i class="bi bi-eye"></i>
                 Vista previa
               </button>
-            </div>
+            </div> -->
           </div>
 
           <div class="editor-wrapper" v-show="pestanaActiva === 'editor'">
@@ -438,7 +438,7 @@ const textoBotonGuardar = computed(() => {
 })
 
 const {
-  wrapperRef: categoriaSelectRef,
+  wrapperRef: 
   selectAbierto,
   busquedaCategoria,
   categoriasFiltradas,

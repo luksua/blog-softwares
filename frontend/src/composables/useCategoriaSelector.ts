@@ -2,11 +2,6 @@ import { computed, onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 import type { Category } from '../types/categorias'
 
 /**
- * Antes esta lógica (abrir/cerrar el dropdown, filtrar por búsqueda,
- * marcar/desmarcar categorías, cerrar al hacer click fuera) estaba
- * copiada casi línea por línea en NewVersion.vue y EditVersion.vue.
- * Ahora vive una sola vez acá.
- *
  * @param categoriaIds  Ref al array de IDs seleccionados (usar `toRef(registro, 'actualizacion_categoria_ids')`
  *                       o `toRef(form, 'categoria_ids')` para pasar una propiedad de un `reactive()`).
  * @param listaCategorias Ref con el catálogo completo de categorías disponibles.

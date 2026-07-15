@@ -29,6 +29,12 @@ export async function listarNotificaciones(perPage = 10) {
   return response.data
 }
 
+export async function listarObservaciones() {
+  const response = await api.get('/notificaciones/observaciones')
+
+  return response.data
+}
+
 export async function obtenerContadorNotificaciones() {
   const response = await api.get('/notificaciones/contador')
 

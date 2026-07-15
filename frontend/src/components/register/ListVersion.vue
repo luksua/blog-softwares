@@ -87,7 +87,6 @@ import {
   computed,
   nextTick,
   onMounted,
-  onUnmounted,
   ref,
   watch,
 } from 'vue'
@@ -110,6 +109,7 @@ const cargando = ref(true)
 
 const detalleVisualRef = ref<any>(null)
 const headingActivo = ref('resumen')
+
 
 let observer: IntersectionObserver | null = null
 

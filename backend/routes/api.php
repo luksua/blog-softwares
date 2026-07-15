@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::get('/notificaciones', [BlogNotificationController::class, 'index']);
+    Route::get('/notificaciones/observaciones', [BlogNotificationController::class, 'indexObservaciones']);
     Route::get('/notificaciones/contador', [BlogNotificationController::class, 'contador']);
     Route::post('/notificaciones/{id}/leida', [BlogNotificationController::class, 'marcarLeida'])
         ->whereNumber('id');

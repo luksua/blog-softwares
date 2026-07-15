@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\BlogNotification;
+use App\Models\Observaciones;
 use Illuminate\Http\Request;
 
 class BlogNotificationController extends Controller
@@ -39,34 +40,21 @@ class BlogNotificationController extends Controller
         ]);
     }
 
-    public function index2(Request $request)
+    public function indexObservaciones(Request $request)
     {
         $usuarioId = $request->user()->usuario_id;
-        $soloNoLeidas = filter_var($request->input('no_leidas', false), FILTER_VALIDATE_BOOLEAN);
 
-        $query = BlogNotification::with([
-            'actualizacion:id,actualizacion_titulo,actualizacion_estado,actualizacion_version,actualizacion_usuario_id_autor',
-            'actor:usuario_id,usuario_usuario,usuario_nombre1,usuario_nombre2,usuario_apellido1,usuario_apellido2',
+        $query = Observaciones::with([
+            'actualizacion:id,actualizacion_titulo,actualizacion_estado,actualizacion_version,actualizacion_usuario_id_autor'
         ])
+            ->where('estado_nuevo', 'revision')
             ->where('usuario_id_destino', $usuarioId)
             ->latest();
 
-        if ($soloNoLeidas) {
-            $query->noLeidas();
-        }
-
-        $perPage = min((int) $request->input('per_page', 10), 50);
-        $notificaciones = $query->paginate($perPage);
+        $observaciones = $query;
 
         return response()->json([
-            'data' => $notificaciones->getCollection()->map(fn (BlogNotification $notificacion) => $this->formatear($notificacion))->values(),
-            'meta' => [
-                'current_page' => $notificaciones->currentPage(),
-                'last_page' => $notificaciones->lastPage(),
-                'per_page' => $notificaciones->perPage(),
-                'total' => $notificaciones->total(),
-                'no_leidas' => $this->contarNoLeidas($usuarioId),
-            ],
+            'data' => $observaciones->getCollection()->map(fn (Observaciones $observacion) => $this->formatear($observacion))->values(),
         ]);
     }
 

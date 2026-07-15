@@ -1996,28 +1996,10 @@ defineExpose({ obtenerActualizaciones })
 .btn-ejecutar-busqueda:hover {
   background: rgba(7, 126, 157, 0.14);
   color: var(--primary);
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
 }
 
-.btn-limpiar-busqueda,
-.btn-ejecutar-busqueda {
-  position: absolute;
-  top: calc(100% + 4px);
-
-  right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  overflow: hidden;
-}
-
-
-.dropdown-search {
+.input-busqueda-wrapper {
+  position: relative;
   display: flex;
   align-items: center;
 }
@@ -2060,5 +2042,4 @@ defineExpose({ obtenerActualizaciones })
   background: rgba(7, 126, 157, 0.14);
   color: var(--primary);
 }
-
 </style>

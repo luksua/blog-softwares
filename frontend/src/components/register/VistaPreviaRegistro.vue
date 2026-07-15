@@ -62,7 +62,6 @@
                   >
                     <span class="indice-bullet" aria-hidden="true">•</span>
                     <span>Resumen</span>
-                  </a>
                 </li>
 
                 <li
@@ -81,7 +80,6 @@
                   >
                     <span class="indice-bullet" aria-hidden="true">•</span>
                     <span>{{ heading.text }}</span>
-                  </a>
                 </li>
 
                 <li v-if="headings.length === 0" class="indice-vacio">

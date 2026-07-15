@@ -18,10 +18,7 @@ export interface OpcionesIniciarEditor {
 }
 
 /**
- * Arma el bloque `tools` de EditorJS (Header, List, Image con subida al
- * backend). Esta configuración era idéntica en NewVersion.vue y
- * EditVersion.vue, con la única diferencia de los niveles de encabezado
- * permitidos.
+ * Arma el bloque `tools` de EditorJS (Header, List, Image con subida al backend)
  */
 function construirHerramientas(headerLevels: number[], defaultLevel: number) {
   return {

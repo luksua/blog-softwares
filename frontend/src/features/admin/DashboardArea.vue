@@ -11,18 +11,9 @@
             {{ dashboard.alcance.descripcion }}
           </span>
 
-          <button
-            type="button"
-            class="btn-refresh"
-            :disabled="cargando"
-            title="Actualizar dashboard"
-            @click="cargarDashboard(); cargarProgramados()"
-          >
-            <span
-              v-if="cargando"
-              class="spinner-border spinner-border-sm"
-              role="status"
-            ></span>
+          <button type="button" class="btn-refresh" :disabled="cargando" title="Actualizar dashboard"
+            @click="cargarDashboard(); cargarProgramados()">
+            <span v-if="cargando" class="spinner-border spinner-border-sm" role="status"></span>
 
             <i v-else class="bi bi-arrow-clockwise"></i>
           </button>
@@ -96,6 +87,19 @@
           </div>
         </article>
 
+        <!-- <article class="summary-card review">
+          <div class="summary-icon">
+            <i class="bi "></i>
+          </div>
+
+          <div>
+            <span class="summary-label">Por publicar</span>
+            <strong class="summary-value">
+              {{ formatearNumero(programados.length) }}
+            </strong>
+          </div>
+        </article> -->
+
         <article class="summary-card draft">
           <div class="summary-icon">
             <i class="bi bi-pencil-square"></i>
@@ -126,11 +130,7 @@
           </div>
 
           <div v-if="dashboard.registros_por_estado.length" class="bar-list">
-            <div
-              v-for="estado in dashboard.registros_por_estado"
-              :key="estado.estado"
-              class="bar-row"
-            >
+            <div v-for="estado in dashboard.registros_por_estado" :key="estado.estado" class="bar-row">
               <div class="bar-row-header">
                 <span class="state-pill" :class="`state-${estado.estado}`">
                   {{ getEstadoLabel(estado.estado) }}
@@ -140,10 +140,7 @@
               </div>
 
               <div class="bar-track">
-                <div
-                  class="bar-fill"
-                  :style="{ width: `${getPorcentaje(estado.total, maxEstado)}%` }"
-                ></div>
+                <div class="bar-fill" :style="{ width: `${getPorcentaje(estado.total, maxEstado)}%` }"></div>
               </div>
             </div>
           </div>
@@ -165,7 +162,13 @@
 
               <p>Registros programados que se publican en las próximas 24 horas.</p>
             </div>
+
+            <strong class="summary-icon">
+              {{ formatearNumero(programados.length) }}
+            </strong>
+
           </div>
+
 
           <div v-if="programados.length" class="scheduled-list scroll-area">
             <div v-for="registro in programados" :key="registro.id" class="scheduled-item">
@@ -174,7 +177,7 @@
                   {{ registro.titulo }}
                 </strong>
 
-                <small>{{ registro.area }}</small>
+                <!-- <small>{{ registro.area }}</small> -->
               </div>
 
               <span class="scheduled-countdown">
@@ -269,15 +272,9 @@
             </div>
           </div>
 
-          <div
-            v-if="dashboard.usuarios_mas_registros.length"
-            class="user-list scroll-area"
-          >
-            <div
-              v-for="(usuario, index) in dashboard.usuarios_mas_registros"
-              :key="usuario.usuario_id"
-              class="user-item"
-            >
+          <div v-if="dashboard.usuarios_mas_registros.length" class="user-list scroll-area">
+            <div v-for="(usuario, index) in dashboard.usuarios_mas_registros" :key="usuario.usuario_id"
+              class="user-item">
               <span class="rank-number">
                 {{ index + 1 }}
               </span>
@@ -316,28 +313,17 @@
               <p>Publicaciones con más lecturas registradas.</p>
             </div>
 
-            <span
-              class="availability-badge"
-              :class="{ disabled: !dashboard.lecturas_disponibles }"
-            >
-              <i
-                class="bi"
-                :class="dashboard.lecturas_disponibles ? 'bi-check-circle-fill' : 'bi-slash-circle-fill'"
-              ></i>
+            <span class="availability-badge" :class="{ disabled: !dashboard.lecturas_disponibles }">
+              <i class="bi"
+                :class="dashboard.lecturas_disponibles ? 'bi-check-circle-fill' : 'bi-slash-circle-fill'"></i>
 
               {{ dashboard.lecturas_disponibles ? 'Lecturas activas' : 'Sin columna de lecturas' }}
             </span>
           </div>
 
-          <div
-            v-if="dashboard.lecturas_disponibles && dashboard.registros_mas_leidos_area.length"
-            class="read-list scroll-area"
-          >
-            <div
-              v-for="(registro, index) in dashboard.registros_mas_leidos_area"
-              :key="registro.id"
-              class="read-item"
-            >
+          <div v-if="dashboard.lecturas_disponibles && dashboard.registros_mas_leidos_area.length"
+            class="read-list scroll-area">
+            <div v-for="(registro, index) in dashboard.registros_mas_leidos_area" :key="registro.id" class="read-item">
               <div class="read-rank">
                 #{{ index + 1 }}
               </div>
@@ -516,12 +502,12 @@ const maxEstado = computed(() => {
   )
 })
 
-const maxArea = computed(() => {
-  return Math.max(
-    ...(dashboard.value?.registros_por_area.map((item) => item.total) || [0]),
-    1
-  )
-})
+// const maxArea = computed(() => {
+//   return Math.max(
+//     ...(dashboard.value?.registros_por_area.map((item) => item.total) || [0]),
+//     1
+//   )
+// })
 
 const maxUsuarios = computed(() => {
   return Math.max(
@@ -827,10 +813,25 @@ onMounted(() => {
 }
 
 
-.state-publicado { background-color: #e6f7e9; color: #2e7d32; }
-.state-borrador { background-color: #fef8e3; color: #f9a825; }
-.state-revision { background-color: #eaf4fd; color: #2f84d3; }
-.state-inactivo { background-color: #e5e7eb; color: #374151; }
+.state-publicado {
+  background-color: #e6f7e9;
+  color: #2e7d32;
+}
+
+.state-borrador {
+  background-color: #fef8e3;
+  color: #f9a825;
+}
+
+.state-revision {
+  background-color: #eaf4fd;
+  color: #2f84d3;
+}
+
+.state-inactivo {
+  background-color: #e5e7eb;
+  color: #374151;
+}
 
 
 .bar-track {
@@ -870,10 +871,10 @@ onMounted(() => {
   padding: 12px;
 }
 
-.area-item + .area-item,
-.user-item + .user-item,
-.read-item + .read-item,
-.scheduled-item + .scheduled-item {
+.area-item+.area-item,
+.user-item+.user-item,
+.read-item+.read-item,
+.scheduled-item+.scheduled-item {
   margin-top: 10px;
 }
 
