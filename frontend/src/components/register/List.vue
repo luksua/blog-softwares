@@ -429,8 +429,8 @@
             @click="cerrarModalEdicion"></button>
         </div>
         <div class="modal-body">
-          <Edit v-if="idEditando" :key="`${idEditando}-${notificacionCorreccionActual?.id || 'normal'}`"
-            :id="idEditando" :modo-correccion="Boolean(notificacionCorreccionActual) || esCorreccionDesdeListado"
+          <Edit v-if="idEditando" :key="`${idEditando}-${observacionCorreccionActual?.id || 'normal'}`"
+            :id="idEditando" :modo-correccion="Boolean(observacionCorreccionActual) || esCorreccionDesdeListado"
             @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
         </div>
       </div>
@@ -440,7 +440,7 @@
   <PanelRevisionesPendientes
     :mostrar="mostrarAlertaRevision"
     v-model:abierto="offcanvasAbierto"
-    :notificaciones="notificacionesRevision"
+    :observaciones="observacionesRevision"
     @corregir="handleCorreccionDesdeOffcanvas"
   />
 </template>
@@ -468,10 +468,9 @@ import {
   obtenerNombreAutor,
 } from '../../utils/formatoRegistro'
 import {
-  listarNotificaciones,
-  marcarNotificacionLeida,
-  type BlogNotification,
-} from '../../api/notificaciones'
+  listarObservacionesPendientes,
+  type ObservacionPendiente,
+} from '../../api/observaciones'
 
 type EstadoFiltro = {
   id: string
@@ -522,7 +521,7 @@ const itemARevision = ref<Version | null>(null)
 const observacionRevision = ref('')
 const errorObservacionRevision = ref('')
 const idEditando = ref<number | null>(null)
-const notificacionCorreccionActual = ref<BlogNotification | null>(null)
+const observacionCorreccionActual = ref<ObservacionPendiente | null>(null)
 
 const mostrarFiltros = ref(false)
 
@@ -552,30 +551,25 @@ const { categorias: categoriasDisponibles } = storeToRefs(categoriasStore)
 const estadosDisponibles = ref<EstadoFiltro[]>([])
 const cargandoFiltros = computed(() => areasStore.loading || categoriasStore.loading)
 
-const notificaciones = ref<BlogNotification[]>([])
-const cargandoNotificaciones = ref(false)
+const observacionesRevision = ref<ObservacionPendiente[]>([])
+const cargandoObservaciones = ref(false)
 
-const notificacionesRevision = computed(() => {
-  return notificaciones.value.filter((item) => {
-    return item.tipo === 'revision' && !item.leida_en
-  })
-})
-
+// Ya no se filtra por "leída": la fuente de verdad es el estado actual
+// de la actualización (viene así del backend), no si el usuario abrió
+// la notificación.
 const mostrarAlertaRevision = computed(() => {
-  return !esVistaSupervision.value && notificacionesRevision.value.length > 0
+  return !esVistaSupervision.value && observacionesRevision.value.length > 0
 })
 
-const cargarNotificacionesRevision = async () => {
+const cargarObservacionesRevision = async () => {
   try {
-    cargandoNotificaciones.value = true
-    const response = await listarNotificaciones(20)
-    notificaciones.value = (response?.data || []).filter((item: BlogNotification) => {
-      return item.tipo === 'revision'
-    })
+    cargandoObservaciones.value = true
+    const response = await listarObservacionesPendientes()
+    observacionesRevision.value = response?.data || []
   } catch (error) {
-    console.error('Error cargando notificaciones de revisión:', error)
+    console.error('Error cargando observaciones pendientes:', error)
   } finally {
-    cargandoNotificaciones.value = false
+    cargandoObservaciones.value = false
   }
 }
 
@@ -616,27 +610,20 @@ const cerrarModalBootstrap = () => {
 
 const cerrarModalEdicion = () => {
   idEditando.value = null
-  notificacionCorreccionActual.value = null
+  observacionCorreccionActual.value = null
   esCorreccionDesdeListado.value = false
   cerrarModalBootstrap()
 }
 
 const actualizacionGuardada = async () => {
-  if (notificacionCorreccionActual.value) {
-    try {
-      await marcarNotificacionLeida(notificacionCorreccionActual.value.id)
-      notificacionCorreccionActual.value.leida_en = new Date().toISOString()
-      window.dispatchEvent(new Event('notificaciones-updated'))
-    } catch (error) {
-      console.error('Error marcando notificación de corrección como leída:', error)
-    }
-  }
-
-  notificacionCorreccionActual.value = null
+  // Ya no hay que "marcar como leída" nada: en cuanto guardamos, el
+  // registro deja de estar en estado "revision" y el próximo
+  // cargarObservacionesRevision() ya no lo va a traer de vuelta.
+  observacionCorreccionActual.value = null
   esCorreccionDesdeListado.value = false
 
   await obtenerActualizaciones(paginaActual.value)
-  await cargarNotificacionesRevision()
+  await cargarObservacionesRevision()
 
   cerrarModalEdicion()
 }
@@ -760,23 +747,23 @@ const verDetalles = (id: number) => {
 const esCorreccionDesdeListado = ref(false)
 
 const editarActualizacion = (item: Version) => {
-  notificacionCorreccionActual.value = null
+  observacionCorreccionActual.value = null
   esCorreccionDesdeListado.value = item.actualizacion_estado === 'revision'
   idEditando.value = item.id
 }
 
-const handleCorreccionDesdeOffcanvas = async (notificacion: BlogNotification) => {
+const handleCorreccionDesdeOffcanvas = async (observacion: ObservacionPendiente) => {
   offcanvasAbierto.value = false
   await nextTick()
-  abrirCorreccionDesdeAlerta(notificacion)
+  abrirCorreccionDesdeAlerta(observacion)
 }
 
-const abrirCorreccionDesdeAlerta = async (notificacion: BlogNotification) => {
-  if (!notificacion.actualizacion_id) return
+const abrirCorreccionDesdeAlerta = async (observacion: ObservacionPendiente) => {
+  if (!observacion.actualizacion_id) return
 
-  notificacionCorreccionActual.value = notificacion
+  observacionCorreccionActual.value = observacion
   esCorreccionDesdeListado.value = true
-  idEditando.value = Number(notificacion.actualizacion_id)
+  idEditando.value = Number(observacion.actualizacion_id)
 
   await nextTick()
 
@@ -1020,7 +1007,7 @@ onMounted(async () => {
   ])
 
   if (!esVistaSupervision.value) {
-    cargarNotificacionesRevision()
+    cargarObservacionesRevision()
   }
 })
 

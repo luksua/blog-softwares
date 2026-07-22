@@ -80,6 +80,7 @@ const router = createRouter({
           component: HomePageAdmin,
           props: true,
           meta: {
+            sinPadding: true,
             requiresAuth: true,
           },
         },
@@ -125,6 +126,7 @@ const router = createRouter({
           name: 'dashboard',
           component: DashboardPage,
           meta: {
+            sinPadding: true,
             requiresAuth: true,
             requiresSupervisor: true,
           },
@@ -135,6 +137,7 @@ const router = createRouter({
           name: 'supervision',
           component: SupervisionPage,
           meta: {
+            sinPadding: true,
             requiresAuth: true,
             requiresSupervisor: true,
           },

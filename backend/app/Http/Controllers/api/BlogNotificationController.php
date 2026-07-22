@@ -40,24 +40,6 @@ class BlogNotificationController extends Controller
         ]);
     }
 
-    public function indexObservaciones(Request $request)
-    {
-        $usuarioId = $request->user()->usuario_id;
-
-        $query = Observaciones::with([
-            'actualizacion:id,actualizacion_titulo,actualizacion_estado,actualizacion_version,actualizacion_usuario_id_autor'
-        ])
-            ->where('estado_nuevo', 'revision')
-            ->where('usuario_id_destino', $usuarioId)
-            ->latest();
-
-        $observaciones = $query;
-
-        return response()->json([
-            'data' => $observaciones->getCollection()->map(fn (Observaciones $observacion) => $this->formatear($observacion))->values(),
-        ]);
-    }
-
     public function contador(Request $request)
     {
         return response()->json([

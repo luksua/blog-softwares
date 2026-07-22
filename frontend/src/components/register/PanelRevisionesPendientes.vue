@@ -9,7 +9,7 @@
                 @click="$emit('update:abierto', true)" aria-label="Ver revisiones pendientes"
                 title="Revisiones pendientes">
                 <i class="bi bi-clipboard-check"></i>
-                <span class="fab-badge">{{ notificaciones.length }}</span>
+                <span class="fab-badge">{{ observaciones.length }}</span>
             </button>
 
             <!-- Panel offcanvas -->
@@ -19,7 +19,7 @@
                     <div class="oc-header-left">
                         <i class="bi bi-exclamation-circle-fill oc-header-icon"></i>
                         <span class="oc-title">Revisión pendiente</span>
-                        <span class="oc-count">{{ notificaciones.length }}</span>
+                        <span class="oc-count">{{ observaciones.length }}</span>
                     </div>
                     <button class="oc-close" @click="$emit('update:abierto', false)"
                         aria-label="Cerrar panel de revisiones">
@@ -28,15 +28,15 @@
                 </div>
 
                 <div class="oc-body">
-                    <div v-for="notificacion in notificaciones" :key="notificacion.id" class="oc-item">
+                    <div v-for="observacion in observaciones" :key="observacion.id" class="oc-item">
                         <div class="oc-item-inner">
                             <div class="oc-item-icon-wrap">
                                 <i class="bi bi-exclamation-triangle-fill oc-item-icon"></i>
                             </div>
                             <div class="oc-item-content">
-                                <p class="oc-item-msg">{{ notificacion.mensaje }}</p>
-                                <button v-if="notificacion.actualizacion_id" type="button" class="oc-item-btn"
-                                    @click="$emit('corregir', notificacion)">
+                                <p class="oc-item-msg">{{ observacion.observacion }}</p>
+                                <button v-if="observacion.actualizacion_id" type="button" class="oc-item-btn"
+                                    @click="$emit('corregir', observacion)">
                                     <i class="bi bi-pencil-square"></i>
                                     Corregir registro
                                 </button>
@@ -51,31 +51,25 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
-import type { BlogNotification } from '../../api/notificaciones'
+import type { ObservacionPendiente } from '../../api/observaciones'
 
 /**
  * Panel de "revisiones pendientes" (botón flotante + panel lateral vía
- * Teleport). Antes vivía embebido dentro de List.vue junto con toda su
- * lógica de filtros/tabla; ahora es un componente de presentación:
- * recibe la lista de notificaciones y el estado abierto/cerrado, y le
- * avisa al padre cuándo cerrarlo o cuándo el usuario quiere corregir
- * un registro. El padre sigue siendo dueño de cargar las notificaciones
- * y de abrir el modal de edición en modo corrección.
+ * Teleport). Ahora se alimenta de las observaciones pendientes reales
+ * (estado actual de la actualización), no de las notificaciones leídas/
+ * no leídas — así el ítem solo desaparece cuando el registro se corrige.
  */
 defineProps<{
-    /** Si el conjunto completo (botón + panel) debe existir en el DOM. */
     mostrar: boolean
-    /** Si el panel está actualmente desplegado. */
     abierto: boolean
-    notificaciones: BlogNotification[]
+    observaciones: ObservacionPendiente[]
 }>()
 
 const emit = defineEmits<{
     (e: 'update:abierto', valor: boolean): void
-    (e: 'corregir', notificacion: BlogNotification): void
+    (e: 'corregir', observacion: ObservacionPendiente): void
 }>()
 
-// Cierra el panel con Escape (solo mientras este componente está montado).
 const onKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
         emit('update:abierto', false)
@@ -348,9 +342,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 }
 
 .contenedor-lista {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 16px;
 }
 
 

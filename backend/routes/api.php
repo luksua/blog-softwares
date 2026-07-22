@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\UpdateBlogController;
 use App\Http\Controllers\Api\BlogDashboardController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
+use App\Http\Controllers\Api\ObservacionesPendientesController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -24,7 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         $permisos = session('tz_permisos', []);
 
-        if (! $permisos && isset($usuario->permisos)) {
+        if (!$permisos && isset($usuario->permisos)) {
             $permisos = $usuario->permisos;
         }
 
@@ -85,12 +86,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Notificaciones
+    | Notificaciones/Observaciones
     |--------------------------------------------------------------------------
     */
 
     Route::get('/notificaciones', [BlogNotificationController::class, 'index']);
-    Route::get('/notificaciones/observaciones', [BlogNotificationController::class, 'indexObservaciones']);
+    Route::get('/observaciones-pendientes', [ObservacionesPendientesController::class, 'index']);
+    Route::get('/observaciones-pendientes/contador', [ObservacionesPendientesController::class, 'contador']);
     Route::get('/notificaciones/contador', [BlogNotificationController::class, 'contador']);
     Route::post('/notificaciones/{id}/leida', [BlogNotificationController::class, 'marcarLeida'])
         ->whereNumber('id');

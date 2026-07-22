@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -25,5 +26,20 @@ class Observaciones extends Model
     public function usuarioSupervisor(): BelongsTo
     {
         return $this->belongsTo(JefeArea::class, 'usuario_id_supervisor', 'jefe_id');
+    }
+
+    /**
+     * Observaciones cuya actualización relacionada sigue
+     * actualmente en estado "revision" (pendiente de corregir)
+     * y pertenece al autor indicado. Esta es la fuente de verdad:
+     * no depende del estado histórico de la fila, sino del estado
+     * actual de la actualización.
+     */
+    public function scopePendientesDe(Builder $query, int $usuarioAutorId): Builder
+    {
+        return $query->whereHas('actualizacion', function (Builder $q) use ($usuarioAutorId) {
+            $q->where('actualizacion_estado', 'revision')
+                ->where('actualizacion_usuario_id_autor', $usuarioAutorId);
+        });
     }
 }
