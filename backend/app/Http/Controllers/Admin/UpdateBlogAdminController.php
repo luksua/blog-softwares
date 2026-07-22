@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use App\Models\UpdateBlog;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources\ActualizacionResource;
 use App\Models\Category;
 
 class UpdateBlogAdminController extends Controller
@@ -185,8 +183,6 @@ class UpdateBlogAdminController extends Controller
     public function subirImagenEditor(Request $request)
     {
         $request->validate([
-            // Dejar solo 'file' sin mimes es peligroso porque un usuario malintencionado 
-            // podría subir un archivo .php o .exe camuflado.
             'imagen' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
@@ -208,9 +204,6 @@ class UpdateBlogAdminController extends Controller
     public function subirImagen(Request $request)
     {
         $request->validate([
-            // ✅ IMPORTANTE: Vuelve a poner 'mimes' y 'image'. 
-            // Dejar solo 'file' sin mimes es peligroso porque un usuario malintencionado 
-            // podría subir un archivo .php o .exe camuflado.
             'imagen' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
         ]);
 
@@ -229,79 +222,79 @@ class UpdateBlogAdminController extends Controller
         return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
     }
 
-    public function show($id)
-    {
-        // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
-        $actualizacion = UpdateBlog::with(['imagenes', 'categoria', 'categorias'])->findOrFail($id);
+    // public function show($id)
+    // {
+    //     // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
+    //     $actualizacion = UpdateBlog::with(['imagenes', 'categoria', 'categorias'])->findOrFail($id);
 
-        return new ActualizacionResource($actualizacion);
-    }
+    //     return new ActualizacionResource($actualizacion);
+    // }
 
-    public function inactivar($id)
-    {
-        $actualizacion = UpdateBlog::findOrFail($id);
+    // public function inactivar($id)
+    // {
+    //     $actualizacion = UpdateBlog::findOrFail($id);
 
-        $actualizacion->actualizacion_estado = 'inactivo';
-        $actualizacion->save();
+    //     $actualizacion->actualizacion_estado = 'inactivo';
+    //     $actualizacion->save();
 
-        return response()->json([
-            'message' => 'Actualización inactivada correctamente'
-        ], 200);
-    }
+    //     return response()->json([
+    //         'message' => 'Actualización inactivada correctamente'
+    //     ], 200);
+    // }
 
-    public function activar($id)
-    {
-        $actualizacion = UpdateBlog::findOrFail($id);
+    // public function activar($id)
+    // {
+    //     $actualizacion = UpdateBlog::findOrFail($id);
 
-        $actualizacion->actualizacion_estado = 'publicado';
-        $actualizacion->actualizacion_fecha_publicacion = now();
+    //     $actualizacion->actualizacion_estado = 'publicado';
+    //     $actualizacion->actualizacion_fecha_publicacion = now();
 
-        $actualizacion->save();
+    //     $actualizacion->save();
 
-        return response()->json([
-            'message' => 'Actualización activada correctamente'
-        ], 200);
-    }
+    //     return response()->json([
+    //         'message' => 'Actualización activada correctamente'
+    //     ], 200);
+    // }
 
-    public function update(Request $request, $id)
-    {
-        $actualizacion = UpdateBlog::findOrFail($id);
+    // public function update(Request $request, $id)
+    // {
+    //     $actualizacion = UpdateBlog::findOrFail($id);
 
-        // Agregamos categoria_id y area_servicio_id a las reglas
-        $this->prepararCategoriaIds($request);
+    //     // Agregamos categoria_id y area_servicio_id a las reglas
+    //     $this->prepararCategoriaIds($request);
 
-        $data = $request->validate([
-            'actualizacion_titulo'            => 'sometimes|required|string|max:255',
-            'actualizacion_version'           => 'sometimes|required|string|max:50',
-            'actualizacion_imagen_destacada'  => 'sometimes|nullable|string|max:255',
-            'actualizacion_resumen'           => 'sometimes|required|string|max:255',
-            'actualizacion_estado'            => 'sometimes|required|in:publicado,borrador,revision,inactivo',
-            'actualizacion_fecha_publicacion' => 'nullable|date',
-            'actualizacion_fecha_creacion'    => 'nullable|date',
-            'actualizacion_contenido'         => 'sometimes|required|array',
-            'actualizacion_categoria_ids'     => 'sometimes|required|array|min:1|max:3',
-            'actualizacion_categoria_ids.*'   => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
-            'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
-        ]);
+    //     $data = $request->validate([
+    //         'actualizacion_titulo'            => 'sometimes|required|string|max:255',
+    //         'actualizacion_version'           => 'sometimes|required|string|max:50',
+    //         'actualizacion_imagen_destacada'  => 'sometimes|nullable|string|max:255',
+    //         'actualizacion_resumen'           => 'sometimes|required|string|max:255',
+    //         'actualizacion_estado'            => 'sometimes|required|in:publicado,borrador,revision,inactivo',
+    //         'actualizacion_fecha_publicacion' => 'nullable|date',
+    //         'actualizacion_fecha_creacion'    => 'nullable|date',
+    //         'actualizacion_contenido'         => 'sometimes|required|array',
+    //         'actualizacion_categoria_ids'     => 'sometimes|required|array|min:1|max:3',
+    //         'actualizacion_categoria_ids.*'   => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
+    //         'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
+    //     ]);
 
-        $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
-        unset($data['actualizacion_categoria_ids']);
+    //     $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
+    //     unset($data['actualizacion_categoria_ids']);
 
-        if (is_array($categoriaIds) && count($categoriaIds) > 0) {
-            $data['actualizacion_categoria_id'] = $categoriaIds[0];
-        }
+    //     if (is_array($categoriaIds) && count($categoriaIds) > 0) {
+    //         $data['actualizacion_categoria_id'] = $categoriaIds[0];
+    //     }
 
-        $actualizacion->update($data);
+    //     $actualizacion->update($data);
 
-        if (is_array($categoriaIds)) {
-            $this->sincronizarCategorias($actualizacion, $categoriaIds);
-        }
+    //     if (is_array($categoriaIds)) {
+    //         $this->sincronizarCategorias($actualizacion, $categoriaIds);
+    //     }
 
-        return response()->json([
-            'message' => 'Actualización editada correctamente',
-            'data' => $actualizacion->fresh(['imagenes', 'categoria', 'categorias'])
-        ]);
-    }
+    //     return response()->json([
+    //         'message' => 'Actualización editada correctamente',
+    //         'data' => $actualizacion->fresh(['imagenes', 'categoria', 'categorias'])
+    //     ]);
+    // }
 
 
     private function prepararCategoriaIds(Request $request): void

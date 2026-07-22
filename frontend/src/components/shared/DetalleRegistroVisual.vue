@@ -156,8 +156,6 @@ defineExpose({ contenidoRef })
     overflow: visible;
     background: #ffffff;
     padding: 0;
-    /* border-radius: 0 0 24px 24px; */
-    /* box-shadow: var(--shadow-md, 0 4px 16px rgba(0, 0, 0, 0.12)); */
 }
 
 /* ─── Hero ─── */

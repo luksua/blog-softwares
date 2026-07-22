@@ -892,103 +892,103 @@ const obtenerIconoCategoria = (icono?: string): string => {
   return icono && icono.trim() !== '' ? icono.trim() : 'bi-tag-fill'
 }
 
-const buscarCategoriaEnCatalogo = (id?: string | number, nombre?: string) => {
-  const idNormalizado = Number(id)
+// const buscarCategoriaEnCatalogo = (id?: string | number, nombre?: string) => {
+//   const idNormalizado = Number(id)
 
-  if (Number.isFinite(idNormalizado)) {
-    const porId = categoriasConIcono.value.find(c => Number(c.id) === idNormalizado)
-    if (porId) return porId
-  }
+//   if (Number.isFinite(idNormalizado)) {
+//     const porId = categoriasConIcono.value.find(c => Number(c.id) === idNormalizado)
+//     if (porId) return porId
+//   }
 
-  if (nombre) {
-    const nombreNormalizado = nombre.toLowerCase().trim()
+//   if (nombre) {
+//     const nombreNormalizado = nombre.toLowerCase().trim()
 
-    const porNombre = categoriasConIcono.value.find(c =>
-      c.nombre.toLowerCase().trim() === nombreNormalizado
-    )
+//     const porNombre = categoriasConIcono.value.find(c =>
+//       c.nombre.toLowerCase().trim() === nombreNormalizado
+//     )
 
-    if (porNombre) return porNombre
-  }
+//     if (porNombre) return porNombre
+//   }
 
-  return null
-}
+//   return null
+// }
 
 
-const normalizarCategoriaItem = (c: any) => {
-  const id =
-    c?.categoria_actualizacion_id ??
-    c?.actualizacion_categoria_id ??
-    c?.id ??
-    0
+// const normalizarCategoriaItem = (c: any) => {
+//   const id =
+//     c?.categoria_actualizacion_id ??
+//     c?.actualizacion_categoria_id ??
+//     c?.id ??
+//     0
 
-  const nombre =
-    c?.categoria_actualizacion_nombre ??
-    c?.actualizacion_categoria_nombre ??
-    c?.nombre ??
-    'Sin categoría'
+//   const nombre =
+//     c?.categoria_actualizacion_nombre ??
+//     c?.actualizacion_categoria_nombre ??
+//     c?.nombre ??
+//     'Sin categoría'
 
-  const categoriaCatalogo = buscarCategoriaEnCatalogo(id, nombre)
+//   const categoriaCatalogo = buscarCategoriaEnCatalogo(id, nombre)
 
-  const icono =
-    c?.icono ||
-    c?.categoria_actualizacion_icono ||
-    c?.actualizacion_categoria_icono ||
-    c?.icono_categoria ||
-    categoriaCatalogo?.icono ||
-    'bi-tag-fill'
+//   const icono =
+//     c?.icono ||
+//     c?.categoria_actualizacion_icono ||
+//     c?.actualizacion_categoria_icono ||
+//     c?.icono_categoria ||
+//     categoriaCatalogo?.icono ||
+//     'bi-tag-fill'
 
-  return {
-    id,
-    nombre: categoriaCatalogo?.nombre || nombre,
-    icono: obtenerIconoCategoria(icono),
-  }
-}
+//   return {
+//     id,
+//     nombre: categoriaCatalogo?.nombre || nombre,
+//     icono: obtenerIconoCategoria(icono),
+//   }
+// }
 
-const obtenerCategorias = (
-  item: Version
-): { id: string | number; nombre: string; icono: string }[] => {
-  const itemAny = item as any
+// const obtenerCategorias = (
+//   item: Version
+// ): { id: string | number; nombre: string; icono: string }[] => {
+//   const itemAny = item as any
 
-  if (Array.isArray(itemAny.categorias) && itemAny.categorias.length > 0) {
-    return itemAny.categorias.map((c: any) => normalizarCategoriaItem(c))
-  }
+//   if (Array.isArray(itemAny.categorias) && itemAny.categorias.length > 0) {
+//     return itemAny.categorias.map((c: any) => normalizarCategoriaItem(c))
+//   }
 
-  if (Array.isArray(itemAny.actualizacion_categorias) && itemAny.actualizacion_categorias.length > 0) {
-    return itemAny.actualizacion_categorias.map((c: any) => normalizarCategoriaItem(c))
-  }
+//   if (Array.isArray(itemAny.actualizacion_categorias) && itemAny.actualizacion_categorias.length > 0) {
+//     return itemAny.actualizacion_categorias.map((c: any) => normalizarCategoriaItem(c))
+//   }
 
-  if (itemAny.categoria) {
-    return [normalizarCategoriaItem(itemAny.categoria)]
-  }
+//   if (itemAny.categoria) {
+//     return [normalizarCategoriaItem(itemAny.categoria)]
+//   }
 
-  if (itemAny.actualizacion_categoria) {
-    return [normalizarCategoriaItem(itemAny.actualizacion_categoria)]
-  }
+//   if (itemAny.actualizacion_categoria) {
+//     return [normalizarCategoriaItem(itemAny.actualizacion_categoria)]
+//   }
 
-  const categoriaId =
-    itemAny.actualizacion_categoria_id ??
-    itemAny.categoria_actualizacion_id
+//   const categoriaId =
+//     itemAny.actualizacion_categoria_id ??
+//     itemAny.categoria_actualizacion_id
 
-  const categoriaNombre =
-    itemAny.actualizacion_categoria_nombre ??
-    itemAny.categoria_actualizacion_nombre
+//   const categoriaNombre =
+//     itemAny.actualizacion_categoria_nombre ??
+//     itemAny.categoria_actualizacion_nombre
 
-  if (categoriaId || categoriaNombre) {
-    const categoriaCatalogo = buscarCategoriaEnCatalogo(categoriaId, categoriaNombre)
+//   if (categoriaId || categoriaNombre) {
+//     const categoriaCatalogo = buscarCategoriaEnCatalogo(categoriaId, categoriaNombre)
 
-    return [{
-      id: categoriaId ?? categoriaCatalogo?.id ?? 0,
-      nombre: categoriaCatalogo?.nombre ?? categoriaNombre ?? 'Sin categoría',
-      icono: categoriaCatalogo?.icono ?? 'bi-tag-fill',
-    }]
-  }
+//     return [{
+//       id: categoriaId ?? categoriaCatalogo?.id ?? 0,
+//       nombre: categoriaCatalogo?.nombre ?? categoriaNombre ?? 'Sin categoría',
+//       icono: categoriaCatalogo?.icono ?? 'bi-tag-fill',
+//     }]
+//   }
 
-  return [{
-    id: 0,
-    nombre: 'Sin categoría',
-    icono: 'bi-tag-fill',
-  }]
-}
+//   return [{
+//     id: 0,
+//     nombre: 'Sin categoría',
+//     icono: 'bi-tag-fill',
+//   }]
+// }
 
 // Área mapeada a la forma genérica { id, nombre } que espera <SelectorBusqueda>
 const areasConOpcion = computed(() => {

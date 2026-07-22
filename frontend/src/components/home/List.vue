@@ -597,54 +597,6 @@ const formatearFecha = (fechaString: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-// const normalizarTexto = (texto: string): string =>
-//   texto
-//     .toLowerCase()
-//     .normalize('NFD')
-//     .replace(/[\u0300-\u036f]/g, '')
-//     .trim()
-
-
-
-// const obtenerIconoCategoria = (nombre: string | undefined): string => {
-//   if (!nombre) return 'bi-tag-fill'
-
-//   const n = normalizarTexto(nombre)
-
-//   const mapa: Record<string, string> = {
-//     'manual de usuario': 'bi-person-lines-fill',
-//     'manual tecnico': 'bi-tools',
-//     'instalador': 'bi-box-arrow-down',
-//     'actualizacion del sistema': 'bi-arrow-repeat',
-//     'nueva funcionalidad': 'bi-stars',
-//     'mejora': 'bi-arrow-up-circle-fill',
-//     'correccion de errores': 'bi-bug-fill',
-//     'parche de seguridad': 'bi-shield-fill-check',
-//     'guia de instalacion': 'bi-journal-arrow-down',
-//     'guia rapida': 'bi-lightning-charge-fill',
-//     'documentacion': 'bi-file-earmark-text-fill',
-//     'notas de version': 'bi-card-list',
-//     'general': 'bi-info-circle-fill',
-//   }
-
-//   if (mapa[n]) return mapa[n]
-
-//   // Fallback por coincidencias parciales
-//   if (n.includes('manual')) return 'bi-journal-text'
-//   if (n.includes('instal')) return 'bi-box-arrow-down'
-//   if (n.includes('actualizacion')) return 'bi-arrow-repeat'
-//   if (n.includes('funcionalidad')) return 'bi-stars'
-//   if (n.includes('mejora')) return 'bi-arrow-up-circle-fill'
-//   if (n.includes('correccion') || n.includes('error')) return 'bi-bug-fill'
-//   if (n.includes('seguridad') || n.includes('parche')) return 'bi-shield-fill-check'
-//   if (n.includes('guia')) return 'bi-journal-bookmark-fill'
-//   if (n.includes('documentacion')) return 'bi-file-earmark-text-fill'
-//   if (n.includes('version')) return 'bi-card-list'
-//   if (n.includes('general')) return 'bi-info-circle-fill'
-
-//   return 'bi-tag-fill'
-// }
-
 const categoriaDropdownAbierto = ref(false)
 
 const categoriasConIcono = computed(() => {
@@ -670,13 +622,7 @@ const categoriasConIcono = computed(() => {
     }
   })
 })
-// const iconoCategoriaSeleccionada = computed(() => {
-//   return categoriaSeleccionada.value?.icono ?? 'bi-tags-fill'
-// })
 
-// const nombreCategoriaSeleccionada = computed(() => {
-//   return categoriaSeleccionada.value?.nombre ?? 'Todas las categorías'
-// })
 
 const seleccionarCategoria = (id: number | '') => {
   filtros.value.categoriaId = id

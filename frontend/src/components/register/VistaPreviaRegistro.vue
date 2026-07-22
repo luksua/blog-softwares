@@ -346,40 +346,6 @@ const iniciarObserver = () => {
     })
 }
 
-const scrollToElement = (elementId: string) => {
-  const scrollContainer = vistaPreviaRef.value
-
-  if (!scrollContainer) {
-    return
-  }
-
-  const element =
-    scrollContainer.querySelector<HTMLElement>(
-      `#${elementId}`
-    )
-
-  if (!element) {
-    return
-  }
-
-  const containerRect =
-    scrollContainer.getBoundingClientRect()
-
-  const elementRect =
-    element.getBoundingClientRect()
-
-  const top =
-    scrollContainer.scrollTop +
-    elementRect.top -
-    containerRect.top -
-    24
-
-  scrollContainer.scrollTo({
-    top,
-    behavior: 'smooth',
-  })
-}
-
 const programarGeneracionIndice = () => {
   if (temporizadorIndice) {
     clearTimeout(temporizadorIndice)

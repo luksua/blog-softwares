@@ -80,7 +80,6 @@ const router = createRouter({
           component: HomePageAdmin,
           props: true,
           meta: {
-            sinPadding: true,
             requiresAuth: true,
           },
         },

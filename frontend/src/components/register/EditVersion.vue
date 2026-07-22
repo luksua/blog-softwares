@@ -290,20 +290,6 @@
         <div class="editor-column">
           <div class="editor-column-header">
             <label class="form-label fw-bold text-primary mb-0">Contenido</label>
-
-            <!-- <div class="pestanas-editor" role="tablist">
-              <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'editor' }"
-                role="tab" :aria-selected="pestanaActiva === 'editor'" @click="pestanaActiva = 'editor'">
-                <i class="bi bi-pencil-square"></i>
-                Editor
-              </button>
-
-              <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'vista-previa' }"
-                role="tab" :aria-selected="pestanaActiva === 'vista-previa'" @click="abrirVistaPrevia">
-                <i class="bi bi-eye"></i>
-                Vista previa
-              </button>
-            </div> -->
           </div>
 
           <div class="editor-wrapper" v-show="pestanaActiva === 'editor'">
@@ -363,7 +349,6 @@ import { useEditorJS } from '../../composables/useEditorJS'
 import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada, resolverUrlImagen } from '../../composables/useImagenDestacada'
-import { useVistaPrevia } from '../../composables/useVistaPrevia'
 import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 
 // Props
@@ -473,7 +458,7 @@ const eliminarImagen = () => {
 const obtenerUrlImagen = (ruta: string) => resolverUrlImagen(ruta)
 
 // ── Vista previa ──────────────────────────────────────────────────
-const { generarHtmlContenido } = useVistaPrevia()
+
 const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
 const contenidoPreviewHtml = ref('')
 
@@ -503,17 +488,6 @@ const fechaTextoPreview = computed(() => {
  * Toma el contenido actual del editor (sin guardar los cambios todavía)
  * y arma el HTML de vista previa, tal cual se vería públicamente.
  */
-const abrirVistaPrevia = async () => {
-  if (editor.value) {
-    try {
-      const outputData = await editor.value.save()
-      contenidoPreviewHtml.value = generarHtmlContenido(outputData)
-    } catch (error) {
-      console.error('Error al generar la vista previa:', error)
-    }
-  }
-  pestanaActiva.value = 'vista-previa'
-}
 
 const formatearFechaParaInput = (fecha: any) => {
   if (!fecha) return ''

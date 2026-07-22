@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <div ref="wrapperRef" class="notification-wrapper">
     <button
       class="notification-button"
@@ -219,4 +219,4 @@ onUnmounted(() => {
   line-height: 1;
   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
 }
-</style>
+</style> -->

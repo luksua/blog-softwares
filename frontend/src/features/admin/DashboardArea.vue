@@ -87,6 +87,19 @@
           </div>
         </article>
 
+        <article class="summary-card review">
+          <div class="summary-icon">
+            <i class="bi bi-hourglass-split"></i>
+          </div>
+
+          <div>
+            <span class="summary-label">Programados</span>
+            <strong class="summary-value">
+              {{ formatearNumero(programados.length) }}
+            </strong>
+          </div>
+        </article>
+
         <!-- <article class="summary-card review">
           <div class="summary-icon">
             <i class="bi "></i>
@@ -379,6 +392,7 @@ interface ResumenDashboard {
   publicados: number
   revision: number
   borradores: number
+  programados: number
 }
 
 interface RegistroPorEstado {
@@ -431,7 +445,7 @@ const programados = ref<RegistroProgramado[]>([])
 const cargandoProgramados = ref(false)
 
 /** Horas hacia adelante dentro de las cuales se considera "próxima a publicarse". */
-const HORAS_PROXIMIDAD = 24
+const HORAS_PROXIMIDAD = 48
 
 const cargarProgramados = async () => {
   cargandoProgramados.value = true
@@ -531,6 +545,7 @@ const getEstadoLabel = (estado: string) => {
     revision: 'Revisión',
     borrador: 'Borrador',
     inactivo: 'Inactivo',
+    programado: 'Programado',
     sin_estado: 'Sin estado',
   }
 

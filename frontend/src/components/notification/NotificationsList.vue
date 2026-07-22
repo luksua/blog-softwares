@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <section class="notification-panel" @click.stop>
     <header class="notification-panel-header">
       <div>
@@ -181,4 +181,4 @@ const formatearFecha = (fecha?: string | null) => {
   color: #94a3b8;
   font-size: 0.72rem;
 }
-</style>
+</style> -->

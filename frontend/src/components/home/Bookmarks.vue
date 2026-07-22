@@ -304,18 +304,6 @@ const verDetalle = (id: number) => {
   router.push(`/employee/actualizaciones/${id}`)
 }
 
-
-const obtenerNombreCategorias = (item: Version): string => {
-  if (Array.isArray((item as any).categorias) && (item as any).categorias.length > 0) {
-    return (item as any).categorias
-      .map((categoria: any) => categoria.categoria_actualizacion_nombre)
-      .filter(Boolean)
-      .join(', ')
-  }
-
-  return item.categoria?.categoria_actualizacion_nombre || 'Sin categoría'
-}
-
 const obtenerUrlImagen = (ruta: string) => {
   if (!ruta) {
     return ''

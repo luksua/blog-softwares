@@ -60,17 +60,6 @@
 
             <nav class="indice-nav">
               <ul class="indice-lista">
-                <!-- <li v-if="actualizacion.actualizacion_resumen" class="indice-item">
-                  <a
-                    href="#resumen"
-                    class="indice-link indice-nivel-fijo"
-                    :class="{ activo: headingActivo === 'resumen' }"
-                    @click.prevent="irAHeading('resumen')"
-                  >
-                    <span class="indice-bullet">•</span>
-                    <span>Resumen</span>
-                  </a>
-                </li> -->
 
                 <li v-for="heading in headings" :key="heading.id" class="indice-item">
                   <a

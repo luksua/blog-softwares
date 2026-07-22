@@ -220,20 +220,6 @@
           <label class="form-label fw-bold text-primary mb-0">
             Contenido <span class="text-danger">*</span>
           </label>
-
-          <!-- <div class="pestanas-editor" role="tablist">
-            <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'editor' }"
-              role="tab" :aria-selected="pestanaActiva === 'editor'" @click="pestanaActiva = 'editor'">
-              <i class="bi bi-pencil-square"></i>
-              Editor
-            </button>
-
-            <button type="button" class="pestana-btn" :class="{ activa: pestanaActiva === 'vista-previa' }"
-              role="tab" :aria-selected="pestanaActiva === 'vista-previa'" @click="abrirVistaPrevia">
-              <i class="bi bi-eye"></i>
-              Vista previa
-            </button>
-          </div> -->
         </div>
 
         <div class="editor-wrapper" v-show="pestanaActiva === 'editor'">
@@ -286,7 +272,7 @@ import { useEditorJS } from '../../composables/useEditorJS'
 import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada } from '../../composables/useImagenDestacada'
-import { useVistaPrevia } from '../../composables/useVistaPrevia'
+// import { useVistaPrevia } from '../../composables/useVistaPrevia'
 import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 
 const tituloInput = ref<HTMLInputElement | null>(null)
@@ -472,7 +458,7 @@ const {
 const { editor: editorInstance, iniciar: iniciarEditor, destruir: destruirEditor } = useEditorJS()
 
 // ── Vista previa ──────────────────────────────────────────────────
-const { generarHtmlContenido } = useVistaPrevia()
+// const { generarHtmlContenido } = useVistaPrevia()
 const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
 const contenidoPreviewHtml = ref('')
 
@@ -497,18 +483,18 @@ const fechaTextoPreview = computed(() => {
  * Toma el contenido actual del editor (sin guardarlo en el backend) y arma
  * el HTML de vista previa, tal cual se vería públicamente el registro.
  */
-const abrirVistaPrevia = async () => {
-  if (editorInstance.value) {
-    try {
-      const outputData = await editorInstance.value.save()
-      contenidoPreviewHtml.value = generarHtmlContenido(outputData)
-    } catch (error) {
-      console.error('Error al generar la vista previa:', error)
-      toast.warning('No se pudo generar la vista previa del contenido.')
-    }
-  }
-  pestanaActiva.value = 'vista-previa'
-}
+// const abrirVistaPrevia = async () => {
+//   if (editorInstance.value) {
+//     try {
+//       const outputData = await editorInstance.value.save()
+//       contenidoPreviewHtml.value = generarHtmlContenido(outputData)
+//     } catch (error) {
+//       console.error('Error al generar la vista previa:', error)
+//       toast.warning('No se pudo generar la vista previa del contenido.')
+//     }
+//   }
+//   pestanaActiva.value = 'vista-previa'
+// }
 
 const enfocarTitulo = async () => {
   await nextTick()
@@ -658,51 +644,6 @@ const limpiarFormulario = () => {
   if (editorInstance.value) editorInstance.value.clear()
 }
 
-// const selectAbierto = ref(false)
-// const busquedaCategoria = ref('')
-
-// // Categorías filtradas por búsqueda
-// const categoriasFiltradas = computed(() => {
-//   if (!busquedaCategoria.value) return listaCategorias.value
-//   const busqueda = busquedaCategoria.value.toLowerCase()
-//   return listaCategorias.value.filter(cat =>
-//     cat.categoria_actualizacion_nombre.toLowerCase().includes(busqueda)
-//   )
-// })
-
-// // Computed para obtener las categorías seleccionadas con sus detalles
-// const categoriasSeleccionadas = computed(() => {
-//   return registro.actualizacion_categoria_ids
-//     .map(id => {
-//       const categoria = listaCategorias.value.find(c => Number(c.categoria_actualizacion_id) === id)
-//       return categoria ? {
-//         id: Number(categoria.categoria_actualizacion_id),
-//         nombre: categoria.categoria_actualizacion_nombre
-//       } : null
-//     })
-//     .filter(c => c !== null)
-// })
-
-// const toggleSelect = () => {
-//   selectAbierto.value = !selectAbierto.value
-//   if (!selectAbierto.value) {
-//     busquedaCategoria.value = ''
-//   }
-// }
-
-// const toggleCategoria = (categoriaId: number) => {
-//   const index = registro.actualizacion_categoria_ids.indexOf(categoriaId)
-
-//   if (index > -1) {
-//     registro.actualizacion_categoria_ids.splice(index, 1)
-//   } else {
-//     if (registro.actualizacion_categoria_ids.length < 3) {
-//       registro.actualizacion_categoria_ids.push(categoriaId)
-//     } else {
-//       toast.warning('Solo puedes seleccionar máximo 3 categorías')
-//     }
-//   }
-// }
 
 // Cerrar select al hacer click fuera
 const cerrarSelectAlClickFuera = (event: MouseEvent) => {

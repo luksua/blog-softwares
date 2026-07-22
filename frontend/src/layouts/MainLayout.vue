@@ -1,9 +1,4 @@
 <template>
-  <!-- <pre style="font-size: 11px;">
-isLoggedIn: {{ isLoggedIn }}
-isAdmin: {{ isAdmin }}
-route: {{ route.name }}
-</pre> -->
   <div class="layout">
     <!-- Overlay móvil para sidebar admin -->
     <div v-if="isMobile && isExpanded && isLoggedIn" class="sidebar-overlay" @click="cerrarSidebarMovil"></div>
@@ -152,6 +147,11 @@ route: {{ route.name }}
                     <span class="notification-message">{{ notificacion.mensaje }}</span>
                     <small>{{ formatearFechaNotificacion(notificacion.created_at) }}</small>
                   </button>
+
+                  <button v-if="hayMasNotificaciones" class="notification-link-button notification-cargar-mas"
+                    type="button" :disabled="cargandoMasNotificaciones" @click="cargarMasNotificaciones">
+                    {{ cargandoMasNotificaciones ? 'Cargando...' : 'Ver más notificaciones' }}
+                  </button>
                 </template>
               </section>
             </div>
@@ -175,19 +175,7 @@ route: {{ route.name }}
           <router-view />
         </div>
       </main>
-
-      <!-- <footer class="footer">
-        <div class="footer-content">
-          <span>© 2026 - Sistema de Versiones</span>
-        </div>
-      </footer> -->
     </div>
-
-    <!-- Botón flotante móvil -->
-    <!-- <button v-if="mostrarBotonNuevoRegistro" class="fab-new-record" type="button" aria-label="Crear nuevo registro"
-      @click="irANuevoRegistro">
-      +
-    </button> -->
   </div>
 </template>
 
@@ -221,7 +209,10 @@ const permisos = ref<string[]>([])
 const notificaciones = ref<BlogNotification[]>([])
 const notificacionesNoLeidas = ref(0)
 const cargandoNotificaciones = ref(false)
+const cargandoMasNotificaciones = ref(false)
 const mostrarPanelNotificaciones = ref(false)
+const paginaNotificaciones = ref(1)
+const hayMasNotificaciones = ref(false)
 let intervaloNotificaciones: ReturnType<typeof window.setInterval> | null = null
 
 const existeRuta = (name: string) => {
@@ -236,25 +227,9 @@ const etiquetaNotificacionesNoLeidas = computed(() => {
   return notificacionesNoLeidas.value > 99 ? '99+' : String(notificacionesNoLeidas.value)
 })
 
-// const puedeSupervisarArea = computed(() => {
-//   return isAdmin.value || permisos.value.includes('blog.supervisar_area')
-// })
-
 const mostrarSupervision = computed(() => {
   return isLoggedIn.value && puedeSupervisarArea.value && router.hasRoute('supervision')
 })
-
-// const estaEnFormularioRegistro = computed(() => {
-//   return [
-//     'actualizaciones-crear',
-//     'actualizaciones-create',
-//     'actualizaciones-editar',
-//     'actualizaciones-edit',
-//     'crear-actualizacion',
-//     'editar-actualizacion',
-//     'admin-actualizaciones-edit',
-//   ].includes(String(route.name))
-// })
 
 const normalizarPermisos = (valor: unknown): string[] => {
   if (!Array.isArray(valor)) {
@@ -333,19 +308,42 @@ const checkAuth = async () => {
   }
 }
 
+const PAGE_SIZE_NOTIFICACIONES = 10
+
 const cargarNotificaciones = async () => {
   if (!isLoggedIn.value) return
 
   cargandoNotificaciones.value = true
 
   try {
-    const response = await listarNotificaciones(10)
+    const response = await listarNotificaciones(PAGE_SIZE_NOTIFICACIONES, 1)
     notificaciones.value = response?.data || []
     notificacionesNoLeidas.value = Number(response?.meta?.no_leidas ?? 0)
+    paginaNotificaciones.value = Number(response?.meta?.current_page ?? 1)
+    hayMasNotificaciones.value = Number(response?.meta?.current_page ?? 1) < Number(response?.meta?.last_page ?? 1)
   } catch (error) {
     console.error('Error al cargar notificaciones:', error)
   } finally {
     cargandoNotificaciones.value = false
+  }
+}
+
+const cargarMasNotificaciones = async () => {
+  if (cargandoMasNotificaciones.value || !hayMasNotificaciones.value) return
+
+  cargandoMasNotificaciones.value = true
+
+  try {
+    const siguientePagina = paginaNotificaciones.value + 1
+    const response = await listarNotificaciones(PAGE_SIZE_NOTIFICACIONES, siguientePagina)
+
+    notificaciones.value = [...notificaciones.value, ...(response?.data || [])]
+    paginaNotificaciones.value = Number(response?.meta?.current_page ?? siguientePagina)
+    hayMasNotificaciones.value = Number(response?.meta?.current_page ?? siguientePagina) < Number(response?.meta?.last_page ?? 1)
+  } catch (error) {
+    console.error('Error al cargar más notificaciones:', error)
+  } finally {
+    cargandoMasNotificaciones.value = false
   }
 }
 
@@ -447,15 +445,6 @@ const formatearFechaNotificacion = (fecha?: string | null) => {
 const manejarNotificacionesActualizadas = () => {
   void cargarNotificaciones()
 }
-
-// const irANuevoRegistro = () => {
-//   if (router.hasRoute('actualizaciones-crear')) {
-//     router.push({ name: 'actualizaciones-crear' })
-//     return
-//   }
-
-//   router.push({ name: 'mis-registros' })
-// }
 
 const toggleSidebar = () => {
   isExpanded.value = !isExpanded.value
@@ -655,6 +644,7 @@ onUnmounted(() => {
   min-width: 28px;
   text-align: center;
 }
+
 
 .nav-text {
   font-size: 15px;
@@ -970,6 +960,8 @@ onUnmounted(() => {
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+  padding: 10px;
+  padding: 11111040;
 }
 
 .notification-empty {

@@ -19,10 +19,11 @@ export interface BlogNotification {
   actor?: Record<string, any> | null
 }
 
-export async function listarNotificaciones(perPage = 10) {
+export async function listarNotificaciones(perPage = 10, page = 1) {
   const response = await api.get('/notificaciones', {
     params: {
       per_page: perPage,
+      page,
     },
   })
 
