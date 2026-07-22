@@ -15,12 +15,13 @@ class BlogDashboardController extends Controller
     public function __invoke(Request $request)
     {
         $usuario = $request->user();
+        $alcance = $this->resolverAlcance($usuario);
 
-        if (! $this->esAdmin($usuario) && empty($this->areasSupervisadas($usuario))) {
+        // Solo bloqueamos si de verdad no hay nada que mostrarle: no es
+        // admin, no supervisa áreas, y ni siquiera tiene área propia asignada.
+        if ($alcance['tipo'] === 'area_usuario' && empty($alcance['areas'])) {
             abort(403, 'No tienes permiso para consultar el dashboard.');
         }
-
-        $alcance = $this->resolverAlcance($usuario);
 
         $base = UpdateBlog::query();
         $this->aplicarAlcance($base, $alcance);
@@ -155,7 +156,7 @@ class BlogDashboardController extends Controller
 
         $areasSupervisadas = $this->areasSupervisadas($usuario);
 
-        if (! empty($areasSupervisadas)) {
+        if (!empty($areasSupervisadas)) {
             return [
                 'tipo' => 'areas_supervisadas',
                 'areas' => $areasSupervisadas,
@@ -200,7 +201,7 @@ class BlogDashboardController extends Controller
 
     private function areasSupervisadas($usuario): array
     {
-        if (! method_exists($usuario, 'areasSupervisadas')) {
+        if (!method_exists($usuario, 'areasSupervisadas')) {
             return [];
         }
 
@@ -220,7 +221,7 @@ class BlogDashboardController extends Controller
 
     private function nombreUsuario(?UsuarioIntranet $usuario): string
     {
-        if (! $usuario) {
+        if (!$usuario) {
             return 'Usuario sin información';
         }
 

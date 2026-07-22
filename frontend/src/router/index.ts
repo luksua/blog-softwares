@@ -180,6 +180,12 @@ const router = createRouter({
             },
           }),
         },
+        {
+          path: '/notificaciones',
+          name: 'notificaciones',
+          component: () =>
+            import('../components/home/Notifications.vue'),
+        },
       ],
     },
 

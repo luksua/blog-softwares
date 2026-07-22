@@ -8,6 +8,7 @@ use App\Models\Area;
 use App\Models\BlogNotification;
 use App\Models\Category;
 use App\Models\JefeArea;
+use App\Models\LecturaBlog;
 use App\Models\UpdateBlog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -151,11 +152,11 @@ class UpdateBlogController extends Controller
     |
     */
 
-            if (! $this->esAdmin($usuario) && ! $this->esJefeArea($usuario)) {
+            if (!$this->esAdmin($usuario) && !$this->esJefeArea($usuario)) {
                 abort(403, 'No tienes permiso para supervisar registros.');
             }
 
-            if (! $this->esAdmin($usuario)) {
+            if (!$this->esAdmin($usuario)) {
                 $areasSupervisadas = $this->areasSupervisadas($usuario);
 
                 if (empty($areasSupervisadas)) {
@@ -178,7 +179,7 @@ class UpdateBlogController extends Controller
     |
     */
 
-            if (! $this->esAdmin($usuario)) {
+            if (!$this->esAdmin($usuario)) {
                 abort(403, 'No tienes permiso para ver todos los registros.');
             }
         } else {
@@ -289,24 +290,23 @@ class UpdateBlogController extends Controller
             'ultimaRevisionObservacion.supervisor',
         ])->findOrFail($id);
 
-        //         public function show($id)
-        // {
-        //     $actualizacion = UpdateBlog::with([
-        //         'areaServicio:area_servicio_id,area_servicio_nombre',
-        //         'categoria:categoria_actualizacion_id,categoria_actualizacion_nombre',
-        //         'categorias:categoria_actualizacion_id,categoria_actualizacion_nombre',
-        //     ])->findOrFail($id);
-
-        if ($actualizacion->actualizacion_estado === 'publicado') {
-            $actualizacion->increment('actualizacion_lecturas');
-            $actualizacion->refresh();
+        if (!$this->puedeVer($usuario, $actualizacion)) {
+            abort(403, 'No tienes permiso para ver este registro.');
         }
 
-        //     return new ActualizacionResource($actualizacion);
-        // }
+        if ($actualizacion->actualizacion_estado === 'publicado') {
+            $yaLeido = LecturaBlog::where('actualizacion_id', $actualizacion->id)
+                ->where('usuario_id', $usuario->usuario_id)
+                ->exists();
 
-        if (! $this->puedeVer($usuario, $actualizacion)) {
-            abort(403, 'No tienes permiso para ver este registro.');
+            if (!$yaLeido) {
+                $actualizacion->increment('actualizacion_lecturas');
+                LecturaBlog::create([
+                    'actualizacion_id' => $actualizacion->id,
+                    'usuario_id' => $usuario->usuario_id,
+                ]);
+                $actualizacion->refresh();
+            }
         }
 
         return new ActualizacionResource($actualizacion);
@@ -346,7 +346,7 @@ class UpdateBlogController extends Controller
             ],
 
             'actualizacion_fecha_publicacion' => [
-                Rule::requiredIf(fn () => $request->input('actualizacion_estado') === 'programado'),
+                Rule::requiredIf(fn() => $request->input('actualizacion_estado') === 'programado'),
                 'nullable',
                 'date',
                 Rule::when(
@@ -408,8 +408,8 @@ class UpdateBlogController extends Controller
 
                 $datosParaGuardar['actualizacion_imagen_destacada'] =
                     $request
-                    ->file('actualizacion_imagen_destacada')
-                    ->store('blog/portadas', 'public');
+                        ->file('actualizacion_imagen_destacada')
+                        ->store('blog/portadas', 'public');
             } elseif ($request->filled('actualizacion_imagen_destacada')) {
                 $datosParaGuardar['actualizacion_imagen_destacada'] =
                     $request->input('actualizacion_imagen_destacada');
@@ -462,7 +462,7 @@ class UpdateBlogController extends Controller
         $actualizacion = UpdateBlog::findOrFail($id);
         $estadoAnterior = (string) $actualizacion->actualizacion_estado;
 
-        if (! $this->puedeEditar($usuario, $actualizacion)) {
+        if (!$this->puedeEditar($usuario, $actualizacion)) {
             abort(403, 'No tienes permiso para editar este registro.');
         }
 
@@ -484,7 +484,7 @@ class UpdateBlogController extends Controller
             'actualizacion_area_servicio_id' => ['sometimes', 'required', 'integer'],
             'actualizacion_estado' => ['sometimes', 'required', Rule::in($this->estadosPermitidos())],
             'actualizacion_fecha_publicacion' => [
-                Rule::requiredIf(fn () => $request->input('actualizacion_estado') === 'programado'),
+                Rule::requiredIf(fn() => $request->input('actualizacion_estado') === 'programado'),
                 'nullable',
                 'date',
                 Rule::when(
@@ -541,25 +541,25 @@ class UpdateBlogController extends Controller
 
             $data['actualizacion_imagen_destacada'] =
                 $request
-                ->file('actualizacion_imagen_destacada')
-                ->store('blog/portadas', 'public');
+                    ->file('actualizacion_imagen_destacada')
+                    ->store('blog/portadas', 'public');
         }
 
         if (array_key_exists('actualizacion_estado', $data)) {
-            if (! $this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
+            if (!$this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
                 abort(403, 'No tienes permiso para cambiar el estado de este registro.');
             }
 
             if (
                 $data['actualizacion_estado'] === 'publicado' &&
                 empty($data['actualizacion_fecha_publicacion']) &&
-                ! $actualizacion->actualizacion_fecha_publicacion
+                !$actualizacion->actualizacion_fecha_publicacion
             ) {
                 $data['actualizacion_fecha_publicacion'] = now();
             }
         }
 
-        if (! isset($data['actualizacion_version'])) {
+        if (!isset($data['actualizacion_version'])) {
             $data['actualizacion_version'] =
                 (string) (((int) $actualizacion->actualizacion_version) + 1);
         }
@@ -595,7 +595,7 @@ class UpdateBlogController extends Controller
     {
         $usuario = $request->user();
 
-        if (! $request->filled('actualizacion_estado') && $request->filled('estado')) {
+        if (!$request->filled('actualizacion_estado') && $request->filled('estado')) {
             $request->merge([
                 'actualizacion_estado' => $request->input('estado'),
             ]);
@@ -610,7 +610,7 @@ class UpdateBlogController extends Controller
             ],
         ]);
 
-        if (! $this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
+        if (!$this->puedeCambiarEstado($usuario, $actualizacion, $data['actualizacion_estado'])) {
             abort(403, 'No tienes permiso para cambiar el estado de este registro.');
         }
 
@@ -618,7 +618,7 @@ class UpdateBlogController extends Controller
 
         if (
             $data['actualizacion_estado'] === 'publicado' &&
-            ! $actualizacion->actualizacion_fecha_publicacion
+            !$actualizacion->actualizacion_fecha_publicacion
         ) {
             $actualizacion->actualizacion_fecha_publicacion = now();
         }
@@ -666,7 +666,7 @@ class UpdateBlogController extends Controller
             'observacion_revision.max' => 'El motivo de revisión no puede superar 2000 caracteres.',
         ]);
 
-        if (! $this->puedeCambiarEstado($usuario, $actualizacion, 'revision')) {
+        if (!$this->puedeCambiarEstado($usuario, $actualizacion, 'revision')) {
             abort(403, 'No tienes permiso para marcar este registro como revisión.');
         }
 
@@ -880,7 +880,7 @@ class UpdateBlogController extends Controller
             return true;
         }
 
-        return ! empty($this->areasSupervisadas($usuario));
+        return !empty($this->areasSupervisadas($usuario));
     }
 
     private function esPropietario($usuario, UpdateBlog $actualizacion): bool
@@ -1040,7 +1040,7 @@ class UpdateBlogController extends Controller
             $ids = [$request->input('actualizacion_categoria_id')];
         }
 
-        if (! is_array($ids)) {
+        if (!is_array($ids)) {
             return;
         }
 

@@ -101,7 +101,7 @@
               <router-link v-if="mostrarSupervision" :to="{ name: 'dashboard' }" class="nav-link-header">
                 Dashboard
               </router-link>
-              
+
               <router-link v-if="mostrarGuardados" :to="{ name: 'employee-guardados' }"
                 class="nav-link-header nav-icon-link" title="Guardados">
                 <i class="bi bi-bookmark-fill fs-5"></i>
@@ -110,15 +110,18 @@
             </nav>
 
             <div class="notification-wrapper" @click.stop>
-              <button class="notification-button" type="button" title="Notificaciones"
-                @click="togglePanelNotificaciones">
+              <button class="notification-button" type="button" title="Notificaciones" @click="abrirNotificaciones">
                 <i class="bi bi-bell"></i>
+
                 <span v-if="notificacionesNoLeidas > 0" class="notification-badge">
                   {{ etiquetaNotificacionesNoLeidas }}
                 </span>
               </button>
 
-              <section v-if="mostrarPanelNotificaciones" class="notification-panel">
+              <section v-if="
+                mostrarPanelNotificaciones &&
+                !isMobile
+              " class="notification-panel">
                 <header class="notification-panel-header">
                   <div>
                     <strong>Notificaciones</strong>
@@ -244,6 +247,20 @@ const normalizarPermisos = (valor: unknown): string[] => {
       return ''
     })
     .filter(Boolean)
+}
+
+const abrirNotificaciones = () => {
+  if (isMobile.value) {
+    mostrarPanelNotificaciones.value = false
+
+    router.push({
+      name: 'notificaciones',
+    })
+
+    return
+  }
+
+  togglePanelNotificaciones()
 }
 
 const aplicarUsuario = (data: any) => {
@@ -374,47 +391,52 @@ const togglePanelNotificaciones = async () => {
 const cerrarPanelNotificaciones = () => {
   mostrarPanelNotificaciones.value = false
 }
-
-const abrirNotificacion = async (notificacion: BlogNotification) => {
+const abrirNotificacion = async (
+  notificacion: BlogNotification
+) => {
   try {
-    const mobile = window.innerWidth <= 768
-    isMobile.value = mobile
-    isExpanded.value = !mobile
+    if (!notificacion.leida_en) {
+      await marcarNotificacionLeida(
+        notificacion.id
+      )
 
-    if (!mobile) {
-      if (!notificacion.leida_en) {
-        await marcarNotificacionLeida(notificacion.id)
-        notificacion.leida_en = new Date().toISOString()
-        notificacionesNoLeidas.value = Math.max(0, notificacionesNoLeidas.value - 1)
-      }
+      notificacion.leida_en =
+        new Date().toISOString()
 
-      cerrarPanelNotificaciones()
+      notificacionesNoLeidas.value =
+        Math.max(
+          0,
+          notificacionesNoLeidas.value - 1
+        )
+    }
 
-      const rutaSugerida = notificacion.data?.ruta_sugerida
+    cerrarPanelNotificaciones()
 
-      if (rutaSugerida?.name && router.hasRoute(rutaSugerida.name)) {
-        router.push(rutaSugerida)
-        return
-      }
+    const rutaSugerida =
+      notificacion.data?.ruta_sugerida
 
-      if (notificacion.actualizacion_id) {
-        router.push({
-          name: 'mis-registros-show',
-          params: {
-            id: notificacion.actualizacion_id,
-          },
-        })
-      }
-    } else {
+    if (
+      rutaSugerida?.name &&
+      router.hasRoute(rutaSugerida.name)
+    ) {
+      router.push(rutaSugerida)
+      return
+    }
+
+    if (notificacion.actualizacion_id) {
       router.push({
-        name: 'mis-registros-',
+        name: 'mis-registros-show',
         params: {
           id: notificacion.actualizacion_id,
         },
       })
     }
+
   } catch (error) {
-    console.error('Error al abrir notificación:', error)
+    console.error(
+      'Error al abrir notificación:',
+      error
+    )
   }
 }
 

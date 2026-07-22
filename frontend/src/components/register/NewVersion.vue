@@ -226,19 +226,36 @@
           <div id="editorjs"></div>
         </div>
 
-        <VistaPreviaRegistro
-          v-if="pestanaActiva === 'vista-previa'"
-          :titulo="registro.titulo"
-          :version="registro.version"
-          :resumen="registro.resumen"
-          :area-nombre="areaSeleccionadaNombre"
-          :categorias="categoriasSeleccionadas.map(c => c.nombre)"
-          :imagen-url="previewMiniatura"
-          :fecha-texto="fechaTextoPreview"
-          :contenido-html="contenidoPreviewHtml"
-        />
+        <div class="contenido-info" :class="{
+          'contenido-error':
+            contenidoNoCumpleMinimo ||
+            contenidoExcedeLimite
+        }">
+          <span>
+            {{ caracteresContenido }}/{{ MAXIMO_CONTENIDO }} caracteres
+          </span>
+
+          <span v-if="contenidoNoCumpleMinimo">
+            Mínimo {{ MINIMO_CONTENIDO }} caracteres
+          </span>
+
+          <span v-else-if="contenidoExcedeLimite">
+            El contenido no puede superar los
+            {{ MAXIMO_CONTENIDO }} caracteres
+          </span>
+
+          <span v-else class="contenido-ok">
+            <i class="bi bi-check-circle"></i>
+            Contenido válido
+          </span>
+        </div>
+
+        <VistaPreviaRegistro v-if="pestanaActiva === 'vista-previa'" :titulo="registro.titulo"
+          :version="registro.version" :resumen="registro.resumen" :area-nombre="areaSeleccionadaNombre"
+          :categorias="categoriasSeleccionadas.map(c => c.nombre)" :imagen-url="previewMiniatura"
+          :fecha-texto="fechaTextoPreview" :contenido-html="contenidoPreviewHtml" />
       </div>
-      
+
       <!-- Barra final de acciones: siempre al final del formulario -->
       <div class="actions">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" @click="emit('cerrar')">
@@ -363,8 +380,23 @@ const cargarBorrador = () => {
 
 const LIMITE_RESUMEN = 800
 
+// Límites del contenido del Editor.js
+const MINIMO_CONTENIDO = 100
+const MAXIMO_CONTENIDO = 10000
+
 const resumenExcedeLimite = computed(() => {
   return registro.resumen.length > LIMITE_RESUMEN
+})
+
+// Cantidad de caracteres escritos en el Editor.js
+const caracteresContenido = ref(0)
+
+const contenidoNoCumpleMinimo = computed(() => {
+  return caracteresContenido.value < MINIMO_CONTENIDO
+})
+
+const contenidoExcedeLimite = computed(() => {
+  return caracteresContenido.value > MAXIMO_CONTENIDO
 })
 
 const guardarBorrador = async () => {
@@ -495,6 +527,33 @@ const fechaTextoPreview = computed(() => {
 //   }
 //   pestanaActiva.value = 'vista-previa'
 // }
+const obtenerTextoDelBloque = (block: any): string => {
+  if (!block?.data) {
+    return ''
+  }
+
+  const extraerTexto = (valor: any): string => {
+    if (typeof valor === 'string') {
+      return valor.replace(/<[^>]*>/g, ' ')
+    }
+
+    if (Array.isArray(valor)) {
+      return valor
+        .map(extraerTexto)
+        .join(' ')
+    }
+
+    if (typeof valor === 'object' && valor !== null) {
+      return Object.values(valor)
+        .map(extraerTexto)
+        .join(' ')
+    }
+
+    return ''
+  }
+
+  return extraerTexto(block.data)
+}
 
 const enfocarTitulo = async () => {
   await nextTick()
@@ -519,8 +578,27 @@ onMounted(async () => {
     onReady: () => {
       cargarBorrador()
     },
-    onChange: () => {
+    onChange: async () => {
       programarAutosave()
+
+      if (editorInstance.value) {
+        try {
+          const output = await editorInstance.value.save()
+
+          caracteresContenido.value = output.blocks.reduce(
+            (total: number, block: any) => {
+              const texto = obtenerTextoDelBloque(block)
+              return total + texto.length
+            },
+            0
+          )
+        } catch (error) {
+          console.error(
+            'Error al contar caracteres del contenido:',
+            error
+          )
+        }
+      }
     },
   })
   const modalEl = document.getElementById('modalNuevoRegistro')
@@ -539,8 +617,12 @@ onBeforeUnmount(() => {
 
 // ── Guardar registro ──────────────────────────────────────────────
 const guardarRegistro = async () => {
+  // Validar resumen
   if (registro.resumen.length > LIMITE_RESUMEN) {
-    errores.value.resumen = [`El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`]
+    errores.value.resumen = [
+      `El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`
+    ]
+
     return
   }
 
@@ -550,16 +632,59 @@ const guardarRegistro = async () => {
     outputData = await editorInstance.value.save()
   }
 
+  // Validar contenido vacío
   if (!outputData || outputData.blocks.length === 0) {
-    toast.warning('El contenido no puede estar vacío.')
+    toast.warning(
+      'El contenido no puede estar vacío.'
+    )
+
+    return
+  }
+
+  // Contar caracteres del contenido
+  const cantidadCaracteres =
+    outputData.blocks.reduce(
+      (total: number, block: any) => {
+        const texto =
+          obtenerTextoDelBloque(block)
+
+        return total + texto.trim().length
+      },
+      0
+    )
+
+  caracteresContenido.value =
+    cantidadCaracteres
+
+  // Validar mínimo
+  if (
+    cantidadCaracteres <
+    MINIMO_CONTENIDO
+  ) {
+    toast.warning(
+      `El contenido debe tener mínimo ${MINIMO_CONTENIDO} caracteres. Actualmente tiene ${cantidadCaracteres}.`
+    )
+
+    return
+  }
+
+  // Validar máximo
+  if (
+    cantidadCaracteres >
+    MAXIMO_CONTENIDO
+  ) {
+    toast.warning(
+      `El contenido no puede superar los ${MAXIMO_CONTENIDO} caracteres.`
+    )
+
     return
   }
 
   enviando.value = true
 
   try {
-const formData = new FormData()
-    
+    const formData = new FormData()
+
     // Aseguramos que siempre sea un string con || ''
     formData.append('actualizacion_titulo', registro.titulo || '')
     formData.append('actualizacion_version', registro.version || '')
@@ -589,7 +714,7 @@ const formData = new FormData()
         enviando.value = false
         return
       }
-      
+
       // Aquí probablemente estaba el error principal, le agregamos || ''
       formData.append('actualizacion_fecha_publicacion', registro.fecha_programada || '')
     } else {
@@ -839,7 +964,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
 }
 
-.editor-column > :deep(.vista-previa-container) {
+.editor-column> :deep(.vista-previa-container) {
   flex: 1;
   min-height: 0;
 }
@@ -1399,5 +1524,27 @@ onBeforeUnmount(() => {
     font-size: 0.7rem;
     padding: 4px 10px;
   }
+}
+
+.contenido-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 8px;
+
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.contenido-info.contenido-error {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.contenido-ok {
+  color: #16a34a;
+  font-weight: 600;
 }
 </style>
