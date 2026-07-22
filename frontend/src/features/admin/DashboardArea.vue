@@ -12,7 +12,7 @@
           </span>
 
           <button type="button" class="btn-refresh" :disabled="cargando" title="Actualizar dashboard"
-            @click="cargarDashboard(); cargarProgramados()">
+            @click="cargarDashboard">
             <span v-if="cargando" class="spinner-border spinner-border-sm" role="status"></span>
 
             <i v-else class="bi bi-arrow-clockwise"></i>
@@ -112,6 +112,32 @@
             </strong>
           </div>
         </article>
+
+        <article class="summary-card scheduled">
+          <div class="summary-icon">
+            <i class="bi bi-alarm-fill"></i>
+          </div>
+
+          <div>
+            <span class="summary-label">Programados</span>
+            <strong class="summary-value">
+              {{ formatearNumero(dashboard.resumen.programados) }}
+            </strong>
+          </div>
+        </article>
+
+        <article class="summary-card inactive">
+          <div class="summary-icon">
+            <i class="bi bi-slash-circle-fill"></i>
+          </div>
+
+          <div>
+            <span class="summary-label">Inactivos</span>
+            <strong class="summary-value">
+              {{ formatearNumero(dashboard.resumen.inactivos) }}
+            </strong>
+          </div>
+        </article>
       </div>
 
       <!-- Grid principal -->
@@ -151,6 +177,7 @@
           </div>
         </article>
 
+
         <!-- Publicaciones programadas próximas -->
         <article class="dashboard-panel">
           <div class="panel-header">
@@ -189,13 +216,61 @@
 
           <div v-else class="empty-panel">
             <i class="bi bi-check2-circle"></i>
+
             <p>
-              {{
-                cargandoProgramados
-                  ? 'Consultando publicaciones programadas...'
-                  : 'No hay publicaciones programadas para las próximas 24 horas.'
-              }}
+              No hay publicaciones programadas para las próximas 24 horas.
             </p>
+          </div>
+        </article>
+
+        <article class="dashboard-panel">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <i class="bi bi-person-check-fill"></i>
+                Empleados más activos
+              </h2>
+
+              <p>Empleados que más publicaciones han consultado.</p>
+            </div>
+          </div>
+
+          <div v-if="dashboard.empleados_mas_activos.length" class="user-list scroll-area">
+            <div v-for="(empleado, index) in dashboard.empleados_mas_activos" :key="empleado.usuario_id"
+              class="user-item">
+              <span class="rank-number">
+                {{ index + 1 }}
+              </span>
+
+              <div class="user-main">
+                <strong :title="empleado.usuario">
+                  {{ empleado.usuario }}
+                </strong>
+
+                <small>
+                  {{ formatearNumero(empleado.registros_vistos) }}
+                  publicaciones diferentes
+                </small>
+
+                <div class="user-progress">
+                  <span :style="{
+                    width: `${getPorcentaje(
+                      empleado.total_visualizaciones,
+                      maxEmpleadosActivos
+                    )}%`
+                  }"></span>
+                </div>
+              </div>
+
+              <strong class="user-total">
+                {{ formatearNumero(empleado.total_visualizaciones) }}
+              </strong>
+            </div>
+          </div>
+
+          <div v-else class="empty-panel">
+            <i class="bi bi-person-x"></i>
+            <p>Todavía no hay visualizaciones registradas.</p>
           </div>
         </article>
 
@@ -358,6 +433,67 @@
             </p>
           </div>
         </article>
+
+        <article class="dashboard-panel">
+          <div class="panel-header">
+            <div>
+              <h2>
+                <i class="bi bi-diagram-3-fill"></i>
+                Áreas más mencionadas
+              </h2>
+
+              <p>
+                Áreas relacionadas con mayor frecuencia en los
+                registros escritos por empleados del alcance actual.
+              </p>
+            </div>
+          </div>
+
+          <div v-if="dashboard.areas_mas_mencionadas.length" class="mentioned-area-list scroll-area">
+            <div v-for="(area, index) in dashboard.areas_mas_mencionadas"
+              :key="area.area_servicio_id ?? `sin-area-${index}`" class="mentioned-area-item">
+              <span class="rank-number">
+                {{ index + 1 }}
+              </span>
+
+              <div class="mentioned-area-main">
+                <div class="mentioned-area-header">
+                  <strong :title="area.area">
+                    {{ area.area }}
+                  </strong>
+
+                  <span class="mentioned-area-total">
+                    {{ formatearNumero(area.total) }}
+                  </span>
+                </div>
+
+                <small>
+                  Mencionada por
+                  {{ formatearNumero(area.autores) }}
+                  {{ area.autores === 1 ? 'autor' : 'autores' }}
+                </small>
+
+                <div class="user-progress">
+                  <span :style="{
+                    width: `${getPorcentaje(
+                      area.total,
+                      maxAreasMencionadas
+                    )}%`
+                  }"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="empty-panel">
+            <i class="bi bi-diagram-3"></i>
+
+            <p>
+              No hay áreas relacionadas en los registros del
+              alcance actual.
+            </p>
+          </div>
+        </article>
       </div>
     </div>
   </section>
@@ -379,11 +515,28 @@ interface ResumenDashboard {
   publicados: number
   revision: number
   borradores: number
+  programados: number
+  inactivos: number
+}
+
+interface EmpleadoMasActivo {
+  usuario_id: number
+  usuario: string
+  total_visualizaciones: number
+  registros_vistos: number
+  ultima_visualizacion: string | null
 }
 
 interface RegistroPorEstado {
   estado: string
   total: number
+}
+
+interface AreaMasMencionada {
+  area_servicio_id: number | null
+  area: string
+  total: number
+  autores: number
 }
 
 interface RegistroPorArea {
@@ -413,7 +566,10 @@ interface BlogDashboardData {
   usuarios_mas_registros: UsuarioMasRegistros[]
   registros_por_estado: RegistroPorEstado[]
   registros_por_area: RegistroPorArea[]
+  programados_proximos: RegistroProgramado[]
+  empleados_mas_activos: EmpleadoMasActivo[]
   lecturas_disponibles: boolean
+  areas_mas_mencionadas: AreaMasMencionada[]
 }
 
 interface RegistroProgramado {
@@ -427,43 +583,9 @@ const dashboard = ref<BlogDashboardData | null>(null)
 const cargando = ref(false)
 const error = ref('')
 
-const programados = ref<RegistroProgramado[]>([])
-const cargandoProgramados = ref(false)
-
-/** Horas hacia adelante dentro de las cuales se considera "próxima a publicarse". */
-const HORAS_PROXIMIDAD = 24
-
-const cargarProgramados = async () => {
-  cargandoProgramados.value = true
-
-  try {
-    const respuesta = await api.get('/actualizaciones?estado=programado&vista=supervision')
-    const registros = respuesta.data?.data || []
-
-    const ahora = Date.now()
-    const limite = ahora + HORAS_PROXIMIDAD * 60 * 60 * 1000
-
-    programados.value = registros
-      .map((registro: any) => ({
-        id: registro.id,
-        titulo: registro.actualizacion_titulo,
-        fecha_publicacion: registro.actualizacion_fecha_publicacion,
-        area: registro.area_servicio?.area_servicio_nombre || 'Sin área',
-      }))
-      .filter((registro: RegistroProgramado) => {
-        const fecha = new Date(registro.fecha_publicacion).getTime()
-        return Number.isFinite(fecha) && fecha >= ahora && fecha <= limite
-      })
-      .sort(
-        (a: RegistroProgramado, b: RegistroProgramado) =>
-          new Date(a.fecha_publicacion).getTime() - new Date(b.fecha_publicacion).getTime()
-      )
-  } catch (err) {
-    console.error('Error al cargar publicaciones programadas:', err)
-  } finally {
-    cargandoProgramados.value = false
-  }
-}
+const programados = computed<RegistroProgramado[]>(() => {
+  return dashboard.value?.programados_proximos ?? []
+})
 
 /** Texto tipo "en 3 h" / "en 45 min" a partir de una fecha futura cercana. */
 const formatearTiempoRestante = (fechaIso: string) => {
@@ -483,12 +605,46 @@ const cargarDashboard = async () => {
 
   try {
     const respuesta = await api.get('/blog-dashboard')
-    dashboard.value = respuesta.data.data
+    const data = respuesta.data?.data
+
+    if (!data) {
+      throw new Error(
+        'El backend no devolvió los datos del dashboard.'
+      )
+    }
+
+    dashboard.value = {
+      ...data,
+      programados_proximos:
+        data.programados_proximos ?? [],
+      empleados_mas_activos:
+        data.empleados_mas_activos ?? [],
+      historial_visualizaciones:
+        data.historial_visualizaciones ?? [],
+      registros_por_estado:
+        data.registros_por_estado ?? [],
+      usuarios_mas_registros:
+        data.usuarios_mas_registros ?? [],
+      registros_mas_leidos_area:
+        data.registros_mas_leidos_area ?? [],
+      registros_por_area:
+        data.registros_por_area ?? [],
+      areas_mas_mencionadas:
+        data.areas_mas_mencionadas ?? [],
+    }
   } catch (err: any) {
+    console.error(
+      'Error al cargar dashboard:',
+      err.response?.data ?? err
+    )
+
     if (err.response?.status === 403) {
-      error.value = 'No tienes permiso para consultar este dashboard.'
+      error.value =
+        'No tienes permiso para consultar este dashboard.'
     } else {
-      error.value = 'Ocurrió un error al consultar la información del dashboard.'
+      error.value =
+        err.response?.data?.message ??
+        'Ocurrió un error al consultar el dashboard.'
     }
   } finally {
     cargando.value = false
@@ -516,6 +672,17 @@ const maxUsuarios = computed(() => {
   )
 })
 
+const maxAreasMencionadas = computed(() => {
+  return Math.max(
+    ...(
+      dashboard.value?.areas_mas_mencionadas.map(
+        (area) => area.total
+      ) ?? [0]
+    ),
+    1
+  )
+})
+
 const getPorcentaje = (valor: number, maximo: number) => {
   if (!maximo) return 0
   return Math.max(6, Math.round((valor / maximo) * 100))
@@ -530,6 +697,7 @@ const getEstadoLabel = (estado: string) => {
     publicado: 'Publicado',
     revision: 'Revisión',
     borrador: 'Borrador',
+    programado: 'Programado',
     inactivo: 'Inactivo',
     sin_estado: 'Sin estado',
   }
@@ -537,10 +705,33 @@ const getEstadoLabel = (estado: string) => {
   return labels[estado] || estado
 }
 
-onMounted(() => {
-  cargarDashboard()
-  cargarProgramados()
+const formatearFechaHora = (fecha: string) => {
+  const valor = new Date(fecha)
+
+  if (Number.isNaN(valor.getTime())) {
+    return 'Fecha no disponible'
+  }
+
+  return new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Bogota',
+  }).format(valor)
+}
+
+const maxEmpleadosActivos = computed(() => {
+  return Math.max(
+    ...(
+      dashboard.value?.empleados_mas_activos.map(
+        (empleado) => empleado.total_visualizaciones
+      ) ?? [0]
+    ),
+    1
+  )
 })
+
+onMounted(cargarDashboard)
+
 </script>
 
 <style scoped>
@@ -1233,5 +1424,90 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.summary-card.scheduled .summary-icon {
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+}
+
+.summary-card.inactive .summary-icon {
+  background: linear-gradient(135deg, #64748b, #334155);
+}
+
+.summary-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.user-main small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.history-date {
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.mentioned-area-list {
+  padding: 12px;
+}
+
+.mentioned-area-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.mentioned-area-item + .mentioned-area-item {
+  margin-top: 10px;
+}
+
+.mentioned-area-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.mentioned-area-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mentioned-area-header strong {
+  overflow: hidden;
+  color: #1e293b;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mentioned-area-main small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.mentioned-area-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 9px;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 900;
+  background: rgba(7, 126, 157, 0.08);
+  border: 1px solid rgba(7, 126, 157, 0.14);
+  border-radius: 999px;
 }
 </style>

@@ -228,21 +228,20 @@
 
         <div class="contenido-info" :class="{
           'contenido-error':
-            contenidoNoCumpleMinimo ||
-            contenidoExcedeLimite
+            contenidoNoCumpleMinimo
         }">
           <span>
-            {{ caracteresContenido }}/{{ MAXIMO_CONTENIDO }} caracteres
+            {{ caracteresContenido }} caracteres
           </span>
 
           <span v-if="contenidoNoCumpleMinimo">
             Mínimo {{ MINIMO_CONTENIDO }} caracteres
           </span>
 
-          <span v-else-if="contenidoExcedeLimite">
+          <!-- <span v-else-if="contenidoExcedeLimite">
             El contenido no puede superar los
             {{ MAXIMO_CONTENIDO }} caracteres
-          </span>
+          </span> -->
 
           <span v-else class="contenido-ok">
             <i class="bi bi-check-circle"></i>
@@ -382,7 +381,7 @@ const LIMITE_RESUMEN = 800
 
 // Límites del contenido del Editor.js
 const MINIMO_CONTENIDO = 100
-const MAXIMO_CONTENIDO = 10000
+// const MAXIMO_CONTENIDO = 10000
 
 const resumenExcedeLimite = computed(() => {
   return registro.resumen.length > LIMITE_RESUMEN
@@ -395,9 +394,9 @@ const contenidoNoCumpleMinimo = computed(() => {
   return caracteresContenido.value < MINIMO_CONTENIDO
 })
 
-const contenidoExcedeLimite = computed(() => {
-  return caracteresContenido.value > MAXIMO_CONTENIDO
-})
+// const contenidoExcedeLimite = computed(() => {
+//   return caracteresContenido.value > MAXIMO_CONTENIDO
+// })
 
 const guardarBorrador = async () => {
   autoguardando.value = true
@@ -669,16 +668,16 @@ const guardarRegistro = async () => {
   }
 
   // Validar máximo
-  if (
-    cantidadCaracteres >
-    MAXIMO_CONTENIDO
-  ) {
-    toast.warning(
-      `El contenido no puede superar los ${MAXIMO_CONTENIDO} caracteres.`
-    )
+  // if (
+  //   cantidadCaracteres >
+  //   MAXIMO_CONTENIDO
+  // ) {
+  //   toast.warning(
+  //     `El contenido no puede superar los ${MAXIMO_CONTENIDO} caracteres.`
+  //   )
 
-    return
-  }
+  //   return
+  // }
 
   enviando.value = true
 

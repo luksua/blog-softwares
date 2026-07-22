@@ -9,6 +9,8 @@ use App\Models\UsuarioIntranet;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 
 class BlogDashboardController extends Controller
 {
@@ -23,18 +25,99 @@ class BlogDashboardController extends Controller
             abort(403, 'No tienes permiso para consultar el dashboard.');
         }
 
-        $base = UpdateBlog::query();
+        $base = UpdateBlog::withoutGlobalScopes();
+
+        // Evita incluir eliminados si el modelo utiliza SoftDeletes.
+        if (Schema::hasColumn('actualizaciones_blog', 'deleted_at')) {
+            $base->whereNull('deleted_at');
+        }
+
         $this->aplicarAlcance($base, $alcance);
 
-        $porEstado = (clone $base)
-            ->selectRaw('actualizacion_estado as estado, COUNT(*) as total')
-            ->groupBy('actualizacion_estado')
-            ->orderBy('actualizacion_estado')
+        $estadoSql = $this->estadoNormalizadoSql();
+
+        $conteosEstado = (clone $base)
+            ->selectRaw("{$estadoSql} AS estado, COUNT(*) AS total")
+            ->groupByRaw($estadoSql)
             ->get()
-            ->map(fn($item) => [
-                'estado' => $item->estado ?: 'sin_estado',
-                'total' => (int) $item->total,
+            ->mapWithKeys(fn($item) => [
+                (string) $item->estado => (int) $item->total,
+            ]);
+
+        $ordenEstados = collect([
+            'publicado',
+            'revision',
+            'borrador',
+            'programado',
+            'inactivo',
+        ]);
+
+        $porEstado = $ordenEstados
+            ->map(fn(string $estado) => [
+                'estado' => $estado,
+                'total' => (int) $conteosEstado->get($estado, 0),
             ])
+            ->concat(
+                $conteosEstado
+                    ->except($ordenEstados->all())
+                    ->map(fn($total, $estado) => [
+                        'estado' => (string) $estado,
+                        'total' => (int) $total,
+                    ])
+                    ->values()
+            )
+            ->values();
+        $ahora = now();
+        $limiteProgramados = now()->addHours(24);
+
+        $programadosRaw = (clone $base)
+            ->whereRaw("({$estadoSql}) = ?", ['programado'])
+            ->whereNotNull('actualizacion_fecha_publicacion')
+            ->whereBetween(
+                'actualizacion_fecha_publicacion',
+                [$ahora, $limiteProgramados]
+            )
+            ->orderBy('actualizacion_fecha_publicacion')
+            ->limit(30)
+            ->get([
+                'id',
+                'actualizacion_titulo',
+                'actualizacion_fecha_publicacion',
+                'actualizacion_area_servicio_id',
+            ]);
+
+        $areasProgramados = Area::query()
+            ->select('area_servicio_id', 'area_servicio_nombre')
+            ->whereIn(
+                'area_servicio_id',
+                $programadosRaw
+                    ->pluck('actualizacion_area_servicio_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+            )
+            ->get()
+            ->keyBy('area_servicio_id');
+
+        $programadosProximos = $programadosRaw
+            ->map(function (UpdateBlog $registro) use ($areasProgramados) {
+                $area = $registro->actualizacion_area_servicio_id
+                    ? $areasProgramados->get(
+                        $registro->actualizacion_area_servicio_id
+                    )
+                    : null;
+
+                return [
+                    'id' => (int) $registro->id,
+                    'titulo' => $registro->actualizacion_titulo
+                        ?: 'Sin título',
+                    'fecha_publicacion' => $registro
+                        ->actualizacion_fecha_publicacion
+                        ?->toIso8601String(),
+                    'area' => $area?->area_servicio_nombre
+                        ?: 'Sin área',
+                ];
+            })
             ->values();
 
         $porAreaAgrupado = (clone $base)
@@ -96,7 +179,183 @@ class BlogDashboardController extends Controller
             })
             ->values();
 
+        $tablaActualizaciones = (new UpdateBlog())->getTable();
+        $tablaUsuarios = (new UsuarioIntranet())->getTable();
+        $tablaAreas = (new Area())->getTable();
+
+        $areasAutores = $this->normalizarAreasAlcance($alcance);
+
+        $queryAreasMencionadas = DB::table(
+            "{$tablaActualizaciones} as actualizacion"
+        )
+            ->join(
+                "{$tablaUsuarios} as autor",
+                'autor.usuario_id',
+                '=',
+                'actualizacion.actualizacion_usuario_id_autor'
+            )
+            ->leftJoin(
+                "{$tablaAreas} as area_destino",
+                'area_destino.area_servicio_id',
+                '=',
+                'actualizacion.actualizacion_area_servicio_id'
+            );
+
+        /*
+ * Para un administrador se consideran todos los autores.
+ * Para supervisores o usuarios normales, solamente los autores
+ * pertenecientes a las áreas incluidas en su alcance.
+ */
+        if ($alcance['tipo'] !== 'global') {
+            if (empty($areasAutores)) {
+                $queryAreasMencionadas->whereRaw('1 = 0');
+            } else {
+                $queryAreasMencionadas->whereIn(
+                    'autor.area_servicio_id',
+                    $areasAutores
+                );
+            }
+        }
+
+        /*
+ * Excluye registros eliminados.
+ */
+        if (
+            Schema::hasColumn(
+                $tablaActualizaciones,
+                'deleted_at'
+            )
+        ) {
+            $queryAreasMencionadas->whereNull(
+                'actualizacion.deleted_at'
+            );
+        }
+
+        $areasMasMencionadas = $queryAreasMencionadas
+            ->selectRaw('
+        actualizacion.actualizacion_area_servicio_id
+            AS area_servicio_id,
+
+        COALESCE(
+            area_destino.area_servicio_nombre,
+            "Sin área"
+        ) AS area,
+
+        COUNT(*) AS total,
+
+        COUNT(
+            DISTINCT actualizacion.actualizacion_usuario_id_autor
+        ) AS autores
+    ')
+            ->groupBy(
+                'actualizacion.actualizacion_area_servicio_id',
+                'area_destino.area_servicio_nombre'
+            )
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get()
+            ->map(fn($item) => [
+                'area_servicio_id' => $item->area_servicio_id
+                    ? (int) $item->area_servicio_id
+                    : null,
+
+                'area' => (string) $item->area,
+
+                'total' => (int) $item->total,
+
+                'autores' => (int) $item->autores,
+            ])
+            ->values();
+
         $registrosMasLeidos = collect();
+
+        $empleadosMasActivos = collect();
+
+        if (Schema::hasTable('actualizaciones_blog_visualizaciones')) {
+            $visualizacionesBase = DB::table(
+                'actualizaciones_blog_visualizaciones as visualizacion'
+            )
+                ->join(
+                    'actualizaciones_blog as actualizacion',
+                    'actualizacion.id',
+                    '=',
+                    'visualizacion.actualizacion_id'
+                );
+
+            $this->aplicarAlcanceVisualizaciones(
+                $visualizacionesBase,
+                $alcance
+            );
+
+            $empleadosAgrupados = (clone $visualizacionesBase)
+                ->selectRaw('
+            visualizacion.usuario_id,
+            COUNT(*) AS total_visualizaciones,
+            COUNT(DISTINCT visualizacion.actualizacion_id) AS registros_vistos,
+            MAX(visualizacion.visualizado_at) AS ultima_visualizacion
+        ')
+                ->groupBy('visualizacion.usuario_id')
+                ->orderByDesc('total_visualizaciones')
+                ->limit(10)
+                ->get();
+
+            $usuariosVisualizaciones = UsuarioIntranet::query()
+                ->select(
+                    'usuario_id',
+                    'usuario_usuario',
+                    'usuario_nombre1',
+                    'usuario_nombre2',
+                    'usuario_apellido1',
+                    'usuario_apellido2'
+                )
+                ->whereIn(
+                    'usuario_id',
+                    $empleadosAgrupados
+                        ->pluck('usuario_id')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                )
+                ->get()
+                ->keyBy('usuario_id');
+
+            $empleadosMasActivos = $empleadosAgrupados
+                ->map(function ($item) use ($usuariosVisualizaciones) {
+                    $usuario = $usuariosVisualizaciones->get(
+                        $item->usuario_id
+                    );
+
+                    return [
+                        'usuario_id' => (int) $item->usuario_id,
+                        'usuario' => $this->nombreUsuario($usuario),
+                        'total_visualizaciones' =>
+                        (int) $item->total_visualizaciones,
+                        'registros_vistos' =>
+                        (int) $item->registros_vistos,
+                        'ultima_visualizacion' =>
+                        $item->ultima_visualizacion,
+                    ];
+                })
+                ->values();
+
+            // $historialVisualizaciones = $historialRaw
+            //     ->map(function ($item) use ($usuariosVisualizaciones) {
+            //         $usuario = $usuariosVisualizaciones->get(
+            //             $item->usuario_id
+            //         );
+
+            //         return [
+            //             'id' => (int) $item->id,
+            //             'usuario_id' => (int) $item->usuario_id,
+            //             'usuario' => $this->nombreUsuario($usuario),
+            //             'actualizacion_id' =>
+            //             (int) $item->actualizacion_id,
+            //             'titulo' => $item->titulo ?: 'Sin título',
+            //             'visualizado_at' => $item->visualizado_at,
+            //         ];
+            //     })
+            //     ->values();
+        }
 
         if (Schema::hasColumn('actualizaciones_blog', 'actualizacion_lecturas')) {
             $queryMasLeidos = (clone $base)
@@ -107,7 +366,7 @@ class BlogDashboardController extends Controller
                     'actualizacion_estado',
                     'actualizacion_lecturas',
                 ])
-                ->where('actualizacion_estado', 'publicado')
+                ->whereRaw("({$estadoSql}) = ?", ['publicado'])
                 ->where('actualizacion_lecturas', '>', 0)
                 ->orderByDesc('actualizacion_lecturas')
                 ->latest('actualizacion_fecha_publicacion')
@@ -122,26 +381,142 @@ class BlogDashboardController extends Controller
         }
 
         $totalRegistros = (clone $base)->count();
-        $totalPublicados = (clone $base)->where('actualizacion_estado', 'publicado')->count();
-        $totalRevision = (clone $base)->where('actualizacion_estado', 'revision')->count();
-        $totalBorradores = (clone $base)->where('actualizacion_estado', 'borrador')->count();
+
+        $totalPublicados = (int) $conteosEstado->get('publicado', 0);
+        $totalRevision = (int) $conteosEstado->get('revision', 0);
+        $totalBorradores = (int) $conteosEstado->get('borrador', 0);
+        $totalProgramados = (int) $conteosEstado->get('programado', 0);
+        $totalInactivos = (int) $conteosEstado->get('inactivo', 0);
 
         return response()->json([
             'data' => [
                 'alcance' => $alcance,
+
                 'resumen' => [
                     'total_registros' => $totalRegistros,
                     'publicados' => $totalPublicados,
                     'revision' => $totalRevision,
                     'borradores' => $totalBorradores,
+                    'programados' => $totalProgramados,
+                    'inactivos' => $totalInactivos,
                 ],
-                'registros_mas_leidos_area' => $registrosMasLeidos->values(),
-                'usuarios_mas_registros' => $usuariosMasRegistros,
-                'registros_por_estado' => $porEstado,
-                'registros_por_area' => $porArea,
-                'lecturas_disponibles' => Schema::hasColumn('actualizaciones_blog', 'actualizacion_lecturas'),
+
+                'registros_mas_leidos_area' =>
+                $registrosMasLeidos->values(),
+
+                'usuarios_mas_registros' =>
+                $usuariosMasRegistros,
+
+                'empleados_mas_activos' =>
+                $empleadosMasActivos,
+
+                'areas_mas_mencionadas' =>
+                $areasMasMencionadas,
+
+                'registros_por_estado' =>
+                $porEstado,
+
+                'registros_por_area' =>
+                $porArea,
+
+                'programados_proximos' =>
+                $programadosProximos,
+
+                'lecturas_disponibles' =>
+                Schema::hasColumn(
+                    'actualizaciones_blog',
+                    'actualizacion_lecturas'
+                ),
             ],
         ]);
+    }
+
+    private function estadoNormalizadoSql(): string
+    {
+        $estado = "LOWER(TRIM(COALESCE(actualizacion_estado, 'sin_estado')))";
+
+        $normalizado = "
+        CASE
+            WHEN {$estado} IN ('publicado', 'publicada') THEN 'publicado'
+            WHEN {$estado} IN ('programado', 'programada') THEN 'programado'
+            WHEN {$estado} IN (
+                'revision',
+                'revisión',
+                'en revision',
+                'en revisión',
+                'en_revision'
+            ) THEN 'revision'
+            WHEN {$estado} = 'borrador' THEN 'borrador'
+            WHEN {$estado} IN ('inactivo', 'inactiva') THEN 'inactivo'
+            ELSE {$estado}
+        END
+    ";
+
+        if (
+            Schema::hasColumn(
+                'actualizaciones_blog',
+                'actualizacion_activo'
+            )
+        ) {
+            return "
+            CASE
+                WHEN {$estado} IN ('programado', 'programada')
+                    THEN 'programado'
+
+                WHEN actualizacion_activo = 0
+                    THEN 'inactivo'
+
+                ELSE ({$normalizado})
+            END
+        ";
+        }
+
+        return $normalizado;
+    }
+
+    private function aplicarAlcanceVisualizaciones(
+        QueryBuilder $query,
+        array $alcance
+    ): void {
+        if ($alcance['tipo'] === 'global') {
+            return;
+        }
+
+        $areas = $this->normalizarAreasAlcance($alcance);
+
+        if (empty($areas)) {
+            $query->whereRaw('1 = 0');
+            return;
+        }
+
+        $tablaUsuarios = (new UsuarioIntranet())->getTable();
+
+        $query->where(function (QueryBuilder $scope) use (
+            $areas,
+            $tablaUsuarios
+        ) {
+            $scope->whereIn(
+                'actualizacion.actualizacion_area_servicio_id',
+                $areas
+            );
+
+            $scope->orWhereExists(function ($subquery) use (
+                $areas,
+                $tablaUsuarios
+            ) {
+                $subquery
+                    ->selectRaw('1')
+                    ->from("{$tablaUsuarios} as autor")
+                    ->whereColumn(
+                        'autor.usuario_id',
+                        'actualizacion.actualizacion_usuario_id_autor'
+                    )
+                    ->whereIn(
+                        'autor.area_servicio_id',
+                        $areas
+                    );
+            });
+        });
     }
 
     private function resolverAlcance($usuario): array
@@ -173,25 +548,75 @@ class BlogDashboardController extends Controller
         ];
     }
 
-    private function aplicarAlcance(Builder $query, array $alcance): void
-    {
+    private function aplicarAlcance(
+        Builder $query,
+        array $alcance
+    ): void {
         if ($alcance['tipo'] === 'global') {
             return;
         }
 
-        $areas = collect($alcance['areas'] ?? [])
-            ->filter(fn($areaId) => $areaId !== null && $areaId !== '')
-            ->map(fn($areaId) => (int) $areaId)
-            ->unique()
-            ->values()
-            ->all();
+        $areas = $this->normalizarAreasAlcance($alcance);
 
         if (empty($areas)) {
             $query->whereRaw('1 = 0');
             return;
         }
 
-        $query->whereIn('actualizacion_area_servicio_id', $areas);
+        $tablaActualizaciones = (new UpdateBlog())->getTable();
+        $tablaUsuarios = (new UsuarioIntranet())->getTable();
+
+        $query->where(function (Builder $scope) use (
+            $areas,
+            $tablaActualizaciones,
+            $tablaUsuarios
+        ) {
+            /*
+         * Primera condición:
+         * el registro está asignado a un área supervisada.
+         */
+            $scope->whereIn(
+                "{$tablaActualizaciones}.actualizacion_area_servicio_id",
+                $areas
+            );
+
+            /*
+         * Segunda condición:
+         * el autor pertenece a un área supervisada.
+         */
+            $scope->orWhereExists(function ($subquery) use (
+                $areas,
+                $tablaActualizaciones,
+                $tablaUsuarios
+            ) {
+                $subquery
+                    ->selectRaw('1')
+                    ->from("{$tablaUsuarios} as autor")
+                    ->whereColumn(
+                        'autor.usuario_id',
+                        "{$tablaActualizaciones}.actualizacion_usuario_id_autor"
+                    )
+                    ->whereIn(
+                        'autor.area_servicio_id',
+                        $areas
+                    );
+            });
+        });
+    }
+
+    private function normalizarAreasAlcance(
+        array $alcance
+    ): array {
+        return collect($alcance['areas'] ?? [])
+            ->filter(
+                fn($areaId) =>
+                $areaId !== null &&
+                    $areaId !== ''
+            )
+            ->map(fn($areaId) => (int) $areaId)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function esAdmin($usuario): bool

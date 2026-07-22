@@ -32,6 +32,8 @@ class UpdateBlog extends Model
     ];
 
     protected $casts = [
+        'actualizacion_fecha_publicacion' => 'datetime',
+        'actualizacion_activo' => 'boolean',
         'actualizacion_lecturas' => 'integer',
     ];
 

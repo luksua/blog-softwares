@@ -24,7 +24,7 @@
 
       <ul class="nav-menu">
         <li>
-          <router-link :to="{ name: 'inicio' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+          <router-link :to="{ name: 'inicio' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-house-door-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Blog</span>
             <div v-if="!isExpanded" class="tooltip">Blog</div>
@@ -32,16 +32,15 @@
         </li>
 
         <li>
-          <router-link :to="{ name: 'mis-registros' }" class="nav-item" active-class="active"
-            @click="cerrarSidebarMovil">
+          <router-link :to="{ name: 'mis-registros' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-journal-text nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Mis registros</span>
             <div v-if="!isExpanded" class="tooltip">Mis registros</div>
           </router-link>
         </li>
 
-        <li v-if="mostrarSupervision">
-          <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+        <li v-if="mostrarDashboard">
+          <router-link :to="{ name: 'dashboard' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-people-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Dashboard</span>
             <div v-if="!isExpanded" class="tooltip">Dashboard</div>
@@ -49,7 +48,7 @@
         </li>
 
         <li v-if="mostrarSupervision">
-          <router-link :to="{ name: 'supervision' }" class="nav-item" active-class="active" @click="cerrarSidebarMovil">
+          <router-link :to="{ name: 'supervision' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-people-fill nav-icon"></i>
             <span v-show="isExpanded" class="nav-text">Supervisión</span>
             <div v-if="!isExpanded" class="tooltip">Supervisión</div>
@@ -101,7 +100,9 @@
               <router-link v-if="mostrarSupervision" :to="{ name: 'dashboard' }" class="nav-link-header">
                 Dashboard
               </router-link>
-
+              <router-link :to="{ name: 'mi-historial-lecturas' }" class="nav-link-header nav-icon-link">
+                <i class="bi bi-clock-history"></i>
+              </router-link>
               <router-link v-if="mostrarGuardados" :to="{ name: 'employee-guardados' }"
                 class="nav-link-header nav-icon-link" title="Guardados">
                 <i class="bi bi-bookmark-fill fs-5"></i>
@@ -233,6 +234,11 @@ const etiquetaNotificacionesNoLeidas = computed(() => {
 const mostrarSupervision = computed(() => {
   return isLoggedIn.value && puedeSupervisarArea.value && router.hasRoute('supervision')
 })
+
+const mostrarDashboard = computed(() => {
+  return isLoggedIn.value && puedeSupervisarArea.value && router.hasRoute('dashboard')
+})
+
 
 const normalizarPermisos = (valor: unknown): string[] => {
   if (!Array.isArray(valor)) {

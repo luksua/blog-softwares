@@ -510,6 +510,27 @@ const obtenerRelacionados = async () => {
   }
 }
 
+const registrarVisualizacion = async (actualizacionId: number) => {
+  if (!Number.isFinite(actualizacionId)) {
+    return
+  }
+
+  try {
+    await api.post(
+      `/actualizaciones/${actualizacionId}/visualizacion`
+    )
+  } catch (error: any) {
+    /*
+     * Una falla registrando la métrica no debe impedir
+     * que el usuario pueda leer la publicación.
+     */
+    console.error(
+      'No se pudo registrar la visualización:',
+      error.response?.data ?? error
+    )
+  }
+}
+
 const obtenerDetalle = async () => {
   cargando.value = true
   headingActivo.value = 'resumen'
@@ -518,10 +539,29 @@ const obtenerDetalle = async () => {
   observer?.disconnect()
 
   try {
-    const respuesta = await api.get(`/actualizaciones/${props.id}`)
+    const respuesta = await api.get(
+      `/actualizaciones/${props.id}`
+    )
+
     actualizacion.value = respuesta.data?.data ?? null
-  } catch (error) {
-    console.error('Error al cargar la actualización:', error)
+
+    if (actualizacion.value) {
+      const actualizacionId = Number(
+        actualizacion.value.id ?? props.id
+      )
+
+      /*
+       * No usamos await para no retrasar la visualización
+       * del contenido por una métrica secundaria.
+       */
+      void registrarVisualizacion(actualizacionId)
+    }
+  } catch (error: any) {
+    console.error(
+      'Error al cargar la actualización:',
+      error.response?.data ?? error
+    )
+
     actualizacion.value = null
   } finally {
     cargando.value = false

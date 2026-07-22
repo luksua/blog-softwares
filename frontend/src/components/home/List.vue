@@ -352,6 +352,7 @@ const totalRegistros = ref(0)
 
 const bookmarkedItems = ref<Set<number>>(new Set())
 const bookmarksProcesando = ref<Set<number>>(new Set())
+const visualizacionesProcesando = ref<Set<number>>(new Set())
 
 const filtros = ref({
   busqueda: '',
@@ -545,6 +546,40 @@ const loadBookmarks = async () => {
   }
 }
 
+const registrarVisualizacion = async (id: number) => {
+  const idNormalizado = Number(id)
+
+  if (
+    !Number.isFinite(idNormalizado) ||
+    visualizacionesProcesando.value.has(idNormalizado)
+  ) {
+    return
+  }
+
+  visualizacionesProcesando.value = new Set([
+    ...visualizacionesProcesando.value,
+    idNormalizado,
+  ])
+
+  try {
+    await api.post(
+      `/actualizaciones/${idNormalizado}/visualizacion`
+    )
+  } catch (err: any) {
+    console.error(
+      'Error registrando visualización:',
+      err.response?.data ?? err
+    )
+  } finally {
+    const siguientes = new Set(
+      visualizacionesProcesando.value
+    )
+
+    siguientes.delete(idNormalizado)
+    visualizacionesProcesando.value = siguientes
+  }
+}
+
 let filtroTimeout: ReturnType<typeof setTimeout> | null = null
 
 watch(
@@ -570,7 +605,10 @@ const handleResize = () => {
 
 // ── Helpers ───────────────────────────────────────────────────────
 const verDetalle = (id: number) => {
-  router.push({ name: 'actualizaciones-show', params: { id } })
+  router.push({
+    name: 'actualizaciones-show',
+    params: { id },
+  })
 }
 
 const cambiarPagina = (pagina: number) => {

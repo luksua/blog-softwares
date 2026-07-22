@@ -186,6 +186,12 @@ const router = createRouter({
           component: () =>
             import('../components/home/Notifications.vue'),
         },
+        {
+          path: '/blog/mi-historial',
+          name: 'mi-historial-lecturas',
+          component: () =>
+            import('../features/employee/Historial.vue'),
+        },
       ],
     },
 
