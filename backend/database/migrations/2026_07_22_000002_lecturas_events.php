@@ -12,7 +12,11 @@ return new class extends Migration
             'actualizaciones_blog_visualizaciones',
             function (Blueprint $table) {
                 $table->id();
-                $table->integer('actualizacion_id');
+
+                $table->foreignId('actualizacion_id')
+                    ->constrained('actualizaciones_blog')
+                    ->cascadeOnDelete();
+
                 $table->unsignedBigInteger('usuario_id');
                 $table->unsignedBigInteger('area_servicio_id')->nullable();
 
@@ -21,16 +25,9 @@ return new class extends Migration
                 $table->string('ip', 45)->nullable();
                 $table->text('user_agent')->nullable();
 
-                $table->index('actualizacion_id');
                 $table->index('usuario_id');
                 $table->index('area_servicio_id');
                 $table->index('visualizado_at');
-
-                $table
-                    ->foreign('actualizacion_id')
-                    ->references('id')
-                    ->on('actualizaciones_blog')
-                    ->cascadeOnDelete();
             }
         );
     }

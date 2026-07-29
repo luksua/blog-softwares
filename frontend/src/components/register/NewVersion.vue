@@ -64,9 +64,18 @@
 
         <!-- Resumen -->
         <div class="form-group">
-          <label for="resumen" class="form-label fw-bold text-primary">
-            Resumen
-          </label>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+            <label for="resumen" class="form-label fw-bold text-primary mb-0">
+              Resumen
+            </label>
+
+            <button type="button" class="btn-generar-ia" @click="generarResumenConIA" :disabled="generandoResumen">
+              <span v-if="generandoResumen" class="spinner-border spinner-border-sm"></span>
+              <i v-else class="bi bi-stars"></i>
+              {{ generandoResumen ? 'Generando...' : 'Generar con IA' }}
+            </button>
+          </div>
+
           <textarea id="resumen" class="form-control" :class="{ 'is-invalid': resumenExcedeLimite }"
             v-model="registro.resumen" rows="2" placeholder="Breve descripción de la actualización..."
             required></textarea>
@@ -79,6 +88,7 @@
             {{ registro.resumen.length }}/800 caracteres
           </div>
         </div>
+
         <!-- Categorías y Área -->
         <div class="row">
           <!-- Área -->
@@ -290,6 +300,7 @@ import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada } from '../../composables/useImagenDestacada'
 // import { useVistaPrevia } from '../../composables/useVistaPrevia'
 import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
+import { useResumenIA } from '../../composables/useResumenIA'
 
 const tituloInput = ref<HTMLInputElement | null>(null)
 
@@ -473,7 +484,7 @@ const enviando = ref(false)
 const emit = defineEmits(['cerrar', 'recargar-lista'])
 
 const {
-  wrapperRef: categoriaSelectRef,
+  wrapperRef,
   selectAbierto,
   busquedaCategoria,
   categoriasFiltradas,
@@ -484,10 +495,22 @@ const {
 } = useCategoriaSelector(toRef(registro, 'actualizacion_categoria_ids'), listaCategorias, {
   onMaxSeleccionAlcanzado: () => toast.warning('Solo puedes seleccionar máximo 3 categorías'),
 })
+// Se usa como ref="categoriaSelectRef" en el template (detección de click fuera del dropdown)
+const categoriaSelectRef = wrapperRef
+void categoriaSelectRef
 
 // ── Editor.js ─────────────────────────────────────────────────────
 const { editor: editorInstance, iniciar: iniciarEditor, destruir: destruirEditor } = useEditorJS()
 
+const { generandoResumen, generarResumen } = useResumenIA()
+
+const generarResumenConIA = async () => {
+  const resumen = await generarResumen(editorInstance.value, registro.titulo)
+  if (resumen) {
+    registro.resumen = resumen
+    toast.success('Resumen generado con IA. Puedes editarlo si lo necesitas.')
+  }
+}
 // ── Vista previa ──────────────────────────────────────────────────
 // const { generarHtmlContenido } = useVistaPrevia()
 const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
@@ -1545,5 +1568,42 @@ onBeforeUnmount(() => {
 .contenido-ok {
   color: #16a34a;
   font-weight: 600;
+}
+
+/* ─── Botón "Generar con IA" ────────────────────────────── */
+.btn-generar-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-generar-ia:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-generar-ia:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-generar-ia .spinner-border {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-width: 2px;
+}
+
+.btn-generar-ia i {
+  font-size: 0.85rem;
 }
 </style>

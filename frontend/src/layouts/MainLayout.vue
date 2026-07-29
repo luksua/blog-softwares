@@ -1,65 +1,52 @@
 <template>
   <div class="layout">
     <!-- Overlay móvil para sidebar admin -->
-    <div v-if="isMobile && isExpanded && isLoggedIn" class="sidebar-overlay" @click="cerrarSidebarMovil"></div>
+    <!-- Overlay móvil para sidebar admin -->
+    <div v-if="isMobile && isExpanded && isLoggedIn" class="sidebar-overlay" :class="{ active: isExpanded }"
+      @click="cerrarSidebarMovil"></div>
 
     <!-- SIDEBAR: solo admin -->
-    <aside v-if="isLoggedIn && isMobile" :class="[
-      'sidebar',
-      {
-        expanded: isExpanded,
-        collapsed: !isExpanded,
-        mobile: isMobile
-      }
-    ]">
-      <div class="sidebar-header">
-        <div v-if="isExpanded" class="logo-full">
-          Asotrauma
-        </div>
-
-        <button class="toggle-btn" type="button" @click="toggleSidebar">
-          ☰
+    <aside v-if="isLoggedIn && isMobile" ref="sidebarRef" class="sidebar-mobile" :class="{ open: isExpanded }"
+      role="navigation" aria-label="Menú principal">
+      <!-- Cabecera con logo y botón de cierre -->
+      <div class="sidebar-mobile-header">
+        <div class="logo-full">Asotrauma</div>
+        <button class="close-btn" type="button" aria-label="Cerrar menú" @click="cerrarSidebarMovil">
+          <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
+      <!-- Menú de navegación -->
       <ul class="nav-menu">
         <li>
-          <router-link :to="{ name: 'inicio' }" class="nav-item" @click="cerrarSidebarMovil">
+          <router-link :to="{ name: 'inicio' }" class="nav-item" active-class="" exact-active-class="router-link-active"
+            @click="cerrarSidebarMovil">
             <i class="bi bi-house-door-fill nav-icon"></i>
-            <span v-show="isExpanded" class="nav-text">Blog</span>
-            <div v-if="!isExpanded" class="tooltip">Blog</div>
+            <span class="nav-text">Blog</span>
           </router-link>
         </li>
-
         <li>
           <router-link :to="{ name: 'mis-registros' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-journal-text nav-icon"></i>
-            <span v-show="isExpanded" class="nav-text">Mis registros</span>
-            <div v-if="!isExpanded" class="tooltip">Mis registros</div>
+            <span class="nav-text">Mis registros</span>
           </router-link>
         </li>
-
         <li v-if="mostrarDashboard">
           <router-link :to="{ name: 'dashboard' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-people-fill nav-icon"></i>
-            <span v-show="isExpanded" class="nav-text">Dashboard</span>
-            <div v-if="!isExpanded" class="tooltip">Dashboard</div>
+            <span class="nav-text">Dashboard</span>
           </router-link>
         </li>
-
         <li v-if="mostrarSupervision">
           <router-link :to="{ name: 'supervision' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-people-fill nav-icon"></i>
-            <span v-show="isExpanded" class="nav-text">Supervisión</span>
-            <div v-if="!isExpanded" class="tooltip">Supervisión</div>
+            <span class="nav-text">Supervisión</span>
           </router-link>
         </li>
-
         <li v-if="mostrarGuardados">
-          <router-link v-if="mostrarGuardados" :to="{ name: 'employee-guardados' }" class="nav-item"
-            active-class="active" @click="cerrarSidebarMovil">
+          <router-link :to="{ name: 'employee-guardados' }" class="nav-item" @click="cerrarSidebarMovil">
             <i class="bi bi-bookmark-fill nav-icon"></i>
-            <span v-show="isExpanded" class="nav-text">Guardados</span>
+            <span class="nav-text">Guardados</span>
           </router-link>
         </li>
       </ul>
@@ -85,7 +72,8 @@
 
           <template v-else-if="isLoggedIn">
             <nav class="header-nav">
-              <router-link :to="{ name: 'inicio' }" class="nav-link-header">
+              <router-link :to="{ name: 'inicio' }" class="nav-link-header" active-class=""
+                exact-active-class="router-link-active">
                 Blog
               </router-link>
 
@@ -184,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
 import { cargarAuth, limpiarAuthCache } from '../api/auth'
@@ -200,7 +188,7 @@ const puedeSupervisarArea = ref(false)
 
 const router = useRouter()
 const route = useRoute()
-
+const sidebarRef = ref<HTMLElement | null>(null)
 const isExpanded = ref(true)
 const isMobile = ref(false)
 
@@ -208,7 +196,7 @@ const isAdmin = ref(false)
 const isEmpleado = ref(false)
 const isLoggedIn = ref(false)
 const authReady = ref(false)
-
+const overlayActive = ref(false)
 const permisos = ref<string[]>([])
 const notificaciones = ref<BlogNotification[]>([])
 const notificacionesNoLeidas = ref(0)
@@ -458,7 +446,99 @@ const marcarTodasComoLeidas = async () => {
     console.error('Error al marcar notificaciones como leídas:', error)
   }
 }
+// Control del overlay
+watch(isExpanded, (nuevoValor) => {
+  if (isMobile.value) {
+    overlayActive.value = nuevoValor
+    document.body.classList.toggle('no-scroll', nuevoValor)
+  }
+})
 
+// Cerrar con overlay
+const cerrarSidebarMovil = () => {
+  if (isMobile.value) {
+    isExpanded.value = false
+  }
+}
+
+// Abrir (desde el toggle)
+const abrirSidebarMovil = () => {
+  if (isMobile.value) {
+    isExpanded.value = true
+  }
+}
+
+// ─── SWIPE PARA CERRAR ──────────────────────────────
+let touchStartX = 0
+let touchCurrentX = 0
+let isSwiping = false
+
+const onTouchStart = (e: TouchEvent) => {
+  if (!isMobile.value || !isExpanded.value) return
+  const touch = e.touches[0]
+  touchStartX = touch.clientX
+  touchCurrentX = touchStartX
+  isSwiping = true
+}
+
+const onTouchMove = (e: TouchEvent) => {
+  if (!isSwiping || !isExpanded.value) return
+  const touch = e.touches[0]
+  touchCurrentX = touch.clientX
+  const diff = touchStartX - touchCurrentX
+
+  // Solo permitir deslizar hacia la izquierda (cerrar)
+  if (diff > 0) {
+    const translate = Math.min(diff, 280)
+    if (sidebarRef.value) {
+      sidebarRef.value.style.transform = `translateX(-${translate}px)`
+      sidebarRef.value.style.transition = 'none'
+    }
+  }
+}
+
+const onTouchEnd = () => {
+  if (!isSwiping || !isExpanded.value) return
+  isSwiping = false
+
+  const diff = touchStartX - touchCurrentX
+  // Si se deslizó más de 80px o la velocidad fue alta, cerrar
+  if (diff > 80) {
+    cerrarSidebarMovil()
+  } else {
+    // Reestablecer posición
+    if (sidebarRef.value) {
+      sidebarRef.value.style.transform = ''
+      sidebarRef.value.style.transition = ''
+    }
+  }
+  touchStartX = 0
+  touchCurrentX = 0
+}
+
+// Registrar eventos al montar
+onMounted(() => {
+  // ... (código existente)
+
+  const sidebarEl = sidebarRef.value
+  if (sidebarEl) {
+    sidebarEl.addEventListener('touchstart', onTouchStart, { passive: true })
+    sidebarEl.addEventListener('touchmove', onTouchMove, { passive: false })
+    sidebarEl.addEventListener('touchend', onTouchEnd, { passive: true })
+  }
+
+})
+onUnmounted(() => {
+  // ... (código existente)
+
+  const sidebarEl = sidebarRef.value
+  if (sidebarEl) {
+    sidebarEl.removeEventListener('touchstart', onTouchStart)
+    sidebarEl.removeEventListener('touchmove', onTouchMove)
+    sidebarEl.removeEventListener('touchend', onTouchEnd)
+  }
+  document.body.classList.remove('no-scroll')
+})
 const formatearFechaNotificacion = (fecha?: string | null) => {
   if (!fecha) return ''
 
@@ -472,20 +552,6 @@ const formatearFechaNotificacion = (fecha?: string | null) => {
 
 const manejarNotificacionesActualizadas = () => {
   void cargarNotificaciones()
-}
-
-const toggleSidebar = () => {
-  isExpanded.value = !isExpanded.value
-}
-
-const abrirSidebarMovil = () => {
-  isExpanded.value = true
-}
-
-const cerrarSidebarMovil = () => {
-  if (isMobile.value) {
-    isExpanded.value = false
-  }
 }
 
 const checkMobile = () => {
@@ -1202,5 +1268,200 @@ onUnmounted(() => {
     justify-content: center;
     text-align: center;
   }
+}
+
+/* ===== SIDEBAR MÓVIL (drawer) ===== */
+.sidebar-mobile {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
+  max-height: 100dvh;
+  background: linear-gradient(145deg, var(--primary), var(--secondary));
+  color: #fff;
+  z-index: 150;
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 12px 24px;
+}
+
+.sidebar-mobile.open {
+  transform: translateX(0);
+}
+
+/* Cabecera con logo y botón de cierre */
+.sidebar-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.logo-full {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  padding: 0;
+}
+
+.close-btn:hover,
+.close-btn:focus-visible {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+.close-btn:active {
+  transform: scale(0.92);
+}
+
+/* Overlay (se mantiene pero con estilos mejorados) */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 140;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  cursor: pointer;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Menú de navegación dentro del drawer */
+.sidebar-mobile .nav-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.sidebar-mobile .nav-menu li {
+  list-style: none;
+}
+
+.sidebar-mobile .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.2s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.sidebar-mobile .nav-item:hover,
+.sidebar-mobile .nav-item:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.sidebar-mobile .nav-item.active,
+.sidebar-mobile .nav-item.router-link-active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  border-left: 4px solid var(--warning);
+}
+
+.sidebar-mobile .nav-icon {
+  font-size: 1.3rem;
+  min-width: 28px;
+  text-align: center;
+}
+
+.sidebar-mobile .nav-text {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+/* Scrollbar del sidebar */
+.sidebar-mobile::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-mobile::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.sidebar-mobile::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+/* Ajustes para el toggle en la navbar (ya existente) */
+.mobile-toggle {
+  display: none;
+  /* se muestra solo en móvil vía media query */
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: var(--primary);
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.mobile-toggle:hover {
+  background: rgba(7, 126, 157, 0.08);
+}
+
+/* Responsive: mostrar toggle y ocultar sidebar fijo */
+@media (max-width: 768px) {
+  .mobile-toggle {
+    display: inline-flex;
+  }
+
+  /* El sidebar fijo (no móvil) se oculta */
+  .sidebar:not(.mobile) {
+    display: none;
+  }
+
+  /* Ajustes para el overlay */
+  .sidebar-overlay {
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* Evitar scroll del body cuando el drawer está abierto */
+body.no-scroll {
+  overflow: hidden;
 }
 </style>

@@ -77,9 +77,18 @@
 
           <!-- Resumen -->
           <div class="form-group">
-            <label for="resumen" class="form-label fw-bold text-primary">
-              Resumen
-            </label>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+              <label for="resumen" class="form-label fw-bold text-primary mb-0">
+                Resumen
+              </label>
+
+              <button type="button" class="btn-generar-ia" @click="generarResumenConIA" :disabled="generandoResumen">
+                <span v-if="generandoResumen" class="spinner-border spinner-border-sm"></span>
+                <i v-else class="bi bi-stars"></i>
+                {{ generandoResumen ? 'Generando...' : 'Generar con IA' }}
+              </button>
+            </div>
+
             <textarea v-model="form.resumen" class="form-control"
               :class="{ 'is-invalid': errores.resumen || errores.actualizacion_resumen || resumenExcedeLimite }"
               rows="3" placeholder="Breve descripción de la actualización..."></textarea>
@@ -296,17 +305,10 @@
             <div ref="editorHolder" id="editorjs" class="editor-container"></div>
           </div>
 
-          <VistaPreviaRegistro
-            v-if="pestanaActiva === 'vista-previa'"
-            :titulo="form.titulo"
-            :version="form.version"
-            :resumen="form.resumen"
-            :area-nombre="areaSeleccionadaNombre"
-            :categorias="categoriasSeleccionadas.map(c => c.nombre)"
-            :imagen-url="imagenUrlPreview"
-            :fecha-texto="fechaTextoPreview"
-            :contenido-html="contenidoPreviewHtml"
-          />
+          <VistaPreviaRegistro v-if="pestanaActiva === 'vista-previa'" :titulo="form.titulo" :version="form.version"
+            :resumen="form.resumen" :area-nombre="areaSeleccionadaNombre"
+            :categorias="categoriasSeleccionadas.map(c => c.nombre)" :imagen-url="imagenUrlPreview"
+            :fecha-texto="fechaTextoPreview" :contenido-html="contenidoPreviewHtml" />
         </div>
 
         <!-- ACCIONES: fuera de la columna izquierda para que siempre queden al final -->
@@ -350,6 +352,19 @@ import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada, resolverUrlImagen } from '../../composables/useImagenDestacada'
 import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
+import { toast } from 'vue-sonner'
+import { useResumenIA } from '../../composables/useResumenIA'
+
+const { generandoResumen, generarResumen } = useResumenIA()
+
+const generarResumenConIA = async () => {
+  const resumen = await generarResumen(editor.value, form.titulo)
+  if (resumen) {
+    form.resumen = resumen
+    mensajeOk.value = ''
+    toast.success('Resumen generado con IA. Puedes editarlo si lo necesitas.')
+  }
+}
 
 // Props
 const props = withDefaults(defineProps<{
@@ -423,7 +438,7 @@ const textoBotonGuardar = computed(() => {
 })
 
 const {
-  wrapperRef: 
+  wrapperRef,
   selectAbierto,
   busquedaCategoria,
   categoriasFiltradas,
@@ -432,6 +447,9 @@ const {
   toggleCategoria,
   toggleSelect,
 } = useCategoriaSelector(toRef(form, 'categoria_ids'), listaCategorias)
+// Se usa como ref="categoriaSelectRef" en el template (detección de click fuera del dropdown)
+const categoriaSelectRef = wrapperRef
+void categoriaSelectRef
 
 const formularioValido = computed(() => {
   return form.titulo.trim() !== '' &&
@@ -928,7 +946,7 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.editor-column > :deep(.vista-previa-container) {
+.editor-column> :deep(.vista-previa-container) {
   flex: 1;
   min-height: 0;
 }
@@ -1550,4 +1568,41 @@ watch(() => form.estado, (nuevoEstado, viejoEstado) => {
     max-height: 150px;
   }
 }
+/* ─── Botón "Generar con IA" ────────────────────────────── */
+.btn-generar-ia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-generar-ia:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-generar-ia:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-generar-ia .spinner-border {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-width: 2px;
+}
+
+.btn-generar-ia i {
+  font-size: 0.85rem;
+}
+
 </style>

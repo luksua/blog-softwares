@@ -14,12 +14,9 @@
           Volver
         </button>
 
-        <img
-          v-if="actualizacion.actualizacion_imagen_destacada"
+        <img v-if="actualizacion.actualizacion_imagen_destacada"
           :src="obtenerUrlImagen(actualizacion.actualizacion_imagen_destacada)"
-          :alt="actualizacion.actualizacion_titulo || 'Imagen destacada'"
-          class="hero-image"
-        />
+          :alt="actualizacion.actualizacion_titulo || 'Imagen destacada'" class="hero-image" />
 
         <div class="hero-overlay" aria-hidden="true"></div>
 
@@ -62,12 +59,9 @@
               <ul class="indice-lista">
 
                 <li v-for="heading in headings" :key="heading.id" class="indice-item">
-                  <a
-                    :href="`#${heading.id}`"
-                    class="indice-link"
+                  <a :href="`#${heading.id}`" class="indice-link"
                     :class="[`indice-nivel-${heading.level}`, { activo: headingActivo === heading.id }]"
-                    @click.prevent="irAHeading(heading.id)"
-                  >
+                    @click.prevent="irAHeading(heading.id)">
                     <span class="indice-bullet">•</span>
                     <span v-html="heading.text"></span>
                   </a>
@@ -81,15 +75,12 @@
           </aside>
 
           <main class="contenido-columna">
-            <span v-if="actualizacion.actualizacion_resumen" id="resumen" class="resumen-anchor" aria-hidden="true"></span>
+            <span v-if="actualizacion.actualizacion_resumen" id="resumen" class="resumen-anchor"
+              aria-hidden="true"></span>
 
             <section class="contenido-container" aria-label="Contenido completo">
-              <div
-                v-if="actualizacion.actualizacion_contenido_html"
-                ref="contenidoRef"
-                class="editorjs-editor"
-                v-html="actualizacion.actualizacion_contenido_html"
-              ></div>
+              <div v-if="actualizacion.actualizacion_contenido_html" ref="contenidoRef" class="editorjs-editor"
+                v-html="actualizacion.actualizacion_contenido_html"></div>
               <p v-else class="contenido-vacio">No hay contenido disponible para esta actualización.</p>
             </section>
           </main>
@@ -127,62 +118,57 @@
               <p>No hay otras publicaciones disponibles.</p>
             </div>
 
-            <div v-else class="relacionados-footer-grid">
-              <article
-                v-for="item in relacionados"
-                :key="item.id"
-                class="tarjeta-changelog"
-                tabindex="0"
-                @click="irA(item.id)"
-                @keyup.enter="irA(item.id)"
-              >
-                <div class="tarjeta-header">
-                  <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
-                    <img
-                      :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
-                      :alt="item.actualizacion_titulo || 'Imagen destacada'"
-                      class="imagen-destacada"
-                      loading="lazy"
-                    />
-                    <div class="imagen-overlay">
-                      <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+            <div v-else class="relacionados-carousel">
+              
+
+              <div ref="relacionadosTrackRef" class="relacionados-footer-grid">
+                <article v-for="item in relacionados" :key="item.id" class="tarjeta-changelog" tabindex="0"
+                  @click="irA(item.id)" @keyup.enter="irA(item.id)">
+                  <div class="tarjeta-header">
+                    <div v-if="item.actualizacion_imagen_destacada" class="imagen-container">
+                      <img :src="obtenerUrlImagen(item.actualizacion_imagen_destacada)"
+                        :alt="item.actualizacion_titulo || 'Imagen destacada'" class="imagen-destacada"
+                        loading="lazy" />
+                      <div class="imagen-overlay">
+                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                      </div>
+                    </div>
+
+                    <div v-else class="sin-imagen-card">
+                      <span class="sin-imagen-icono">🖼️</span>
+                      <p>Sin imagen destacada</p>
+                      <div class="imagen-overlay">
+                        <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div v-else class="sin-imagen-card">
-                    <span class="sin-imagen-icono">🖼️</span>
-                    <p>Sin imagen destacada</p>
-                    <div class="imagen-overlay">
-                      <span class="area-label">{{ item.area_servicio?.area_servicio_nombre || 'Sin área' }}</span>
+                  <div class="tarjeta-cuerpo">
+                    <div class="metadatos-top">
+                      <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
+                      <span class="separador">|</span>
+                      <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+                    </div>
+
+                    <h3 class="titulo-version">{{ item.actualizacion_titulo }}</h3>
+                    <p class="resumen">{{ item.actualizacion_resumen || 'Sin resumen disponible.' }}</p>
+
+                    <div class="categorias-iconos" aria-label="Categorías">
+                      <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
+                        <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)" aria-hidden="true"></i>
+                        <span class="ico-label">{{ cat.nombre }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div class="tarjeta-cuerpo">
-                  <div class="metadatos-top">
-                    <span class="fecha">{{ formatearFecha(item.actualizacion_fecha_publicacion) }}</span>
-                    <span class="separador">|</span>
-                    <span class="version-number">v{{ item.actualizacion_version || '0.0' }}</span>
+                  <div class="tarjeta-pie">
+                    <button class="btn-enlace" type="button" @click.stop="irA(item.id)">
+                      Ver más
+                      <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </button>
                   </div>
-
-                  <h3 class="titulo-version">{{ item.actualizacion_titulo }}</h3>
-                  <p class="resumen">{{ item.actualizacion_resumen || 'Sin resumen disponible.' }}</p>
-
-                  <div class="categorias-iconos" aria-label="Categorías">
-                    <div v-for="cat in obtenerCategorias(item)" :key="cat.id" class="icono-categoria">
-                      <i class="ico-icon bi" :class="obtenerIconoCategoria(cat.nombre)" aria-hidden="true"></i>
-                      <span class="ico-label">{{ cat.nombre }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="tarjeta-pie">
-                  <button class="btn-enlace" type="button" @click.stop="irA(item.id)">
-                    Ver más
-                    <i class="bi bi-arrow-right" aria-hidden="true"></i>
-                  </button>
-                </div>
-              </article>
+                </article>
+              </div>
             </div>
           </div>
         </section>
@@ -210,7 +196,8 @@
       <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modal-indice-titulo">
         <header class="modal-header">
           <h3 id="modal-indice-titulo"><i class="bi bi-list-ul" aria-hidden="true"></i> Índice del documento</h3>
-          <button class="btn-cerrar" type="button" @click="cerrarModalIndice" aria-label="Cerrar índice">&times;</button>
+          <button class="btn-cerrar" type="button" @click="cerrarModalIndice"
+            aria-label="Cerrar índice">&times;</button>
         </header>
 
         <div class="modal-body">
@@ -236,7 +223,8 @@
       <div class="modal-contenido" role="dialog" aria-modal="true" aria-labelledby="modal-resumen-titulo">
         <header class="modal-header">
           <h3 id="modal-resumen-titulo"><i class="bi bi-file-text" aria-hidden="true"></i> Resumen</h3>
-          <button class="btn-cerrar" type="button" @click="cerrarModalResumen" aria-label="Cerrar resumen">&times;</button>
+          <button class="btn-cerrar" type="button" @click="cerrarModalResumen"
+            aria-label="Cerrar resumen">&times;</button>
         </header>
 
         <div class="modal-body">
@@ -392,6 +380,8 @@ const cerrarModalResumen = () => {
   mostrarModalResumen.value = false
 }
 
+const relacionadosTrackRef = ref<HTMLElement | null>(null)
+
 const abrirResumenDesdeIndice = () => {
   cerrarModalIndice()
   abrirModalResumen()
@@ -508,6 +498,20 @@ const obtenerRelacionados = async () => {
   } finally {
     cargandoRelacionados.value = false
   }
+}
+
+const desplazarCarrusel = (direccion: 1 | -1) => {
+  const track = relacionadosTrackRef.value
+  if (!track) return
+
+  const primeraTarjeta = track.querySelector<HTMLElement>('.tarjeta-changelog')
+  const anchoTarjeta = primeraTarjeta?.offsetWidth ?? track.clientWidth
+  const gap = 24 // debe coincidir con el 'gap' de .relacionados-footer-grid en el CSS
+
+  track.scrollBy({
+    left: direccion * (anchoTarjeta + gap),
+    behavior: 'smooth',
+  })
 }
 
 const registrarVisualizacion = async (actualizacionId: number) => {
@@ -1169,10 +1173,58 @@ watch(
   font-weight: 800;
 }
 
+.relacionados-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .relacionados-footer-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex: 1;
+  min-width: 0;
   gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.relacionados-footer-grid::-webkit-scrollbar {
+  display: none;
+}
+
+.relacionados-footer-grid .tarjeta-changelog,
+.relacionados-footer-grid .skeleton-card-footer {
+  flex: 0 0 calc((100% - 48px) / 3);
+  scroll-snap-align: start;
+}
+
+.carrusel-nav {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  color: var(--primary);
+  font-size: 1.1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.carrusel-nav:hover {
+  color: #ffffff;
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
 .tarjeta-changelog {
@@ -1463,8 +1515,13 @@ watch(
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .relacionados-footer-vacio {
@@ -1539,8 +1596,13 @@ watch(
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -1548,6 +1610,7 @@ watch(
     opacity: 0;
     transform: translateY(30px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1730,8 +1793,9 @@ watch(
     line-height: 1.65;
   }
 
-  .relacionados-footer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .relacionados-footer-grid .tarjeta-changelog,
+  .relacionados-footer-grid .skeleton-card-footer {
+    flex: 0 0 calc((100% - 24px) / 2);
   }
 }
 
@@ -1771,10 +1835,6 @@ watch(
     font-size: 1.4rem;
   }
 
-  .relacionados-footer-grid {
-    grid-template-columns: 1fr;
-  }
-
   .footer-movil {
     position: fixed;
     right: 0;
@@ -1790,6 +1850,17 @@ watch(
     border-top: 1px solid rgba(0, 0, 0, 0.06);
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
     backdrop-filter: blur(12px);
+  }
+
+  .relacionados-footer-grid .tarjeta-changelog,
+  .relacionados-footer-grid .skeleton-card-footer {
+    flex: 0 0 85%;
+  }
+
+  .carrusel-nav {
+    width: 36px;
+    height: 36px;
+    font-size: 0.95rem;
   }
 }
 

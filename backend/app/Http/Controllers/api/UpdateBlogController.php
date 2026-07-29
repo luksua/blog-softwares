@@ -13,6 +13,7 @@ use App\Models\UpdateBlog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Services\OpenAIService;
 
 class UpdateBlogController extends Controller
 {
@@ -771,6 +772,51 @@ class UpdateBlogController extends Controller
         ]);
     }
 
+
+    public function generarResumenIA(Request $request, OpenAIService $openAIService)
+    {
+        $datosValidados = $request->validate([
+            'contenido' => ['required'],
+            'titulo' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $contenido = $datosValidados['contenido'];
+
+        if (is_string($contenido)) {
+            $contenido = json_decode($contenido, true);
+        }
+
+        $blocks = is_array($contenido) ? ($contenido['blocks'] ?? $contenido) : [];
+
+        if (!is_array($blocks)) {
+            $blocks = [];
+        }
+
+        $textoPlano = $this->extraerTextoPlanoDeBloques($blocks);
+
+        if (mb_strlen($textoPlano) < 50) {
+            return response()->json([
+                'error' => 'El contenido es muy corto para generar un resumen. Escribe un poco más primero.',
+            ], 422);
+        }
+
+        try {
+            $resumen = $openAIService->generarResumen(
+                $textoPlano,
+                $datosValidados['titulo'] ?? ''
+            );
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'resumen' => $resumen,
+        ]);
+    }
+
+
     public function subirImagenEditor(Request $request)
     {
         $request->validate([
@@ -1086,5 +1132,44 @@ class UpdateBlogController extends Controller
         }
 
         return (string) $contenido;
+    }
+
+
+    private function extraerTextoPlanoDeBloques(array $blocks): string
+    {
+        $partes = [];
+
+        foreach ($blocks as $block) {
+            $data = $block['data'] ?? null;
+
+            if ($data === null) {
+                continue;
+            }
+
+            $partes[] = $this->extraerTextoDeValor($data);
+        }
+
+        $texto = implode(' ', array_filter($partes, fn($p) => trim((string) $p) !== ''));
+
+        return trim(preg_replace('/\s+/', ' ', $texto) ?? '');
+    }
+
+    private function extraerTextoDeValor($valor): string
+    {
+        if (is_string($valor)) {
+            return trim(strip_tags($valor));
+        }
+
+        if (is_array($valor)) {
+            $textos = [];
+
+            foreach ($valor as $item) {
+                $textos[] = $this->extraerTextoDeValor($item);
+            }
+
+            return implode(' ', $textos);
+        }
+
+        return '';
     }
 }
