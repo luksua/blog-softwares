@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\BlogDashboardController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlogNotificationController;
 use App\Http\Controllers\Api\ObservacionesPendientesController;
+use App\Http\Controllers\Api\RegistrarVisualizacionController;
+use App\Http\Controllers\Api\MiHistorialLecturasController;
 
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -89,7 +91,8 @@ Route::middleware('auth:sanctum')->group(function () {
     | Notificaciones/Observaciones
     |--------------------------------------------------------------------------
     */
-
+    
+    Route::post('/actualizaciones/{actualizacion}/visualizacion', RegistrarVisualizacionController::class);
     Route::get('/notificaciones', [BlogNotificationController::class, 'index']);
     Route::get('/observaciones-pendientes', [ObservacionesPendientesController::class, 'index']);
     Route::get('/observaciones-pendientes/contador', [ObservacionesPendientesController::class, 'contador']);
@@ -129,7 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/actualizaciones', [UpdateBlogController::class, 'index']);
     Route::post('/actualizaciones', [UpdateBlogController::class, 'store']);
-
+    Route::post('/actualizaciones/generar-resumen', [UpdateBlogController::class, 'generarResumenIA']);
     Route::get('/actualizaciones/{id}', [UpdateBlogController::class, 'show'])
         ->whereNumber('id');
 
@@ -156,6 +159,6 @@ Route::middleware('auth:sanctum')->group(function () {
     | Dashboard
     |--------------------------------------------------------------------------
     */
-
+    Route::get('/mi-historial-lecturas', MiHistorialLecturasController::class);
     Route::get('/blog-dashboard', BlogDashboardController::class);
 });

@@ -380,8 +380,6 @@ const cerrarModalResumen = () => {
   mostrarModalResumen.value = false
 }
 
-const relacionadosTrackRef = ref<HTMLElement | null>(null)
-
 const abrirResumenDesdeIndice = () => {
   cerrarModalIndice()
   abrirModalResumen()
@@ -500,19 +498,19 @@ const obtenerRelacionados = async () => {
   }
 }
 
-const desplazarCarrusel = (direccion: 1 | -1) => {
-  const track = relacionadosTrackRef.value
-  if (!track) return
+// const desplazarCarrusel = (direccion: 1 | -1) => {
+//   const track = relacionadosTrackRef.value
+//   if (!track) return
 
-  const primeraTarjeta = track.querySelector<HTMLElement>('.tarjeta-changelog')
-  const anchoTarjeta = primeraTarjeta?.offsetWidth ?? track.clientWidth
-  const gap = 24 // debe coincidir con el 'gap' de .relacionados-footer-grid en el CSS
+//   const primeraTarjeta = track.querySelector<HTMLElement>('.tarjeta-changelog')
+//   const anchoTarjeta = primeraTarjeta?.offsetWidth ?? track.clientWidth
+//   const gap = 24 // debe coincidir con el 'gap' de .relacionados-footer-grid en el CSS
 
-  track.scrollBy({
-    left: direccion * (anchoTarjeta + gap),
-    behavior: 'smooth',
-  })
-}
+//   track.scrollBy({
+//     left: direccion * (anchoTarjeta + gap),
+//     behavior: 'smooth',
+//   })
+// }
 
 const registrarVisualizacion = async (actualizacionId: number) => {
   if (!Number.isFinite(actualizacionId)) {

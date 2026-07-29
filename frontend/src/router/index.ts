@@ -136,7 +136,6 @@ const router = createRouter({
           name: 'supervision',
           component: SupervisionPage,
           meta: {
-            sinPadding: true,
             requiresAuth: true,
             requiresSupervisor: true,
           },
@@ -191,6 +190,9 @@ const router = createRouter({
           name: 'mi-historial-lecturas',
           component: () =>
             import('../features/employee/Historial.vue'),
+           meta: {
+            sinPadding: true,
+           }
         },
       ],
     },

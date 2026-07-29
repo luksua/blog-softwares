@@ -24,7 +24,7 @@ class RegistrarVisualizacionController extends Controller
         $visualizacionReciente = Visualizacion::query()
             ->where('actualizacion_id', $actualizacion->id)
             ->where('usuario_id', $usuario->usuario_id)
-            ->where('visualizado_at', '>=', now()->subMinutes(30))
+            ->where('visualizado_at', '>=', now())
             ->exists();
 
         if ($visualizacionReciente) {

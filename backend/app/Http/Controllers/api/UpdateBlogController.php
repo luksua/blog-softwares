@@ -13,7 +13,7 @@ use App\Models\UpdateBlog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use App\Services\OpenAIService;
+use App\Services\OpenAI;
 
 class UpdateBlogController extends Controller
 {
@@ -409,8 +409,8 @@ class UpdateBlogController extends Controller
 
                 $datosParaGuardar['actualizacion_imagen_destacada'] =
                     $request
-                        ->file('actualizacion_imagen_destacada')
-                        ->store('blog/portadas', 'public');
+                    ->file('actualizacion_imagen_destacada')
+                    ->store('blog/portadas', 'public');
             } elseif ($request->filled('actualizacion_imagen_destacada')) {
                 $datosParaGuardar['actualizacion_imagen_destacada'] =
                     $request->input('actualizacion_imagen_destacada');
@@ -542,8 +542,8 @@ class UpdateBlogController extends Controller
 
             $data['actualizacion_imagen_destacada'] =
                 $request
-                    ->file('actualizacion_imagen_destacada')
-                    ->store('blog/portadas', 'public');
+                ->file('actualizacion_imagen_destacada')
+                ->store('blog/portadas', 'public');
         }
 
         if (array_key_exists('actualizacion_estado', $data)) {
@@ -773,7 +773,7 @@ class UpdateBlogController extends Controller
     }
 
 
-    public function generarResumenIA(Request $request, OpenAIService $openAIService)
+    public function generarResumenIA(Request $request, OpenAI $openAIService)
     {
         $datosValidados = $request->validate([
             'contenido' => ['required'],

@@ -67,17 +67,9 @@
 
       <!-- Lista de tarjetas móvil -->
       <div v-else class="tarjetas-movil">
-        <TarjetaMovilRegistro
-          v-for="item in actualizaciones"
-          :key="item.id"
-          :item="item"
-          :es-vista-supervision="esVistaSupervision"
-          @ver="verDetalles"
-          @editar="editarActualizacion"
-          @archivar="confirmarEliminar"
-          @activar="confirmarActivar"
-          @revisar="confirmarRevision"
-        />
+        <TarjetaMovilRegistro v-for="item in actualizaciones" :key="item.id" :item="item"
+          :es-vista-supervision="esVistaSupervision" @ver="verDetalles" @editar="editarActualizacion"
+          @archivar="confirmarEliminar" @activar="confirmarActivar" @revisar="confirmarRevision" />
 
         <div v-if="actualizaciones.length === 0 && !cargando" class="vacio-movil">
           <i class="bi bi-inbox"></i>
@@ -171,28 +163,17 @@
 
             <div class="filtro-grupo">
               <label class="filtro-label">Área / Servicio</label>
-              <SelectorBusqueda
-                v-model="filtros.areaServicioId"
-                :opciones="areasConOpcion"
-                placeholder="Selecciona un área..."
-                icono-placeholder="bi-building"
-                texto-busqueda="Buscar área..."
-                texto-vacio="No se encontraron áreas"
-              />
+              <SelectorBusqueda v-model="filtros.areaServicioId" :opciones="areasConOpcion"
+                placeholder="Selecciona un área..." icono-placeholder="bi-building" texto-busqueda="Buscar área..."
+                texto-vacio="No se encontraron áreas" />
             </div>
 
             <div class="filtro-grupo">
               <label class="filtro-label">Categoría</label>
-              <SelectorBusqueda
-                v-model="filtros.categoriaId"
-                :opciones="categoriasConIcono"
-                placeholder="Todas las categorías"
-                icono-placeholder="bi-tags-fill"
-                texto-busqueda="Buscar categoría..."
-                texto-vacio="No se encontraron categorías"
-                mostrar-opcion-todas
-                texto-opcion-todas="Todas las categorías"
-              />
+              <SelectorBusqueda v-model="filtros.categoriaId" :opciones="categoriasConIcono"
+                placeholder="Todas las categorías" icono-placeholder="bi-tags-fill" texto-busqueda="Buscar categoría..."
+                texto-vacio="No se encontraron categorías" mostrar-opcion-todas
+                texto-opcion-todas="Todas las categorías" />
             </div>
             <div class="filtro-acciones">
               <button class="btn-limpiar" @click="limpiarFiltros">
@@ -298,6 +279,12 @@
                         <i :class="item.actualizacion_estado === 'revision'
                           ? 'bi bi-send-check'
                           : 'bi bi-pencil-square'"></i>
+                      </button>
+
+                      <button title="Duplicar" class="btn-icon" :disabled="duplicandoId === item.id"
+                        @click.stop="duplicarActualizacion(item)">
+                        <span v-if="duplicandoId === item.id" class="spinner-border spinner-border-sm"></span>
+                        <i v-else class="bi bi-copy"></i>
                       </button>
 
                       <div v-if="item.actualizacion_estado !== 'inactivo'">
@@ -429,20 +416,16 @@
             @click="cerrarModalEdicion"></button>
         </div>
         <div class="modal-body">
-          <Edit v-if="idEditando" :key="`${idEditando}-${observacionCorreccionActual?.id || 'normal'}`"
-            :id="idEditando" :modo-correccion="Boolean(observacionCorreccionActual) || esCorreccionDesdeListado"
+          <Edit v-if="idEditando" :key="`${idEditando}-${observacionCorreccionActual?.id || 'normal'}`" :id="idEditando"
+            :modo-correccion="Boolean(observacionCorreccionActual) || esCorreccionDesdeListado"
             @guardado="actualizacionGuardada" @cerrar="cerrarModalEdicion" />
         </div>
       </div>
     </div>
   </div>
 
-  <PanelRevisionesPendientes
-    :mostrar="mostrarAlertaRevision"
-    v-model:abierto="offcanvasAbierto"
-    :observaciones="observacionesRevision"
-    @corregir="handleCorreccionDesdeOffcanvas"
-  />
+  <PanelRevisionesPendientes :mostrar="mostrarAlertaRevision" v-model:abierto="offcanvasAbierto"
+    :observaciones="observacionesRevision" @corregir="handleCorreccionDesdeOffcanvas" />
 </template>
 
 <script setup lang="ts">
@@ -454,6 +437,7 @@ import type { Version } from '../../types/version';
 import Edit from './EditVersion.vue'
 import SelectorBusqueda from '../shared/SelectorBusqueda.vue'
 import PanelRevisionesPendientes from './PanelRevisionesPendientes.vue'
+import { normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
 import TarjetaMovilRegistro from './TarjetaMovilRegistro.vue'
 import { Modal } from 'bootstrap'
 import { useAreasStore } from '../../stores/areas'
@@ -477,6 +461,15 @@ type EstadoFiltro = {
   nombre: string
 }
 
+const emit = defineEmits<{
+  (e: 'duplicar', payload: {
+    titulo: string
+    resumen: string
+    area_servicio_id: number | string
+    actualizacion_categoria_ids: number[]
+    contenidoBlocks: any[]
+  }): void
+}>()
 const router = useRouter()
 
 const props = withDefaults(defineProps<{
@@ -554,9 +547,6 @@ const cargandoFiltros = computed(() => areasStore.loading || categoriasStore.loa
 const observacionesRevision = ref<ObservacionPendiente[]>([])
 const cargandoObservaciones = ref(false)
 
-// Ya no se filtra por "leída": la fuente de verdad es el estado actual
-// de la actualización (viene así del backend), no si el usuario abrió
-// la notificación.
 const mostrarAlertaRevision = computed(() => {
   return !esVistaSupervision.value && observacionesRevision.value.length > 0
 })
@@ -573,6 +563,18 @@ const cargarObservacionesRevision = async () => {
   }
 }
 
+// Con esto: título, resumen, área, categorías y contenido quedan precargados, pero versión, estado, fecha e id se mantienen como los de un registro nuevo (ya que registroVacio() los define así) — exactamente lo que buscas: "empezar uno nuevo" desde una base existente.
+
+// Importante: el componente padre que renderiza <NewVersion> debe forzar un remount cada vez que se duplica, igual que ya hacen con Edit en List.vue (:key="idEditando-..."). Si no, si el usuario duplica dos registros distintos sin cerrar el modal entre medio, el segundo datosIniciales no se re-aplicará porque el onReady de EditorJS ya se disparó una vez. Recomiendo:
+
+// vue
+// <NewVersion
+//   v-if="mostrarModalNuevo"
+//   :key="`nuevo-${claveDuplicado}`"
+//   :datos-iniciales="datosDuplicado"
+//   @cerrar="mostrarModalNuevo = false; datosDuplicado = null"
+//   @recargar-lista="..."
+// />
 const hayFiltrosActivos = computed(() => {
   return Boolean(
     filtros.value.busqueda ||
@@ -752,6 +754,52 @@ const editarActualizacion = (item: Version) => {
   idEditando.value = item.id
 }
 
+const duplicandoId = ref<number | null>(null)
+
+const extraerCategoriaIds = (data: any): number[] => {
+  if (Array.isArray(data.actualizacion_categoria_ids)) {
+    return normalizarCategoriaIds(data.actualizacion_categoria_ids)
+  }
+  if (Array.isArray(data.categorias)) {
+    return normalizarCategoriaIds(
+      data.categorias.map((c: any) => c.categoria_actualizacion_id ?? c.id)
+    )
+  }
+  return normalizarCategoriaIds(data.actualizacion_categoria_id)
+}
+
+const duplicarActualizacion = async (item: Version) => {
+  duplicandoId.value = item.id
+  try {
+    const respuesta = await api.get(`/actualizaciones/${item.id}`)
+    const data = respuesta.data.data || respuesta.data
+
+    let contenidoBlocks: any[] = []
+    try {
+      const contenidoParseado =
+        typeof data.actualizacion_contenido === 'string'
+          ? JSON.parse(data.actualizacion_contenido)
+          : data.actualizacion_contenido
+      contenidoBlocks = contenidoParseado?.blocks || []
+    } catch (e) {
+      console.error('No se pudo parsear el contenido a duplicar:', e)
+    }
+
+    emit('duplicar', {
+      titulo: `${data.actualizacion_titulo} (copia)`,
+      resumen: data.actualizacion_resumen || '',
+      area_servicio_id: data.actualizacion_area_servicio_id,
+      actualizacion_categoria_ids: extraerCategoriaIds(data),
+      contenidoBlocks,
+    })
+  } catch (err) {
+    console.error('Error al preparar la duplicación:', err)
+    error.value = 'No se pudo duplicar el registro. Intenta de nuevo.'
+  } finally {
+    duplicandoId.value = null
+  }
+}
+
 const handleCorreccionDesdeOffcanvas = async (observacion: ObservacionPendiente) => {
   offcanvasAbierto.value = false
   await nextTick()
@@ -891,104 +939,6 @@ const categoriasConIcono = computed(() => {
 const obtenerIconoCategoria = (icono?: string): string => {
   return icono && icono.trim() !== '' ? icono.trim() : 'bi-tag-fill'
 }
-
-// const buscarCategoriaEnCatalogo = (id?: string | number, nombre?: string) => {
-//   const idNormalizado = Number(id)
-
-//   if (Number.isFinite(idNormalizado)) {
-//     const porId = categoriasConIcono.value.find(c => Number(c.id) === idNormalizado)
-//     if (porId) return porId
-//   }
-
-//   if (nombre) {
-//     const nombreNormalizado = nombre.toLowerCase().trim()
-
-//     const porNombre = categoriasConIcono.value.find(c =>
-//       c.nombre.toLowerCase().trim() === nombreNormalizado
-//     )
-
-//     if (porNombre) return porNombre
-//   }
-
-//   return null
-// }
-
-
-// const normalizarCategoriaItem = (c: any) => {
-//   const id =
-//     c?.categoria_actualizacion_id ??
-//     c?.actualizacion_categoria_id ??
-//     c?.id ??
-//     0
-
-//   const nombre =
-//     c?.categoria_actualizacion_nombre ??
-//     c?.actualizacion_categoria_nombre ??
-//     c?.nombre ??
-//     'Sin categoría'
-
-//   const categoriaCatalogo = buscarCategoriaEnCatalogo(id, nombre)
-
-//   const icono =
-//     c?.icono ||
-//     c?.categoria_actualizacion_icono ||
-//     c?.actualizacion_categoria_icono ||
-//     c?.icono_categoria ||
-//     categoriaCatalogo?.icono ||
-//     'bi-tag-fill'
-
-//   return {
-//     id,
-//     nombre: categoriaCatalogo?.nombre || nombre,
-//     icono: obtenerIconoCategoria(icono),
-//   }
-// }
-
-// const obtenerCategorias = (
-//   item: Version
-// ): { id: string | number; nombre: string; icono: string }[] => {
-//   const itemAny = item as any
-
-//   if (Array.isArray(itemAny.categorias) && itemAny.categorias.length > 0) {
-//     return itemAny.categorias.map((c: any) => normalizarCategoriaItem(c))
-//   }
-
-//   if (Array.isArray(itemAny.actualizacion_categorias) && itemAny.actualizacion_categorias.length > 0) {
-//     return itemAny.actualizacion_categorias.map((c: any) => normalizarCategoriaItem(c))
-//   }
-
-//   if (itemAny.categoria) {
-//     return [normalizarCategoriaItem(itemAny.categoria)]
-//   }
-
-//   if (itemAny.actualizacion_categoria) {
-//     return [normalizarCategoriaItem(itemAny.actualizacion_categoria)]
-//   }
-
-//   const categoriaId =
-//     itemAny.actualizacion_categoria_id ??
-//     itemAny.categoria_actualizacion_id
-
-//   const categoriaNombre =
-//     itemAny.actualizacion_categoria_nombre ??
-//     itemAny.categoria_actualizacion_nombre
-
-//   if (categoriaId || categoriaNombre) {
-//     const categoriaCatalogo = buscarCategoriaEnCatalogo(categoriaId, categoriaNombre)
-
-//     return [{
-//       id: categoriaId ?? categoriaCatalogo?.id ?? 0,
-//       nombre: categoriaCatalogo?.nombre ?? categoriaNombre ?? 'Sin categoría',
-//       icono: categoriaCatalogo?.icono ?? 'bi-tag-fill',
-//     }]
-//   }
-
-//   return [{
-//     id: 0,
-//     nombre: 'Sin categoría',
-//     icono: 'bi-tag-fill',
-//   }]
-// }
 
 // Área mapeada a la forma genérica { id, nombre } que espera <SelectorBusqueda>
 const areasConOpcion = computed(() => {
@@ -1909,7 +1859,6 @@ defineExpose({ obtenerActualizaciones })
      siguen viviendo en este componente (el panel de revisiones se
      movió a PanelRevisionesPendientes.vue con su propio <style>). -->
 <style>
-
 .filtro-grupo {
   display: flex;
   flex-direction: column;

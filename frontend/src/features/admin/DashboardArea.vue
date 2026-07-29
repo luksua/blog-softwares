@@ -705,19 +705,19 @@ const getEstadoLabel = (estado: string) => {
   return labels[estado] || estado
 }
 
-const formatearFechaHora = (fecha: string) => {
-  const valor = new Date(fecha)
+// const formatearFechaHora = (fecha: string) => {
+//   const valor = new Date(fecha)
 
-  if (Number.isNaN(valor.getTime())) {
-    return 'Fecha no disponible'
-  }
+//   if (Number.isNaN(valor.getTime())) {
+//     return 'Fecha no disponible'
+//   }
 
-  return new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-    timeZone: 'America/Bogota',
-  }).format(valor)
-}
+//   return new Intl.DateTimeFormat('es-CO', {
+//     dateStyle: 'short',
+//     timeStyle: 'short',
+//     timeZone: 'America/Bogota',
+//   }).format(valor)
+// }
 
 const maxEmpleadosActivos = computed(() => {
   return Math.max(

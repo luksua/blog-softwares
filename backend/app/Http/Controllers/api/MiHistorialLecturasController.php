@@ -56,7 +56,7 @@ class MiHistorialLecturasController extends Controller
                 'historial.veces_visualizado',
             ])
             ->orderByDesc('historial.ultima_visualizacion')
-            ->paginate(20);
+            ->paginate(10);
 
         return response()->json($historial);
     }

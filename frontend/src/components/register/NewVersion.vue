@@ -20,9 +20,7 @@
               El borrador se guardará automáticamente
             </span>
           </div>
-
-          <button v-if="hayBorradorGuardado" type="button" class="btn-descartar"
-            @click="descartarBorrador(true); limpiarFormulario()">
+          <button v-if="hayBorradorGuardado" type="button" class="btn-descartar" @click="descartarYLimpiar">
             Descartar borrador
           </button>
         </div>
@@ -283,43 +281,122 @@
     </form>
   </div>
 </template>
-
 <script setup lang="ts">
-import { reactive, ref, onMounted, onBeforeUnmount, watch, nextTick, computed, toRef } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  toRef,
+  watch,
+} from 'vue'
+
 import { storeToRefs } from 'pinia'
+import { toast } from 'vue-sonner'
+
+import type {
+  OutputBlockData,
+  OutputData,
+} from '@editorjs/editorjs'
+
 import api from '../../api/api'
 import type { NewVersion } from '../../types/newVersion'
+
 import { useAreasStore } from '../../stores/areas'
 import { useCategoriasStore } from '../../stores/categorias'
-import { toast } from 'vue-sonner'
-import { Modal } from 'bootstrap'
 
 import { useEditorJS } from '../../composables/useEditorJS'
-import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
+import {
+  normalizarCategoriaIds,
+  useCategoriaSelector,
+} from '../../composables/useCategoriaSelector'
+
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada } from '../../composables/useImagenDestacada'
-// import { useVistaPrevia } from '../../composables/useVistaPrevia'
-import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 import { useResumenIA } from '../../composables/useResumenIA'
+
+import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
+
+/* =========================================================
+ * TIPOS
+ * =======================================================*/
+
+type DatosIniciales = {
+  titulo?: string
+  version?: string
+  resumen?: string
+  area_servicio_id?: number | string
+  actualizacion_categoria_ids?: number[]
+  contenidoBlocks?: OutputBlockData[]
+}
+
+type BorradorRegistro = {
+  titulo?: string
+  version?: string
+  resumen?: string
+  area_servicio_id?: number | string
+  actualizacion_categoria_ids?: number[]
+  actualizacion_categoria_id?: number | number[]
+  estado?: string
+  fecha_publicacion?: string
+  fecha_programada?: string
+  editorBlocks?: OutputBlockData[]
+  guardadoEn?: string
+}
+
+/* =========================================================
+ * PROPS Y EVENTOS
+ * =======================================================*/
+
+const props = defineProps<{
+  datosIniciales?: DatosIniciales | null
+}>()
+
+const emit = defineEmits<{
+  (event: 'cerrar'): void
+  (event: 'recargar-lista'): void
+}>()
+
+/* =========================================================
+ * CONSTANTES
+ * =======================================================*/
+
+const DRAFT_KEY = 'draft_nueva_actualizacion'
+const LIMITE_RESUMEN = 800
+const MINIMO_CONTENIDO = 100
+
+const fechaActual = (): string => {
+  return new Date().toISOString().split('T')[0]
+}
+
+/* =========================================================
+ * REFERENCIAS DEL DOM
+ * =======================================================*/
 
 const tituloInput = ref<HTMLInputElement | null>(null)
 
-// ── Clave del borrador ────────────────────────────────────────────
-const DRAFT_KEY = 'draft_nueva_actualizacion'
+/* =========================================================
+ * ESTADO GENERAL
+ * =======================================================*/
 
-// ── Archivos ──────────────────────────────────────────────────────
-const {
-  archivo: archivoMiniatura,
-  preview: previewMiniatura,
-  seleccionarArchivo: manejarArchivoMiniatura,
-  quitarImagen: quitarImagenMiniatura,
-} = useImagenDestacada({
-  onError: (mensaje) => toast.warning(mensaje),
-})
-
-// ── Registro ──────────────────────────────────────────────────────
-const idUsuarioLogueado = 1
 const errores = ref<Record<string, string[]>>({})
+const enviando = ref(false)
+
+const caracteresContenido = ref(0)
+const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
+const contenidoPreviewHtml = ref('')
+
+const editorListo = ref(false)
+const suspenderAutosave = ref(false)
+const omitirGuardadoAlDesmontar = ref(false)
+
+/* =========================================================
+ * REGISTRO
+ * =======================================================*/
+
+const idUsuarioLogueado = 1
 
 const registroVacio = () => ({
   titulo: '',
@@ -331,157 +408,77 @@ const registroVacio = () => ({
   actualizacion_categoria_ids: [] as number[],
   usuario_id_autor: idUsuarioLogueado,
   estado: 'borrador',
-  fecha_creacion: new Date().toISOString().split('T')[0],
-  fecha_publicacion: new Date().toISOString().split('T')[0],
+  fecha_creacion: fechaActual(),
+  fecha_publicacion: fechaActual(),
   fecha_programada: '',
-  imagenes_quill: []
+  imagenes_quill: [],
 })
 
-const registro = reactive<NewVersion>(registroVacio())
-
-const esProgramado = computed(() => registro.estado === 'programado')
-
-const { fechaMinimaProgramada, validarFechaProgramada } = useFechaProgramada()
-
-watch(esProgramado, (activo) => {
-  if (activo && !registro.fecha_programada) {
-    registro.fecha_programada = fechaMinimaProgramada.value
-  }
-})
-
-
-// ── Autosave ──────────────────────────────────────────────────────
-const hayBorradorGuardado = ref(false)
-const ultimoGuardado = ref<string | null>(null)
-const autoguardando = ref(false)
-
-let autoguardadoTimeout: ReturnType<typeof setTimeout> | null = null
-
-const cargarBorrador = () => {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY)
-    if (!raw) return
-
-    const draft = JSON.parse(raw)
-
-    Object.assign(registro, {
-      titulo: draft.titulo || '',
-      version: draft.version || '',
-      resumen: draft.resumen || '',
-      area_servicio_id: draft.area_servicio_id || '',
-      actualizacion_categoria_ids: normalizarCategoriaIds(draft.actualizacion_categoria_ids || draft.actualizacion_categoria_id),
-      estado: draft.estado || 'borrador',
-      fecha_publicacion: draft.fecha_publicacion || new Date().toISOString().split('T')[0],
-      fecha_programada: draft.fecha_programada || '',
-    })
-
-    ultimoGuardado.value = draft.guardadoEn || null
-    hayBorradorGuardado.value = true
-
-    if (draft.editorBlocks?.length && editorInstance.value) {
-      editorInstance.value.render({ blocks: draft.editorBlocks })
-    }
-
-    // toast.info('Borrador restaurado.')
-  } catch (e) {
-    console.warn('No se pudo restaurar el borrador:', e)
-  }
-}
-
-const LIMITE_RESUMEN = 800
-
-// Límites del contenido del Editor.js
-const MINIMO_CONTENIDO = 100
-// const MAXIMO_CONTENIDO = 10000
-
-const resumenExcedeLimite = computed(() => {
-  return registro.resumen.length > LIMITE_RESUMEN
-})
-
-// Cantidad de caracteres escritos en el Editor.js
-const caracteresContenido = ref(0)
-
-const contenidoNoCumpleMinimo = computed(() => {
-  return caracteresContenido.value < MINIMO_CONTENIDO
-})
-
-// const contenidoExcedeLimite = computed(() => {
-//   return caracteresContenido.value > MAXIMO_CONTENIDO
-// })
-
-const guardarBorrador = async () => {
-  autoguardando.value = true
-
-  try {
-    let editorBlocks: any[] = []
-
-    if (editorInstance.value) {
-      const output = await editorInstance.value.save()
-      editorBlocks = output.blocks
-    }
-
-    const draft = {
-      titulo: registro.titulo,
-      version: registro.version,
-      resumen: registro.resumen,
-      area_servicio_id: registro.area_servicio_id,
-      actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
-      estado: registro.estado,
-      fecha_publicacion: registro.fecha_publicacion,
-      fecha_programada: registro.fecha_programada,
-      editorBlocks,
-      guardadoEn: new Date().toLocaleTimeString('es-ES', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      })
-    }
-
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
-    ultimoGuardado.value = draft.guardadoEn
-    hayBorradorGuardado.value = true
-  } catch (e) {
-    console.warn('Error al autoguardar:', e)
-  } finally {
-    autoguardando.value = false
-  }
-}
-
-const descartarBorrador = (mostrarToast = false) => {
-  localStorage.removeItem(DRAFT_KEY)
-  hayBorradorGuardado.value = false
-  ultimoGuardado.value = null
-  if (mostrarToast) toast.info('Borrador descartado.')
-}
-
-const programarAutosave = () => {
-  if (autoguardadoTimeout) clearTimeout(autoguardadoTimeout)
-  autoguardadoTimeout = setTimeout(() => {
-    guardarBorrador()
-  }, 1500)
-}
-
-watch(
-  () => ({
-    titulo: registro.titulo,
-    version: registro.version,
-    resumen: registro.resumen,
-    area_servicio_id: registro.area_servicio_id,
-    actualizacion_categoria_ids: registro.actualizacion_categoria_ids,
-    estado: registro.estado,
-    fecha_publicacion: registro.fecha_publicacion,
-    fecha_programada: registro.fecha_programada,
-  }),
-  () => { programarAutosave() },
-  { deep: true }
+const registro = reactive<NewVersion>(
+  registroVacio(),
 )
 
-// ── Listas ────────────────────────────────────────────────────────
+/* =========================================================
+ * STORES
+ * =======================================================*/
+
 const areasStore = useAreasStore()
 const categoriasStore = useCategoriasStore()
-const { areas: listaAreas } = storeToRefs(areasStore)
-const { categorias: listaCategorias } = storeToRefs(categoriasStore)
-const listaEstados = ref<{ id: string; nombre: string }[]>([])
-const enviando = ref(false)
-const emit = defineEmits(['cerrar', 'recargar-lista'])
+
+const { areas: listaAreas } =
+  storeToRefs(areasStore)
+
+const { categorias: listaCategorias } =
+  storeToRefs(categoriasStore)
+
+const listaEstados = ref<
+  Array<{
+    id: string
+    nombre: string
+  }>
+>([])
+
+/* =========================================================
+ * IMAGEN DESTACADA
+ * =======================================================*/
+
+const {
+  archivo: archivoMiniatura,
+  preview: previewMiniatura,
+  seleccionarArchivo: manejarArchivoMiniatura,
+  quitarImagen: quitarImagenMiniatura,
+} = useImagenDestacada({
+  onError: (mensaje) => {
+    toast.warning(mensaje)
+  },
+})
+
+/* =========================================================
+ * FECHA PROGRAMADA
+ * =======================================================*/
+
+const {
+  fechaMinimaProgramada,
+  validarFechaProgramada,
+} = useFechaProgramada()
+
+const esProgramado = computed(() => {
+  return registro.estado === 'programado'
+})
+
+watch(esProgramado, (activo) => {
+  if (
+    activo &&
+    !registro.fecha_programada
+  ) {
+    registro.fecha_programada =
+      fechaMinimaProgramada.value
+  }
+})
+
+/* =========================================================
+ * CATEGORÍAS
+ * =======================================================*/
 
 const {
   wrapperRef,
@@ -492,323 +489,1103 @@ const {
   categoriaSeleccionada,
   toggleCategoria,
   toggleSelect,
-} = useCategoriaSelector(toRef(registro, 'actualizacion_categoria_ids'), listaCategorias, {
-  onMaxSeleccionAlcanzado: () => toast.warning('Solo puedes seleccionar máximo 3 categorías'),
-})
-// Se usa como ref="categoriaSelectRef" en el template (detección de click fuera del dropdown)
+} = useCategoriaSelector(
+  toRef(
+    registro,
+    'actualizacion_categoria_ids',
+  ),
+  listaCategorias,
+  {
+    onMaxSeleccionAlcanzado: () => {
+      toast.warning(
+        'Solo puedes seleccionar máximo 3 categorías',
+      )
+    },
+  },
+)
+
 const categoriaSelectRef = wrapperRef
 void categoriaSelectRef
 
-// ── Editor.js ─────────────────────────────────────────────────────
-const { editor: editorInstance, iniciar: iniciarEditor, destruir: destruirEditor } = useEditorJS()
+/* =========================================================
+ * EDITORJS
+ * =======================================================*/
 
-const { generandoResumen, generarResumen } = useResumenIA()
-
-const generarResumenConIA = async () => {
-  const resumen = await generarResumen(editorInstance.value, registro.titulo)
-  if (resumen) {
-    registro.resumen = resumen
-    toast.success('Resumen generado con IA. Puedes editarlo si lo necesitas.')
-  }
-}
-// ── Vista previa ──────────────────────────────────────────────────
-// const { generarHtmlContenido } = useVistaPrevia()
-const pestanaActiva = ref<'editor' | 'vista-previa'>('editor')
-const contenidoPreviewHtml = ref('')
-
-const areaSeleccionadaNombre = computed(() => {
-  const area = listaAreas.value.find(
-    (a) => String(a.area_servicio_id) === String(registro.area_servicio_id)
-  )
-  return area?.area_servicio_nombre || ''
-})
-
-const fechaTextoPreview = computed(() => {
-  if (esProgramado.value) {
-    if (!registro.fecha_programada) return 'Se publicará cuando definas una fecha programada'
-    const fecha = new Date(registro.fecha_programada)
-    return `Programado para el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })} a las ${fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}`
-  }
-  const fecha = new Date(registro.fecha_publicacion)
-  return `Publicado el ${fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}`
-})
+const {
+  editor: editorInstance,
+  iniciar: iniciarEditor,
+  destruir: destruirEditor,
+} = useEditorJS()
 
 /**
- * Toma el contenido actual del editor (sin guardarlo en el backend) y arma
- * el HTML de vista previa, tal cual se vería públicamente el registro.
+ * Solamente corrige posibles nombres antiguos de herramientas.
+ *
+ * No transforma data.items, data.style, meta, tunes ni imágenes.
  */
-// const abrirVistaPrevia = async () => {
-//   if (editorInstance.value) {
-//     try {
-//       const outputData = await editorInstance.value.save()
-//       contenidoPreviewHtml.value = generarHtmlContenido(outputData)
-//     } catch (error) {
-//       console.error('Error al generar la vista previa:', error)
-//       toast.warning('No se pudo generar la vista previa del contenido.')
-//     }
-//   }
-//   pestanaActiva.value = 'vista-previa'
-// }
-const obtenerTextoDelBloque = (block: any): string => {
+const aliasTiposEditor: Record<string, string> = {
+  List: 'list',
+  nestedList: 'list',
+  unorderedList: 'list',
+  orderedList: 'list',
+
+  Header: 'header',
+  heading: 'header',
+
+  Image: 'image',
+  imageTool: 'image',
+}
+const clonarJsonPlano = <T>(valor: T): T => {
+  return JSON.parse(JSON.stringify(valor)) as T
+}
+
+const prepararBloquesIniciales = (
+  blocks: OutputBlockData[],
+): OutputBlockData[] => {
+  if (!Array.isArray(blocks)) {
+    return []
+  }
+
+  /*
+   * EditorJS trabaja con JSON plano.
+   * JSON.stringify elimina los Proxy de Vue.
+   */
+  const bloquesPlanos =
+    clonarJsonPlano<OutputBlockData[]>(blocks)
+
+  return bloquesPlanos
+    .filter((block) => {
+      return Boolean(
+        block &&
+        typeof block === 'object' &&
+        typeof block.type === 'string' &&
+        block.data &&
+        typeof block.data === 'object',
+      )
+    })
+    .map((block) => {
+      return {
+        ...block,
+
+        type:
+          aliasTiposEditor[block.type] ??
+          block.type,
+      }
+    })
+}
+
+/* =========================================================
+ * DATOS INICIALES DEL DUPLICADO
+ * =======================================================*/
+
+const aplicarDatosIniciales = (
+  datos: DatosIniciales,
+) => {
+  Object.assign(registro, {
+    titulo: datos.titulo ?? '',
+    version: datos.version ?? '',
+    resumen: datos.resumen ?? '',
+    area_servicio_id:
+      datos.area_servicio_id ?? '',
+
+    actualizacion_categoria_ids:
+      Array.isArray(
+        datos.actualizacion_categoria_ids,
+      )
+        ? [
+          ...datos.actualizacion_categoria_ids,
+        ]
+        : [],
+  })
+}
+
+/* =========================================================
+ * VALIDACIONES COMPUTADAS
+ * =======================================================*/
+
+const resumenExcedeLimite = computed(() => {
+  return (
+    registro.resumen.length >
+    LIMITE_RESUMEN
+  )
+})
+
+const contenidoNoCumpleMinimo = computed(() => {
+  return (
+    caracteresContenido.value <
+    MINIMO_CONTENIDO
+  )
+})
+
+/* =========================================================
+ * TEXTO DEL EDITOR
+ * =======================================================*/
+
+const limpiarHtml = (
+  texto: unknown,
+): string => {
+  if (typeof texto !== 'string') {
+    return ''
+  }
+
+  return texto
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const obtenerTextoItemsLista = (
+  items: unknown,
+): string => {
+  if (!Array.isArray(items)) {
+    return ''
+  }
+
+  return items
+    .map((item) => {
+      /*
+       * Formato antiguo:
+       * items: ["Elemento uno", "Elemento dos"]
+       */
+      if (typeof item === 'string') {
+        return limpiarHtml(item)
+      }
+
+      /*
+       * Formato moderno:
+       * {
+       *   content: "...",
+       *   meta: {},
+       *   items: []
+       * }
+       */
+      if (
+        item &&
+        typeof item === 'object'
+      ) {
+        const itemLista =
+          item as Record<string, unknown>
+
+        return [
+          limpiarHtml(
+            itemLista.content ??
+            itemLista.text,
+          ),
+
+          obtenerTextoItemsLista(
+            itemLista.items,
+          ),
+        ]
+          .filter(Boolean)
+          .join(' ')
+      }
+
+      return ''
+    })
+    .filter(Boolean)
+    .join(' ')
+}
+
+const obtenerTextoDelBloque = (
+  block: OutputBlockData,
+): string => {
   if (!block?.data) {
     return ''
   }
 
-  const extraerTexto = (valor: any): string => {
-    if (typeof valor === 'string') {
-      return valor.replace(/<[^>]*>/g, ' ')
-    }
+  switch (block.type) {
+    case 'paragraph':
+    case 'header':
+      return limpiarHtml(block.data.text)
 
-    if (Array.isArray(valor)) {
-      return valor
-        .map(extraerTexto)
-        .join(' ')
-    }
+    case 'list':
+      return obtenerTextoItemsLista(
+        block.data.items,
+      )
 
-    if (typeof valor === 'object' && valor !== null) {
-      return Object.values(valor)
-        .map(extraerTexto)
-        .join(' ')
-    }
+    case 'image':
+      return limpiarHtml(
+        block.data.caption,
+      )
 
-    return ''
-  }
-
-  return extraerTexto(block.data)
-}
-
-const enfocarTitulo = async () => {
-  await nextTick()
-  tituloInput.value?.focus()
-}
-
-onMounted(async () => {
-  areasStore.fetchAreas()
-  categoriasStore.fetchCategorias()
-
-  try {
-    const resEstados = await api.get('/estados-actualizacion')
-    listaEstados.value = resEstados.data.data
-  } catch (error) {
-    console.error('Error al cargar los estados:', error)
-  }
-
-  await iniciarEditor({
-    holder: 'editorjs',
-    placeholder: 'Escribe tu actualización aquí. Puedes arrastrar imágenes...',
-    headerLevels: [2, 3, 4, 5, 6],
-    onReady: () => {
-      cargarBorrador()
-    },
-    onChange: async () => {
-      programarAutosave()
-
-      if (editorInstance.value) {
-        try {
-          const output = await editorInstance.value.save()
-
-          caracteresContenido.value = output.blocks.reduce(
-            (total: number, block: any) => {
-              const texto = obtenerTextoDelBloque(block)
-              return total + texto.length
-            },
-            0
-          )
-        } catch (error) {
-          console.error(
-            'Error al contar caracteres del contenido:',
-            error
-          )
+    default: {
+      const extraerTextoGenerico = (
+        valor: unknown,
+      ): string => {
+        if (typeof valor === 'string') {
+          return limpiarHtml(valor)
         }
+
+        if (Array.isArray(valor)) {
+          return valor
+            .map(extraerTextoGenerico)
+            .filter(Boolean)
+            .join(' ')
+        }
+
+        if (
+          valor &&
+          typeof valor === 'object'
+        ) {
+          return Object.values(valor)
+            .map(extraerTextoGenerico)
+            .filter(Boolean)
+            .join(' ')
+        }
+
+        return ''
       }
-    },
-  })
-  const modalEl = document.getElementById('modalNuevoRegistro')
 
-  modalEl?.addEventListener('shown.bs.modal', enfocarTitulo)
-})
-
-onBeforeUnmount(() => {
-  const modalEl = document.getElementById('modalNuevoRegistro')
-  modalEl?.removeEventListener('shown.bs.modal', enfocarTitulo)
-
-  guardarBorrador()
-  if (autoguardadoTimeout) clearTimeout(autoguardadoTimeout)
-  destruirEditor()
-})
-
-// ── Guardar registro ──────────────────────────────────────────────
-const guardarRegistro = async () => {
-  // Validar resumen
-  if (registro.resumen.length > LIMITE_RESUMEN) {
-    errores.value.resumen = [
-      `El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`
-    ]
-
-    return
+      return extraerTextoGenerico(
+        block.data,
+      )
+    }
   }
+}
 
-  let outputData
-
-  if (editorInstance.value) {
-    outputData = await editorInstance.value.save()
-  }
-
-  // Validar contenido vacío
-  if (!outputData || outputData.blocks.length === 0) {
-    toast.warning(
-      'El contenido no puede estar vacío.'
-    )
-
-    return
-  }
-
-  // Contar caracteres del contenido
-  const cantidadCaracteres =
-    outputData.blocks.reduce(
-      (total: number, block: any) => {
-        const texto =
-          obtenerTextoDelBloque(block)
-
-        return total + texto.trim().length
-      },
-      0
-    )
-
-  caracteresContenido.value =
-    cantidadCaracteres
-
-  // Validar mínimo
-  if (
-    cantidadCaracteres <
-    MINIMO_CONTENIDO
-  ) {
-    toast.warning(
-      `El contenido debe tener mínimo ${MINIMO_CONTENIDO} caracteres. Actualmente tiene ${cantidadCaracteres}.`
-    )
-
-    return
-  }
-
-  // Validar máximo
-  // if (
-  //   cantidadCaracteres >
-  //   MAXIMO_CONTENIDO
-  // ) {
-  //   toast.warning(
-  //     `El contenido no puede superar los ${MAXIMO_CONTENIDO} caracteres.`
-  //   )
-
-  //   return
-  // }
-
-  enviando.value = true
-
-  try {
-    const formData = new FormData()
-
-    // Aseguramos que siempre sea un string con || ''
-    formData.append('actualizacion_titulo', registro.titulo || '')
-    formData.append('actualizacion_version', registro.version || '')
-    formData.append('actualizacion_contenido', JSON.stringify(outputData))
-    formData.append('actualizacion_resumen', registro.resumen || '')
-    formData.append('actualizacion_area_servicio_id', String(registro.area_servicio_id))
-
-    const categoriaIds = registro.actualizacion_categoria_ids.slice(0, 3)
-
-    if (categoriaIds.length === 0) {
-      toast.warning('Selecciona al menos una categoría.')
-      enviando.value = false
+const actualizarCantidadCaracteres =
+  async (): Promise<void> => {
+    if (!editorInstance.value) {
+      caracteresContenido.value = 0
       return
     }
 
-    formData.append('actualizacion_categoria_id', String(categoriaIds[0]))
-    categoriaIds.forEach((categoriaId) => {
-      formData.append('actualizacion_categoria_ids[]', String(categoriaId))
-    })
-    formData.append('actualizacion_usuario_id_autor', String(registro.usuario_id_autor))
-    formData.append('actualizacion_estado', registro.estado || '')
+    try {
+      const output =
+        await editorInstance.value.save()
 
-    if (esProgramado.value) {
-      const errorFecha = validarFechaProgramada(registro.fecha_programada)
-      if (errorFecha) {
-        toast.warning(errorFecha)
-        enviando.value = false
+      caracteresContenido.value =
+        output.blocks.reduce(
+          (
+            total,
+            block,
+          ) => {
+            const texto =
+              obtenerTextoDelBloque(block)
+
+            return (
+              total +
+              texto.trim().length
+            )
+          },
+          0,
+        )
+    } catch (error) {
+      console.error(
+        'Error al contar caracteres del contenido:',
+        error,
+      )
+    }
+  }
+
+/* =========================================================
+ * AUTOGUARDADO
+ * =======================================================*/
+
+const hayBorradorGuardado = ref(false)
+const ultimoGuardado =
+  ref<string | null>(null)
+
+const autoguardando = ref(false)
+
+let autoguardadoTimeout:
+  | ReturnType<typeof setTimeout>
+  | null = null
+
+const guardarBorrador =
+  async (): Promise<void> => {
+    /*
+     * El duplicado no debe sobrescribir el
+     * borrador del formulario nuevo.
+     */
+    if (
+      props.datosIniciales ||
+      suspenderAutosave.value
+    ) {
+      return
+    }
+
+    autoguardando.value = true
+
+    try {
+      let editorBlocks:
+        OutputBlockData[] = []
+
+      if (editorInstance.value) {
+        const output =
+          await editorInstance.value.save()
+
+        editorBlocks = output.blocks
+      }
+
+      const borrador: BorradorRegistro = {
+        titulo: registro.titulo,
+        version: registro.version,
+        resumen: registro.resumen,
+
+        area_servicio_id:
+          registro.area_servicio_id ?? '',
+
+        actualizacion_categoria_ids: [
+          ...registro
+            .actualizacion_categoria_ids,
+        ],
+
+        estado: registro.estado,
+
+        fecha_publicacion:
+          registro.fecha_publicacion,
+
+        fecha_programada:
+          registro.fecha_programada,
+
+        editorBlocks,
+
+        guardadoEn:
+          new Date().toLocaleTimeString(
+            'es-ES',
+            {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            },
+          ),
+      }
+
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify(borrador),
+      )
+
+      ultimoGuardado.value =
+        borrador.guardadoEn ?? null
+
+      hayBorradorGuardado.value = true
+    } catch (error) {
+      console.warn(
+        'Error al autoguardar:',
+        error,
+      )
+    } finally {
+      autoguardando.value = false
+    }
+  }
+
+const cargarBorrador =
+  async (): Promise<void> => {
+    try {
+      const raw =
+        localStorage.getItem(DRAFT_KEY)
+
+      if (!raw) {
         return
       }
 
-      // Aquí probablemente estaba el error principal, le agregamos || ''
-      formData.append('actualizacion_fecha_publicacion', registro.fecha_programada || '')
-    } else {
-      formData.append('actualizacion_fecha_publicacion', registro.fecha_publicacion || '')
+      const draft =
+        JSON.parse(
+          raw,
+        ) as BorradorRegistro
+
+      Object.assign(registro, {
+        titulo: draft.titulo ?? '',
+        version: draft.version ?? '',
+        resumen: draft.resumen ?? '',
+
+        area_servicio_id:
+          draft.area_servicio_id ?? '',
+
+        actualizacion_categoria_ids:
+          normalizarCategoriaIds(
+            draft.actualizacion_categoria_ids ??
+            draft.actualizacion_categoria_id ??
+            [],
+          ),
+
+        estado:
+          draft.estado ?? 'borrador',
+
+        fecha_publicacion:
+          draft.fecha_publicacion ??
+          fechaActual(),
+
+        fecha_programada:
+          draft.fecha_programada ?? '',
+      })
+
+      ultimoGuardado.value =
+        draft.guardadoEn ?? null
+
+      hayBorradorGuardado.value = true
+
+      if (
+        Array.isArray(
+          draft.editorBlocks,
+        ) &&
+        draft.editorBlocks.length > 0 &&
+        editorInstance.value
+      ) {
+        await editorInstance.value.render({
+          blocks:
+            prepararBloquesIniciales(
+              draft.editorBlocks,
+            ),
+        })
+      }
+    } catch (error) {
+      console.warn(
+        'No se pudo restaurar el borrador:',
+        error,
+      )
     }
+  }
 
-    if (archivoMiniatura.value) {
-      formData.append('actualizacion_imagen_destacada', archivoMiniatura.value)
-    }
+const programarAutosave = (): void => {
+  if (
+    !editorListo.value ||
+    props.datosIniciales ||
+    suspenderAutosave.value
+  ) {
+    return
+  }
 
-    const respuesta = await api.post('/actualizaciones', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+  /*
+   * Si el usuario vuelve a escribir después
+   * de descartar, se habilita nuevamente el guardado.
+   */
+  omitirGuardadoAlDesmontar.value =
+    false
 
-    // El interceptor ya muestra toast.success si el backend retorna message.
-    // Solo mostramos el manual como respaldo cuando no viene message.
-    if (!respuesta.data?.message) {
-      toast.success('¡Registro publicado correctamente!')
-    }
+  if (autoguardadoTimeout) {
+    clearTimeout(
+      autoguardadoTimeout,
+    )
+  }
 
-    descartarBorrador()
-    limpiarFormulario()
-    emit('recargar-lista')
-    emit('cerrar')
+  autoguardadoTimeout =
+    setTimeout(() => {
+      guardarBorrador()
+    }, 1500)
+}
 
-    // ← Cerrar el modal correctamente via Bootstrap:
-    const modalEl = document.getElementById('modalNuevoRegistro') // el id de tu modal
-    if (modalEl) {
-      const modal = Modal.getInstance(modalEl)
-      modal?.hide()
-    }
+const descartarBorrador = (
+  mostrarToast = false,
+): void => {
+  if (autoguardadoTimeout) {
+    clearTimeout(
+      autoguardadoTimeout,
+    )
 
-  } catch {
-    // El interceptor de api.ts ya gestiona y muestra los errores
-  } finally {
-    enviando.value = false
+    autoguardadoTimeout = null
+  }
+
+  localStorage.removeItem(DRAFT_KEY)
+
+  hayBorradorGuardado.value = false
+  ultimoGuardado.value = null
+
+  omitirGuardadoAlDesmontar.value =
+    true
+
+  if (mostrarToast) {
+    toast.info(
+      'Borrador descartado.',
+    )
   }
 }
 
-// ── Limpiar ───────────────────────────────────────────────────────
-const limpiarFormulario = () => {
-  Object.assign(registro, registroVacio())
+/* =========================================================
+ * OBSERVADOR DEL FORMULARIO
+ * =======================================================*/
 
-  pestanaActiva.value = 'editor'
-  contenidoPreviewHtml.value = ''
+watch(
+  () => ({
+    titulo: registro.titulo,
+    version: registro.version,
+    resumen: registro.resumen,
 
-  quitarImagenMiniatura()
+    area_servicio_id:
+      registro.area_servicio_id,
 
-  const inputMiniatura = document.getElementById('miniatura') as HTMLInputElement
-  if (inputMiniatura) inputMiniatura.value = ''
+    actualizacion_categoria_ids:
+      registro.actualizacion_categoria_ids,
 
-  if (editorInstance.value) editorInstance.value.clear()
-}
+    estado: registro.estado,
 
+    fecha_publicacion:
+      registro.fecha_publicacion,
 
-// Cerrar select al hacer click fuera
-const cerrarSelectAlClickFuera = (event: MouseEvent) => {
-  const wrapper = document.querySelector('.categoria-select-wrapper')
-  if (wrapper && !wrapper.contains(event.target as Node)) {
+    fecha_programada:
+      registro.fecha_programada,
+  }),
+
+  () => {
+    programarAutosave()
+  },
+
+  {
+    deep: true,
+  },
+)
+
+/* =========================================================
+ * RESUMEN CON IA
+ * =======================================================*/
+
+const {
+  generandoResumen,
+  generarResumen,
+} = useResumenIA()
+
+const generarResumenConIA =
+  async (): Promise<void> => {
+    const resumen =
+      await generarResumen(
+        editorInstance.value,
+        registro.titulo,
+      )
+
+    if (resumen) {
+      registro.resumen = resumen
+
+      toast.success(
+        'Resumen generado con IA. Puedes editarlo si lo necesitas.',
+      )
+    }
+  }
+
+/* =========================================================
+ * DATOS PARA VISTA PREVIA
+ * =======================================================*/
+
+const areaSeleccionadaNombre =
+  computed(() => {
+    const area =
+      listaAreas.value.find(
+        (item) => {
+          return (
+            String(
+              item.area_servicio_id,
+            ) ===
+            String(
+              registro.area_servicio_id,
+            )
+          )
+        },
+      )
+
+    return (
+      area?.area_servicio_nombre ??
+      ''
+    )
+  })
+
+const fechaTextoPreview =
+  computed(() => {
+    if (esProgramado.value) {
+      if (
+        !registro.fecha_programada
+      ) {
+        return 'Se publicará cuando definas una fecha programada'
+      }
+
+      const fecha = new Date(
+        registro.fecha_programada,
+      )
+
+      return [
+        'Programado para el',
+        fecha.toLocaleDateString(
+          'es-ES',
+          {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          },
+        ),
+        'a las',
+        fecha.toLocaleTimeString(
+          'es-ES',
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          },
+        ),
+      ].join(' ')
+    }
+
+    const fecha = new Date(
+      registro.fecha_publicacion,
+    )
+
+    return [
+      'Publicado el',
+      fecha.toLocaleDateString(
+        'es-ES',
+        {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        },
+      ),
+    ].join(' ')
+  })
+
+/* =========================================================
+ * LIMPIAR FORMULARIO
+ * =======================================================*/
+
+const limpiarFormulario =
+  async (): Promise<void> => {
+    Object.assign(
+      registro,
+      registroVacio(),
+    )
+
+    errores.value = {}
+
+    pestanaActiva.value = 'editor'
+    contenidoPreviewHtml.value = ''
+    caracteresContenido.value = 0
+
+    quitarImagenMiniatura()
+
+    const inputMiniatura =
+      document.getElementById(
+        'miniatura',
+      ) as HTMLInputElement | null
+
+    if (inputMiniatura) {
+      inputMiniatura.value = ''
+    }
+
+    if (editorInstance.value) {
+      try {
+        await editorInstance.value.clear()
+      } catch (error) {
+        console.warn(
+          'No se pudo limpiar EditorJS:',
+          error,
+        )
+      }
+    }
+  }
+
+const descartarYLimpiar =
+  async (): Promise<void> => {
+    suspenderAutosave.value = true
+
+    descartarBorrador(true)
+
+    await limpiarFormulario()
+    await nextTick()
+
+    suspenderAutosave.value = false
+  }
+
+/* =========================================================
+ * GUARDAR REGISTRO
+ * =======================================================*/
+
+const guardarRegistro =
+  async (): Promise<void> => {
+    errores.value = {}
+
+    if (
+      registro.resumen.length >
+      LIMITE_RESUMEN
+    ) {
+      errores.value.resumen = [
+        `El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`,
+      ]
+
+      toast.warning(
+        `El resumen no puede superar los ${LIMITE_RESUMEN} caracteres.`,
+      )
+
+      return
+    }
+
+    let outputData:
+      | OutputData
+      | undefined
+
+    try {
+      if (editorInstance.value) {
+        outputData =
+          await editorInstance.value.save()
+      }
+    } catch (error) {
+      console.error(
+        'No se pudo obtener el contenido de EditorJS:',
+        error,
+      )
+
+      toast.warning(
+        'No se pudo procesar el contenido del editor.',
+      )
+
+      return
+    }
+
+    if (
+      !outputData ||
+      outputData.blocks.length === 0
+    ) {
+      toast.warning(
+        'El contenido no puede estar vacío.',
+      )
+
+      return
+    }
+
+    const cantidadCaracteres =
+      outputData.blocks.reduce(
+        (
+          total,
+          block,
+        ) => {
+          const texto =
+            obtenerTextoDelBloque(block)
+
+          return (
+            total +
+            texto.trim().length
+          )
+        },
+        0,
+      )
+
+    caracteresContenido.value =
+      cantidadCaracteres
+
+    if (
+      cantidadCaracteres <
+      MINIMO_CONTENIDO
+    ) {
+      toast.warning(
+        `El contenido debe tener mínimo ${MINIMO_CONTENIDO} caracteres. Actualmente tiene ${cantidadCaracteres}.`,
+      )
+
+      return
+    }
+
+    const categoriaIds =
+      registro.actualizacion_categoria_ids
+        .map(Number)
+        .filter(
+          (categoriaId) =>
+            Number.isFinite(
+              categoriaId,
+            ),
+        )
+        .slice(0, 3)
+
+    if (
+      categoriaIds.length === 0
+    ) {
+      toast.warning(
+        'Selecciona al menos una categoría.',
+      )
+
+      return
+    }
+
+    if (esProgramado.value) {
+      const errorFecha =
+        validarFechaProgramada(
+          registro.fecha_programada,
+        )
+
+      if (errorFecha) {
+        toast.warning(errorFecha)
+        return
+      }
+    }
+
+    enviando.value = true
+
+    try {
+      const formData =
+        new FormData()
+
+      formData.append(
+        'actualizacion_titulo',
+        registro.titulo ?? '',
+      )
+
+      formData.append(
+        'actualizacion_version',
+        registro.version ?? '',
+      )
+
+      formData.append(
+        'actualizacion_contenido',
+        JSON.stringify(outputData),
+      )
+
+      formData.append(
+        'actualizacion_resumen',
+        registro.resumen ?? '',
+      )
+
+      formData.append(
+        'actualizacion_area_servicio_id',
+        String(
+          registro.area_servicio_id,
+        ),
+      )
+
+      formData.append(
+        'actualizacion_categoria_id',
+        String(categoriaIds[0]),
+      )
+
+      categoriaIds.forEach(
+        (categoriaId) => {
+          formData.append(
+            'actualizacion_categoria_ids[]',
+            String(categoriaId),
+          )
+        },
+      )
+
+      formData.append(
+        'actualizacion_usuario_id_autor',
+        String(
+          registro.usuario_id_autor,
+        ),
+      )
+
+      formData.append(
+        'actualizacion_estado',
+        registro.estado ?? '',
+      )
+
+      formData.append(
+        'actualizacion_fecha_publicacion',
+
+        esProgramado.value
+          ? registro.fecha_programada ?? ''
+          : registro.fecha_publicacion ?? '',
+      )
+
+      if (archivoMiniatura.value) {
+        formData.append(
+          'actualizacion_imagen_destacada',
+          archivoMiniatura.value,
+        )
+      }
+
+      const respuesta =
+        await api.post(
+          '/actualizaciones',
+          formData,
+          {
+            headers: {
+              'Content-Type':
+                'multipart/form-data',
+            },
+          },
+        )
+
+      if (
+        !respuesta.data?.message
+      ) {
+        toast.success(
+          '¡Registro publicado correctamente!',
+        )
+      }
+
+      /*
+       * Evita que onBeforeUnmount vuelva
+       * a crear un borrador vacío.
+       */
+      suspenderAutosave.value = true
+      omitirGuardadoAlDesmontar.value =
+        true
+
+      descartarBorrador(false)
+
+      await limpiarFormulario()
+
+      emit('recargar-lista')
+      emit('cerrar')
+    } catch (error) {
+      /*
+       * El interceptor de api normalmente
+       * muestra los errores.
+       */
+      console.error(
+        'Error al guardar el registro:',
+        error,
+      )
+    } finally {
+      enviando.value = false
+    }
+  }
+
+/* =========================================================
+ * EVENTOS DEL DOM
+ * =======================================================*/
+
+const cerrarSelectAlClickFuera = (
+  event: MouseEvent,
+): void => {
+  const wrapper =
+    categoriaSelectRef.value
+
+  if (
+    wrapper &&
+    !wrapper.contains(
+      event.target as Node,
+    )
+  ) {
     selectAbierto.value = false
     busquedaCategoria.value = ''
   }
 }
 
-onMounted(() => {
-  document.addEventListener('click', cerrarSelectAlClickFuera)
+const enfocarTitulo =
+  async (): Promise<void> => {
+    await nextTick()
+    tituloInput.value?.focus()
+  }
+
+/* =========================================================
+ * MONTAJE
+ * =======================================================*/
+
+onMounted(async () => {
+  document.addEventListener(
+    'click',
+    cerrarSelectAlClickFuera,
+  )
+
+  await Promise.all([
+    areasStore.fetchAreas(),
+    categoriasStore.fetchCategorias(),
+  ])
+
+  try {
+    const respuesta =
+      await api.get(
+        '/estados-actualizacion',
+      )
+
+    listaEstados.value =
+      respuesta.data.data ?? []
+  } catch (error) {
+    console.error(
+      'Error al cargar los estados:',
+      error,
+    )
+  }
+
+  /*
+   * El componente padre monta este formulario
+   * después de que el modal ya está visible.
+   */
+  if (props.datosIniciales) {
+    aplicarDatosIniciales(
+      props.datosIniciales,
+    )
+  }
+
+  await nextTick()
+
+  const bloquesIniciales =
+  prepararBloquesIniciales(
+    props.datosIniciales
+      ?.contenidoBlocks ?? [],
+  )
+
+console.log(
+  'Bloques entregados a EditorJS:',
+  bloquesIniciales,
+)
+
+try {
+  await iniciarEditor({
+    holder: 'editorjs',
+
+    data: {
+      blocks: bloquesIniciales,
+    },
+
+    placeholder:
+      'Escribe tu actualización aquí. Puedes arrastrar imágenes...',
+
+    headerLevels: [2, 3, 4, 5, 6],
+
+    onReady: async () => {
+      editorListo.value = true
+
+      if (!props.datosIniciales) {
+        await cargarBorrador()
+      }
+
+      await actualizarCantidadCaracteres()
+    },
+
+    onChange: async () => {
+      if (!editorListo.value) {
+        return
+      }
+
+      programarAutosave()
+      await actualizarCantidadCaracteres()
+    },
+  })
+
+  await enfocarTitulo()
+} catch (error) {
+  console.error(
+    'No fue posible iniciar EditorJS:',
+    error,
+  )
+
+  toast.error(
+    'No fue posible cargar el editor.',
+  )
+}
 })
 
+/* =========================================================
+ * DESMONTAJE
+ * =======================================================*/
+
 onBeforeUnmount(() => {
-  document.removeEventListener('click', cerrarSelectAlClickFuera)
+  document.removeEventListener(
+    'click',
+    cerrarSelectAlClickFuera
+  )
+
+  if (autoguardadoTimeout) {
+    clearTimeout(
+      autoguardadoTimeout
+    )
+
+    autoguardadoTimeout = null
+  }
+
+  editorListo.value = false
+
+  const finalizar = async (): Promise<void> => {
+    try {
+      if (
+        !props.datosIniciales &&
+        !omitirGuardadoAlDesmontar.value
+      ) {
+        await guardarBorrador()
+      }
+    } finally {
+      await destruirEditor()
+    }
+  };
+
+  finalizar();
 })
 </script>
+
 <style scoped>
 /* ─── Colores y utilidades ──────────────────────────────── */
 .text-primary {
@@ -1605,5 +2382,45 @@ onBeforeUnmount(() => {
 
 .btn-generar-ia i {
   font-size: 0.85rem;
+}
+
+.editor-wrapper {
+  width: 100%;
+  min-width: 0;
+  min-height: 420px;
+}
+
+.editor-wrapper :deep(#editorjs) {
+  width: 100%;
+  min-height: 420px;
+}
+
+.editor-wrapper :deep(.codex-editor) {
+  width: 100%;
+}
+
+.editor-wrapper :deep(.codex-editor__redactor) {
+  width: 100%;
+  padding-bottom: 100px !important;
+}
+
+.editor-wrapper :deep(.ce-block__content),
+.editor-wrapper :deep(.ce-toolbar__content) {
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.editor-wrapper :deep(.ce-paragraph) {
+  line-height: 1.65;
+}
+
+.editor-wrapper :deep(.cdx-list) {
+  line-height: 1.65;
+}
+
+.editor-wrapper :deep(.cdx-list__item) {
+  margin-bottom: 0.3rem;
 }
 </style>
