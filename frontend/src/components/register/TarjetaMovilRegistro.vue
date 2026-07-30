@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import type { Version } from '../../types/version'
+
 import {
   formatearFecha,
   mapearClaseEstado,
@@ -98,12 +99,6 @@ import {
   obtenerNombreAutor,
 } from '../../utils/formatoRegistro' 
 
-/**
- * Tarjeta de un registro para la vista móvil de "Mis registros" /
- * "Supervisión". Componente de presentación puro: no conoce filtros,
- * paginación ni cómo se cargan los datos — solo recibe un registro y
- * avisa al padre (List.vue) qué acción se pidió.
- */
 defineProps<{
   item: Version
   esVistaSupervision: boolean

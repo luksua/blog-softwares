@@ -53,12 +53,6 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import type { ObservacionPendiente } from '../../api/observaciones'
 
-/**
- * Panel de "revisiones pendientes" (botón flotante + panel lateral vía
- * Teleport). Ahora se alimenta de las observaciones pendientes reales
- * (estado actual de la actualización), no de las notificaciones leídas/
- * no leídas — así el ítem solo desaparece cuando el registro se corrige.
- */
 defineProps<{
     mostrar: boolean
     abierto: boolean
@@ -80,9 +74,6 @@ onMounted(() => document.addEventListener('keydown', onKeydown))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown))
 </script>
 
-<!-- Sin "scoped": el contenido se renderiza vía Teleport a <body>, fuera
-     del árbol de este componente, así que los estilos scoped no le
-     llegarían (ver nota en el resto de componentes de este proyecto). -->
 <style>
 .oc-overlay {
     position: fixed;

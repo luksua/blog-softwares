@@ -55,9 +55,6 @@ class UpdateBlogAdminController extends Controller
             $actualizacion = UpdateBlog::create($datosParaGuardar);
             $this->sincronizarCategorias($actualizacion, $datosValidados['actualizacion_categoria_ids']);
 
-            // 4. (Opcional) GUARDAR LAS RUTAS DE LAS IMÁGENES EXTRA
-            // Nota: Con Editor.js las imágenes ya se suben por otro endpoint, 
-            // pero si mantienes tu lógica manual de arrays, aquí está:
             if ($request->filled('imagenes_quill')) {
                 $rutasImagenes = json_decode($request->imagenes_quill, true);
 
@@ -221,81 +218,6 @@ class UpdateBlogAdminController extends Controller
         // Es buena práctica retornar un error si no llegó la imagen
         return response()->json(['error' => 'No se recibió ninguna imagen.'], 400);
     }
-
-    // public function show($id)
-    // {
-    //     // Buscamos la actualización por su ID. Si no existe, devuelve error 404.
-    //     $actualizacion = UpdateBlog::with(['imagenes', 'categoria', 'categorias'])->findOrFail($id);
-
-    //     return new ActualizacionResource($actualizacion);
-    // }
-
-    // public function inactivar($id)
-    // {
-    //     $actualizacion = UpdateBlog::findOrFail($id);
-
-    //     $actualizacion->actualizacion_estado = 'inactivo';
-    //     $actualizacion->save();
-
-    //     return response()->json([
-    //         'message' => 'Actualización inactivada correctamente'
-    //     ], 200);
-    // }
-
-    // public function activar($id)
-    // {
-    //     $actualizacion = UpdateBlog::findOrFail($id);
-
-    //     $actualizacion->actualizacion_estado = 'publicado';
-    //     $actualizacion->actualizacion_fecha_publicacion = now();
-
-    //     $actualizacion->save();
-
-    //     return response()->json([
-    //         'message' => 'Actualización activada correctamente'
-    //     ], 200);
-    // }
-
-    // public function update(Request $request, $id)
-    // {
-    //     $actualizacion = UpdateBlog::findOrFail($id);
-
-    //     // Agregamos categoria_id y area_servicio_id a las reglas
-    //     $this->prepararCategoriaIds($request);
-
-    //     $data = $request->validate([
-    //         'actualizacion_titulo'            => 'sometimes|required|string|max:255',
-    //         'actualizacion_version'           => 'sometimes|required|string|max:50',
-    //         'actualizacion_imagen_destacada'  => 'sometimes|nullable|string|max:255',
-    //         'actualizacion_resumen'           => 'sometimes|required|string|max:255',
-    //         'actualizacion_estado'            => 'sometimes|required|in:publicado,borrador,revision,inactivo',
-    //         'actualizacion_fecha_publicacion' => 'nullable|date',
-    //         'actualizacion_fecha_creacion'    => 'nullable|date',
-    //         'actualizacion_contenido'         => 'sometimes|required|array',
-    //         'actualizacion_categoria_ids'     => 'sometimes|required|array|min:1|max:3',
-    //         'actualizacion_categoria_ids.*'   => 'required|integer|distinct|exists:act_categorias,categoria_actualizacion_id',
-    //         'actualizacion_area_servicio_id'  => 'sometimes|required|integer',
-    //     ]);
-
-    //     $categoriaIds = $data['actualizacion_categoria_ids'] ?? null;
-    //     unset($data['actualizacion_categoria_ids']);
-
-    //     if (is_array($categoriaIds) && count($categoriaIds) > 0) {
-    //         $data['actualizacion_categoria_id'] = $categoriaIds[0];
-    //     }
-
-    //     $actualizacion->update($data);
-
-    //     if (is_array($categoriaIds)) {
-    //         $this->sincronizarCategorias($actualizacion, $categoriaIds);
-    //     }
-
-    //     return response()->json([
-    //         'message' => 'Actualización editada correctamente',
-    //         'data' => $actualizacion->fresh(['imagenes', 'categoria', 'categorias'])
-    //     ]);
-    // }
-
 
     private function prepararCategoriaIds(Request $request): void
     {

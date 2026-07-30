@@ -117,6 +117,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import '../../styles/notification.css'
 
 import {
     listarNotificaciones,
@@ -126,25 +127,14 @@ import {
 } from '../../api/notificaciones'
 
 const router = useRouter()
-
 const PAGE_SIZE_NOTIFICACIONES = 10
-
 const notificaciones = ref<BlogNotification[]>([])
-
 const notificacionesNoLeidas = ref(0)
-
 const cargandoNotificaciones = ref(false)
-
 const cargandoMasNotificaciones = ref(false)
-
 const paginaNotificaciones = ref(1)
-
 const hayMasNotificaciones = ref(false)
 
-
-/**
- * Cargar primera página de notificaciones
- */
 const cargarNotificaciones = async () => {
     cargandoNotificaciones.value = true
 
@@ -179,9 +169,6 @@ const cargarNotificaciones = async () => {
 }
 
 
-/**
- * Cargar más notificaciones
- */
 const cargarMasNotificaciones = async () => {
     if (
         cargandoMasNotificaciones.value ||
@@ -230,10 +217,6 @@ const cargarMasNotificaciones = async () => {
     }
 }
 
-
-/**
- * Abrir una notificación
- */
 const abrirNotificacion = async (
     notificacion: BlogNotification
 ) => {
@@ -293,10 +276,6 @@ const abrirNotificacion = async (
     }
 }
 
-
-/**
- * Marcar todas como leídas
- */
 const marcarTodasComoLeidas = async () => {
 
     if (notificacionesNoLeidas.value === 0) {
@@ -329,10 +308,6 @@ const marcarTodasComoLeidas = async () => {
     }
 }
 
-
-/**
- * Formatear fecha
- */
 const formatearFechaNotificacion = (
     fecha?: string | null
 ) => {
@@ -354,520 +329,11 @@ const formatearFechaNotificacion = (
     )
 }
 
-
-/**
- * Volver
- */
 const volver = () => {
     router.back()
 }
-
 
 onMounted(() => {
     cargarNotificaciones()
 })
 </script>
-
-<style scoped>
-.notifications-page {
-    min-height: 100%;
-    background: #f5f7fa;
-}
-
-
-/* =========================
-   HEADER
-========================= */
-
-.notifications-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    padding: 16px;
-
-    background: #ffffff;
-
-    border-bottom: 1px solid #e5e7eb;
-
-    position: sticky;
-    top: 0;
-
-    z-index: 10;
-}
-
-
-.back-button,
-.mark-all-button {
-    width: 42px;
-    height: 42px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: 1px solid #dbe3ee;
-
-    border-radius: 12px;
-
-    background: #ffffff;
-
-    color: #025b7d;
-
-    cursor: pointer;
-
-    transition:
-        background 0.2s ease,
-        transform 0.2s ease;
-}
-
-
-.back-button:hover,
-.mark-all-button:hover {
-    background: rgba(7, 126, 157, 0.08);
-
-    transform: translateY(-1px);
-}
-
-
-.back-button i,
-.mark-all-button i {
-    font-size: 1.2rem;
-}
-
-
-.header-title {
-    flex: 1;
-}
-
-
-.header-title h1 {
-    margin: 0;
-
-    color: #0f172a;
-
-    font-size: 1.15rem;
-
-    font-weight: 800;
-}
-
-
-.header-title span {
-    display: block;
-
-    margin-top: 3px;
-
-    color: #64748b;
-
-    font-size: 0.75rem;
-}
-
-
-.header-spacer {
-    width: 42px;
-}
-
-
-/* =========================
-   CONTENIDO
-========================= */
-
-.notifications-content {
-    padding: 16px;
-}
-
-
-/* =========================
-   LISTA
-========================= */
-
-.notifications-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10px;
-}
-
-
-/* =========================
-   TARJETA
-========================= */
-
-.notification-card {
-    width: 100%;
-
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 12px;
-
-    padding: 15px;
-
-    border: 1px solid #e2e8f0;
-
-    border-radius: 16px;
-
-    background: #ffffff;
-
-    text-align: left;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 4px 12px rgba(15, 23, 42, 0.04);
-
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        background 0.2s ease;
-}
-
-
-.notification-card:hover {
-    transform: translateY(-1px);
-
-    box-shadow:
-        0 8px 20px rgba(15, 23, 42, 0.08);
-}
-
-
-.notification-card.unread {
-    background: #eef9fc;
-
-    border-color:
-        rgba(7, 126, 157, 0.18);
-}
-
-
-/* =========================
-   ICONO
-========================= */
-
-.notification-icon {
-    flex-shrink: 0;
-
-    width: 42px;
-    height: 42px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    border-radius: 12px;
-
-    background: #e2e8f0;
-
-    color: #64748b;
-}
-
-
-.notification-icon.unread {
-    background: rgba(7, 126, 157, 0.12);
-
-    color: #077e9d;
-}
-
-
-.notification-icon i {
-    font-size: 1rem;
-}
-
-
-/* =========================
-   INFORMACIÓN
-========================= */
-
-.notification-info {
-    flex: 1;
-
-    min-width: 0;
-}
-
-
-.notification-top {
-    display: flex;
-
-    align-items: flex-start;
-
-    gap: 8px;
-}
-
-
-.notification-top h3 {
-    flex: 1;
-
-    margin: 0;
-
-    color: #0f172a;
-
-    font-size: 0.9rem;
-
-    font-weight: 800;
-
-    line-height: 1.3;
-}
-
-
-.notification-info p {
-    margin: 5px 0 8px;
-
-    color: #475569;
-
-    font-size: 0.8rem;
-
-    line-height: 1.4;
-}
-
-
-.notification-date {
-    display: flex;
-
-    align-items: center;
-
-    gap: 5px;
-
-    color: #94a3b8;
-
-    font-size: 0.7rem;
-}
-
-
-.notification-date i {
-    font-size: 0.7rem;
-}
-
-
-/* =========================
-   PUNTO NO LEÍDO
-========================= */
-
-.unread-dot {
-    flex-shrink: 0;
-
-    width: 8px;
-    height: 8px;
-
-    margin-top: 4px;
-
-    border-radius: 50%;
-
-    background: #dc2626;
-}
-
-
-/* =========================
-   FLECHA
-========================= */
-
-.notification-arrow {
-    flex-shrink: 0;
-
-    margin-top: 12px;
-
-    color: #94a3b8;
-
-    font-size: 0.85rem;
-}
-
-
-/* =========================
-   CARGAR MÁS
-========================= */
-
-.load-more-button {
-    width: 100%;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 8px;
-
-    margin-top: 6px;
-
-    padding: 13px 16px;
-
-    border: 1px solid rgba(7, 126, 157, 0.25);
-
-    border-radius: 12px;
-
-    background: #ffffff;
-
-    color: #077e9d;
-
-    font-size: 0.85rem;
-
-    font-weight: 700;
-
-    cursor: pointer;
-}
-
-
-.load-more-button:hover {
-    background:
-        rgba(7, 126, 157, 0.06);
-}
-
-
-.load-more-button:disabled {
-    opacity: 0.6;
-
-    cursor: not-allowed;
-}
-
-
-/* =========================
-   ESTADOS
-========================= */
-
-.notification-state {
-    min-height: 60vh;
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-
-    justify-content: center;
-
-    text-align: center;
-
-    color: #64748b;
-}
-
-
-.empty-icon {
-    width: 70px;
-    height: 70px;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    margin-bottom: 16px;
-
-    border-radius: 50%;
-
-    background:
-        rgba(7, 126, 157, 0.08);
-
-    color: #077e9d;
-}
-
-
-.empty-icon i {
-    font-size: 1.8rem;
-}
-
-
-.empty-state h2 {
-    margin: 0;
-
-    color: #0f172a;
-
-    font-size: 1.05rem;
-}
-
-
-.empty-state p {
-    max-width: 280px;
-
-    margin: 8px 0 0;
-
-    font-size: 0.8rem;
-
-    line-height: 1.5;
-}
-
-
-/* =========================
-   SPINNERS
-========================= */
-
-.loading-spinner,
-.small-spinner {
-    border: 3px solid rgba(7, 126, 157, 0.15);
-
-    border-top-color: #077e9d;
-
-    border-radius: 50%;
-
-    animation:
-        spin 0.8s linear infinite;
-}
-
-
-.loading-spinner {
-    width: 36px;
-    height: 36px;
-
-    margin-bottom: 12px;
-}
-
-
-.small-spinner {
-    display: inline-block;
-
-    width: 14px;
-    height: 14px;
-
-    border-width: 2px;
-}
-
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-
-/* =========================
-   RESPONSIVE
-========================= */
-
-@media (min-width: 769px) {
-    .notifications-page {
-        max-width: 700px;
-
-        margin: 0 auto;
-    }
-}
-
-
-@media (max-width: 360px) {
-
-    .notifications-content {
-        padding: 12px;
-    }
-
-    .notification-card {
-        padding: 12px;
-
-        gap: 9px;
-    }
-
-    .notification-icon {
-        width: 38px;
-        height: 38px;
-    }
-
-    .notification-top h3 {
-        font-size: 0.82rem;
-    }
-
-    .notification-info p {
-        font-size: 0.75rem;
-    }
-
-}
-</style>

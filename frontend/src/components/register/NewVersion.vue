@@ -303,7 +303,8 @@ import type {
 
 import api from '../../api/api'
 import type { NewVersion } from '../../types/newVersion'
-
+import type { DatosIniciales } from '../../types/datos'
+import type { BorradorRegistro } from '../../types/datos'
 import { useAreasStore } from '../../stores/areas'
 import { useCategoriasStore } from '../../stores/categorias'
 
@@ -316,35 +317,6 @@ import {
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada } from '../../composables/useImagenDestacada'
 import { useResumenIA } from '../../composables/useResumenIA'
-
-import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
-
-/* =========================================================
- * TIPOS
- * =======================================================*/
-
-type DatosIniciales = {
-  titulo?: string
-  version?: string
-  resumen?: string
-  area_servicio_id?: number | string
-  actualizacion_categoria_ids?: number[]
-  contenidoBlocks?: OutputBlockData[]
-}
-
-type BorradorRegistro = {
-  titulo?: string
-  version?: string
-  resumen?: string
-  area_servicio_id?: number | string
-  actualizacion_categoria_ids?: number[]
-  actualizacion_categoria_id?: number | number[]
-  estado?: string
-  fecha_publicacion?: string
-  fecha_programada?: string
-  editorBlocks?: OutputBlockData[]
-  guardadoEn?: string
-}
 
 /* =========================================================
  * PROPS Y EVENTOS
@@ -507,21 +479,12 @@ const {
 const categoriaSelectRef = wrapperRef
 void categoriaSelectRef
 
-/* =========================================================
- * EDITORJS
- * =======================================================*/
-
 const {
   editor: editorInstance,
   iniciar: iniciarEditor,
   destruir: destruirEditor,
 } = useEditorJS()
 
-/**
- * Solamente corrige posibles nombres antiguos de herramientas.
- *
- * No transforma data.items, data.style, meta, tunes ni imágenes.
- */
 const aliasTiposEditor: Record<string, string> = {
   List: 'list',
   nestedList: 'list',
@@ -947,10 +910,6 @@ const programarAutosave = (): void => {
     return
   }
 
-  /*
-   * Si el usuario vuelve a escribir después
-   * de descartar, se habilita nuevamente el guardado.
-   */
   omitirGuardadoAlDesmontar.value =
     false
 

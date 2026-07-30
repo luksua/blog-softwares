@@ -201,11 +201,7 @@ class BlogDashboardController extends Controller
                 'actualizacion.actualizacion_area_servicio_id'
             );
 
-        /*
- * Para un administrador se consideran todos los autores.
- * Para supervisores o usuarios normales, solamente los autores
- * pertenecientes a las áreas incluidas en su alcance.
- */
+
         if ($alcance['tipo'] !== 'global') {
             if (empty($areasAutores)) {
                 $queryAreasMencionadas->whereRaw('1 = 0');

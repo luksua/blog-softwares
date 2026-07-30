@@ -351,7 +351,6 @@ import { useEditorJS } from '../../composables/useEditorJS'
 import { useCategoriaSelector, normalizarCategoriaIds } from '../../composables/useCategoriaSelector'
 import { useFechaProgramada } from '../../composables/useFechaProgramada'
 import { useImagenDestacada, resolverUrlImagen } from '../../composables/useImagenDestacada'
-import VistaPreviaRegistro from './VistaPreviaRegistro.vue'
 import { toast } from 'vue-sonner'
 import { useResumenIA } from '../../composables/useResumenIA'
 

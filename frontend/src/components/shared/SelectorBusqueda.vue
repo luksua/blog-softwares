@@ -63,13 +63,7 @@ export interface OpcionSelector {
     icono?: string
 }
 
-/**
- * Selector desplegable con búsqueda, usado para filtros de Área y
- * Categoría. Antes esta misma pieza (trigger + dropdown + búsqueda +
- * opción "Todas") estaba copiada 4 veces dentro de List.vue (versión
- * móvil y desktop, para área y categoría), cada una con su propio CSS
- * repetido. Ahora vive una sola vez acá, con su propio v-model.
- */
+
 const props = withDefaults(defineProps<{
     /** ID seleccionado. Usa '' o null para "sin selección". */
     modelValue: number | string | null
@@ -114,13 +108,6 @@ const opcionSeleccionada = computed(() => {
     return props.opciones.find((o) => esSeleccionada(o.id)) || null
 })
 
-/**
- * Quita tildes/diacríticos para comparar sin acentos (p. ej. "programacion"
- * debe encontrar y resaltar "Programación"). Al pasar por NFD, cada letra
- * acentuada (á, é, í, ó, ú, ñ...) se separa en su letra base + una marca
- * combinante aparte, así que al remover esas marcas el resultado conserva
- * la misma cantidad de caracteres que el texto original, letra por letra.
- */
 const normalizarTexto = (texto: string) =>
     texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 
@@ -145,8 +132,6 @@ const resaltarCoincidencia = (nombre: string) => {
     const nombreNormalizado = normalizarTexto(nombre.toLowerCase())
     const queryNormalizado = normalizarTexto(query.toLowerCase())
 
-    // Salvaguarda: si por algún carácter especial la normalización no conserva
-    // la longitud original, evitamos desalinear los índices y no resaltamos.
     if (nombreNormalizado.length !== nombre.length || !queryNormalizado) {
         return escaparHtml(nombre)
     }

@@ -20,8 +20,6 @@ withDefaults(
         eyebrow: string
         titulo: string
         descripcion?: string
-        /** Ocupa todo el ancho del contenedor padre en vez de su propio max-width.
-         *  Úsalo cuando la página ya tiene su propio contenedor con max-width (p. ej. Dashboard). */
         anchoCompleto?: boolean
     }>(),
     {
@@ -31,15 +29,7 @@ withDefaults(
 </script>
 
 <style scoped>
-/* ============================================================
-   Hero de cabecera de página
-   ------------------------------------------------------------
-   Header reutilizado en "Mis registros", "Supervisión",
-   "Dashboard", "Actualizaciones" y "Guardados". Antes vivía
-   copiado en cada componente con pequeñas variaciones de
-   markup (por eso no se veían iguales); ahora es un único
-   componente con slots para descripción y acciones.
-   ============================================================ */
+
 .page-hero {
     display: flex;
     justify-content: space-between;

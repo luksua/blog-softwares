@@ -133,14 +133,6 @@ class UpdateBlogController extends Controller
                     ->orderBy('actualizacion_fecha_creacion', 'desc')
                     ->orderBy('id', 'desc'),
             };
-            // } else {
-            //     match ($orden) {
-            //         'antiguos' => $query->oldest('actualizacion_fecha_publicacion'),
-            //         'az' => $query->orderBy('actualizacion_titulo', 'asc'),
-            //         'za' => $query->orderBy('actualizacion_titulo', 'desc'),
-            //         default => $query->latest('actualizacion_fecha_publicacion'),
-            //     };
-            // }
         } elseif ($vista === 'supervision') {
             /*
 
@@ -242,34 +234,12 @@ class UpdateBlogController extends Controller
         if ($request->filled('fecha_hasta')) {
             $query->whereDate($campoFecha, '<=', $request->input('fecha_hasta'));
         }
-
-        // if ($request->filled('fecha_desde')) {
-        //     $query->whereDate(
-        //         'actualizacion_fecha_publicacion',
-        //         '>=',
-        //         $request->input('fecha_desde')
-        //     );
-        // }
-
-        // if ($request->filled('fecha_hasta')) {
-        //     $query->whereDate(
-        //         'actualizacion_fecha_publicacion',
-        //         '<=',
-        //         $request->input('fecha_hasta')
-        //     );
-        // }
-
         match ($request->input('orden', 'recientes')) {
             'antiguos' => $query->oldest('actualizacion_fecha_publicacion'),
             'az' => $query->orderBy('actualizacion_titulo', 'asc'),
             'za' => $query->orderBy('actualizacion_titulo', 'desc'),
             default => $query->latest('actualizacion_fecha_publicacion'),
         };
-
-        // if ($query->actualizacion_estado === 'publicado') {
-        //     $query->increment('actualizacion_lecturas');
-        //     $query->refresh();
-        // }
 
         $perPage = (int) $request->input('per_page', 12);
 

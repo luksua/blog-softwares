@@ -274,66 +274,6 @@
           </div>
         </article>
 
-        <!-- Registros por área -->
-        <!--  <article class="dashboard-panel">
-          <div class="panel-header">
-            <div>
-              <h2>
-                <i class="bi bi-diagram-3-fill"></i>
-                Registros por área
-              </h2>
-
-              <p>Cantidad de registros escritos y pendientes de revisión por área.</p>
-            </div>
-          </div>
-
-          <div v-if="dashboard.registros_por_area.length" class="area-list scroll-area">
-            <div
-              v-for="area in dashboard.registros_por_area"
-              :key="area.area_servicio_id || area.area"
-              class="area-item"
-            >
-              <div class="area-info">
-                <span class="area-icon">
-                  <i class="bi bi-building-fill"></i>
-                </span>
-
-                <div class="area-text">
-                  <strong :title="area.area">
-                    {{ area.area }}
-                  </strong>
-
-                  <small>
-                    {{ formatearNumero(area.total) }} escritos ·
-                    {{ formatearNumero(getPendientesArea(area)) }} por revisar
-                  </small>
-                </div>
-              </div>
-
-              <div class="area-stats">
-                <span class="area-stat total" title="Registros escritos">
-                  <i class="bi bi-file-earmark-text-fill"></i>
-                  {{ formatearNumero(area.total) }}
-                </span>
-
-                <span class="area-stat revision" title="Pendientes por revisar">
-                  <i class="bi bi-hourglass-split"></i>
-                  {{ formatearNumero(getPendientesArea(area)) }}
-                </span>
-              </div>
-
-              <div class="mini-bar">
-                <span :style="{ width: `${getPorcentaje(area.total, maxArea)}%` }"></span>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="empty-panel">
-            <i class="bi bi-building"></i>
-            <p>No hay datos por área.</p>
-          </div>
-        </article> -->
-
         <!-- Usuarios con más registros -->
         <article class="dashboard-panel">
           <div class="panel-header">
@@ -503,81 +443,8 @@
 import { computed, onMounted, ref } from 'vue'
 import api from '../../api/api'
 import PageHero from '../../components/shared/PageHero.vue'
-
-interface AlcanceDashboard {
-  tipo: string
-  areas: number[]
-  descripcion: string
-}
-
-interface ResumenDashboard {
-  total_registros: number
-  publicados: number
-  revision: number
-  borradores: number
-  programados: number
-  inactivos: number
-}
-
-interface EmpleadoMasActivo {
-  usuario_id: number
-  usuario: string
-  total_visualizaciones: number
-  registros_vistos: number
-  ultima_visualizacion: string | null
-}
-
-interface RegistroPorEstado {
-  estado: string
-  total: number
-}
-
-interface AreaMasMencionada {
-  area_servicio_id: number | null
-  area: string
-  total: number
-  autores: number
-}
-
-interface RegistroPorArea {
-  area_servicio_id: number | null
-  area: string
-  total: number
-  pendientes_revision?: number
-}
-
-interface UsuarioMasRegistros {
-  usuario_id: number
-  usuario: string
-  total: number
-}
-
-interface RegistroMasLeido {
-  id: number
-  titulo: string
-  lecturas: number
-  area_servicio_id: number | null
-}
-
-interface BlogDashboardData {
-  alcance: AlcanceDashboard
-  resumen: ResumenDashboard
-  registros_mas_leidos_area: RegistroMasLeido[]
-  usuarios_mas_registros: UsuarioMasRegistros[]
-  registros_por_estado: RegistroPorEstado[]
-  registros_por_area: RegistroPorArea[]
-  programados_proximos: RegistroProgramado[]
-  empleados_mas_activos: EmpleadoMasActivo[]
-  lecturas_disponibles: boolean
-  areas_mas_mencionadas: AreaMasMencionada[]
-}
-
-interface RegistroProgramado {
-  id: number
-  titulo: string
-  fecha_publicacion: string
-  area: string
-}
+import type { BlogDashboardData } from '../../types/dashboard'
+import type { RegistroProgramado } from '../../types/dashboard'
 
 const dashboard = ref<BlogDashboardData | null>(null)
 const cargando = ref(false)

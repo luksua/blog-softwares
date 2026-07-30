@@ -164,3 +164,123 @@ p {
   background-color: #f2f4f7;
   color: #5f6671;
 }
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+}
+
+.filtro-input {
+  height: 42px;
+  border: 1px solid #d7deea;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 0.95rem;
+  color: #374151;
+  background: #fff;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.filtro-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(7, 126, 157, 0.12);
+}
+
+.filtro-input:disabled {
+  background: #f9fafb;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+  padding-right: 78px;
+}
+
+.btn-limpiar-busqueda,
+.btn-ejecutar-busqueda {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-limpiar-busqueda {
+  right: 42px;
+}
+
+.btn-ejecutar-busqueda {
+  right: 8px;
+  background: rgba(7, 126, 157, 0.08);
+  color: var(--primary);
+}
+
+.btn-limpiar-busqueda:hover,
+.btn-ejecutar-busqueda:hover {
+  background: rgba(7, 126, 157, 0.14);
+  color: var(--primary);
+}
+
+.input-busqueda-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filtro-busqueda .filtro-input {
+  padding-left: 34px;
+  padding-right: 78px;
+}
+
+.btn-limpiar-busqueda,
+.btn-ejecutar-busqueda {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-limpiar-busqueda {
+  right: 42px;
+}
+
+.btn-ejecutar-busqueda {
+  right: 8px;
+  background: rgba(7, 126, 157, 0.08);
+  color: var(--primary);
+}
+
+.btn-limpiar-busqueda:hover,
+.btn-ejecutar-busqueda:hover {
+  background: rgba(7, 126, 157, 0.14);
+  color: var(--primary);
+}

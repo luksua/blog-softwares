@@ -49,6 +49,9 @@ import {
 import List from '../../components/register/List.vue'
 import Store from '../../components/register/NewVersion.vue'
 import PageHero from '../../components/shared/PageHero.vue'
+import type { DatosDuplicado } from '../../types/datos'
+import type { DatosDuplicadoEntrada } from '../../types/datos'
+
 import type {
   OutputBlockData,
 } from '@editorjs/editorjs'
@@ -70,44 +73,11 @@ const esVistaSupervision = computed(
 )
 
 /* =========================================================
- * TIPOS
- * =======================================================*/
-
-type DatosDuplicadoEntrada = {
-  titulo?: string
-  resumen?: string
-  area_servicio_id?: number | string
-  actualizacion_categoria_ids?: number[]
-  contenidoBlocks?: unknown
-}
-
-type DatosDuplicado = {
-  titulo?: string
-  resumen?: string
-  area_servicio_id?: number | string
-  actualizacion_categoria_ids?: number[]
-  contenidoBlocks?: OutputBlockData[]
-}
-
-/* =========================================================
  * ESTADO DEL FORMULARIO
  * =======================================================*/
 const datosDuplicado = ref<DatosDuplicado | null>(null)
 const claveFormularioNuevo = ref(0)
 const mostrarFormulario = ref(false)
-
-/*
- * Debe coincidir exactamente con la clave usada en
- * tools dentro de NewVersion.vue.
- *
- * Ejemplo:
- *
- * tools: {
- *   list: {
- *     class: EditorjsList
- *   }
- * }
- */
 
 /* =========================================================
  * PARSEO SEGURO
@@ -115,10 +85,6 @@ const mostrarFormulario = ref(false)
 const parsearJsonSeguro = (valor: unknown): unknown => {
   let resultado = valor
 
-  /*
-   * Permite procesar contenido normal o doblemente
-   * convertido mediante JSON.stringify().
-   */
   for (let intento = 0; intento < 3; intento++) {
     if (typeof resultado !== 'string') {
       break
@@ -151,26 +117,12 @@ const extraerBlocks = (
 ): OutputBlockData[] => {
   const contenido = parsearJsonSeguro(valor)
 
-  /*
-   * Caso 1:
-   * La API ya devuelve directamente los bloques.
-   */
   if (Array.isArray(contenido)) {
     return structuredClone(
       contenido,
     ) as OutputBlockData[]
   }
 
-  /*
-   * Caso 2:
-   * La API devuelve el OutputData completo:
-   *
-   * {
-   *   time: 123,
-   *   blocks: [],
-   *   version: "..."
-   * }
-   */
   if (
     contenido &&
     typeof contenido === 'object'
@@ -182,10 +134,6 @@ const extraerBlocks = (
       return extraerBlocks(objeto.blocks)
     }
 
-    /*
-     * Algunos endpoints pueden envolver el contenido
-     * dentro de data o contenido.
-     */
     if ('data' in objeto) {
       return extraerBlocks(objeto.data)
     }
@@ -208,11 +156,6 @@ const extraerBlocks = (
 
   return []
 }
-
-
-/* =========================================================
- * NORMALIZACIÓN DE LISTAS
- * =======================================================*/
 
 const normalizarDatosDuplicado = (
   payload: DatosDuplicadoEntrada,
@@ -262,11 +205,6 @@ const normalizarDatosDuplicado = (
             ...payload.actualizacion_categoria_ids,
           ]
         : [],
-
-    /*
-     * Se envía exactamente el JSON original.
-     * No se modifica style, items, meta, tunes ni id.
-     */
     contenidoBlocks: bloques,
   }
 }
@@ -310,10 +248,6 @@ const abrirModalDuplicado = async (
   await mostrarModalFormulario()
 }
 
-/*
- * Este evento se ejecuta cuando el modal ya terminó de abrirse.
- * Solo en ese momento se monta NewVersion.vue y se crea EditorJS.
- */
 const manejarModalMostrado = async () => {
   claveFormularioNuevo.value++
   mostrarFormulario.value = true
@@ -321,10 +255,6 @@ const manejarModalMostrado = async () => {
   await nextTick()
 }
 
-/*
- * Al cerrar se desmonta NewVersion.vue para que EditorJS
- * destruya su instancia y no deje barras o listeners anteriores.
- */
 const manejarModalOculto = () => {
   mostrarFormulario.value = false
   datosDuplicado.value = null

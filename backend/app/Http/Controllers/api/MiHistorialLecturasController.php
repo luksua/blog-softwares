@@ -28,10 +28,7 @@ class MiHistorialLecturasController extends Controller
             ->where('usuario_id', $usuarioId)
             ->groupBy('actualizacion_id');
 
-        /*
-         * UpdateBlog::query() conserva los scopes normales del blog.
-         * Así no se muestran publicaciones que el usuario ya no pueda abrir.
-         */
+
         $historial = UpdateBlog::query()
             ->joinSub(
                 $ultimasLecturas,
