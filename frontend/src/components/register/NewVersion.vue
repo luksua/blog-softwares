@@ -1768,33 +1768,13 @@ onBeforeUnmount(() => {
   min-height: 0;
 }
 
-/* ─── Columna del editor ────────────────────────────────── */
-.editor-column {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.editor-wrapper {
-  flex: 1;
-  min-height: 0;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 20px 24px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.editor-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(7, 126, 157, 0.12);
-}
-
 /* ─── Editor.js interno ────────────────────────────────── */
+:deep(#editorjs) {
+  width: 100%;
+}
+
 :deep(.codex-editor) {
+  width: 100%;
   padding: 0;
 }
 
@@ -1806,12 +1786,26 @@ onBeforeUnmount(() => {
 :deep(.ce-block__content),
 :deep(.ce-toolbar__content) {
   max-width: 100%;
+  margin-left: 40px;
+  margin-right: 0;
   padding: 0;
 }
 
 :deep(.ce-block__content) {
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+:deep(.ce-paragraph) {
+  line-height: 1.65;
+}
+
+:deep(.cdx-list) {
+  line-height: 1.65;
+}
+
+:deep(.cdx-list__item) {
+  margin-bottom: 0.3rem;
 }
 
 /* ─── Scrollbar del editor ────────────────────────────── */
@@ -2384,43 +2378,4 @@ onBeforeUnmount(() => {
   font-size: 0.85rem;
 }
 
-.editor-wrapper {
-  width: 100%;
-  min-width: 0;
-  min-height: 420px;
-}
-
-.editor-wrapper :deep(#editorjs) {
-  width: 100%;
-  min-height: 420px;
-}
-
-.editor-wrapper :deep(.codex-editor) {
-  width: 100%;
-}
-
-.editor-wrapper :deep(.codex-editor__redactor) {
-  width: 100%;
-  padding-bottom: 100px !important;
-}
-
-.editor-wrapper :deep(.ce-block__content),
-.editor-wrapper :deep(.ce-toolbar__content) {
-  width: 100%;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.editor-wrapper :deep(.ce-paragraph) {
-  line-height: 1.65;
-}
-
-.editor-wrapper :deep(.cdx-list) {
-  line-height: 1.65;
-}
-
-.editor-wrapper :deep(.cdx-list__item) {
-  margin-bottom: 0.3rem;
-}
 </style>
