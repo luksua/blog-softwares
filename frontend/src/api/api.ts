@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { toast } from 'vue-sonner'
+import { demoAdapter } from './demoAdapter'
 
 export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-
-// Esta URL debe apuntar al menú/launcher de la intranet, no a /sso-login sin firma.
-// La intranet es quien conoce el usuario real y genera user, ts y sig.
 export const INTRANET_ENTRY_URL = import.meta.env.VITE_INTRANET_ENTRY_URL || ''
+
+// Modo Demo activado para portafolio (despliegue estático sin necesidad de backend MySQL/Laravel)
+export const IS_DEMO_MODE = import.meta.env.VITE_FORCE_REAL_BACKEND !== 'true'
 
 const api = axios.create({
   baseURL: `${BACKEND_URL}/api`,
@@ -15,17 +16,23 @@ const api = axios.create({
     Accept: 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
   },
+  adapter: IS_DEMO_MODE ? demoAdapter : undefined,
 })
 
 export async function ensureCsrfCookie() {
-  await axios.get(`${BACKEND_URL}/sanctum/csrf-cookie`, {
-    withCredentials: true,
-    withXSRFToken: true,
-    headers: {
-      Accept: 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-  })
+  if (IS_DEMO_MODE) return
+  try {
+    await axios.get(`${BACKEND_URL}/sanctum/csrf-cookie`, {
+      withCredentials: true,
+      withXSRFToken: true,
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+  } catch {
+    // Silenciar error en modo demo
+  }
 }
 
 api.interceptors.response.use(

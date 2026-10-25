@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import api, { INTRANET_ENTRY_URL, ensureCsrfCookie } from '../api/api.ts'
+import { cargarAuth, USUARIO_DEMO } from '../api/auth'
 
 import MainLayout from '../layouts/MainLayout.vue'
 import HomePage from '../features/employee/HomePage.vue'
@@ -204,90 +204,6 @@ const router = createRouter({
   ],
 })
 
-let authVerificado: any = null
-let intentoMeRealizado = false
-
-function normalizarPermisos(valor: any): string[] {
-  if (!Array.isArray(valor)) {
-    return []
-  }
-
-  return valor
-    .map((item: any) => {
-      if (typeof item === 'string') return item
-      if (item?.permiso_nombre) return item.permiso_nombre
-      if (item?.nombre) return item.nombre
-      return ''
-    })
-    .filter(Boolean)
-}
-
-function enviarAIntranet() {
-  localStorage.removeItem('user_data')
-  localStorage.removeItem('auth_token')
-
-  if (INTRANET_ENTRY_URL) {
-    window.location.href = INTRANET_ENTRY_URL
-    return
-  }
-
-  document.body.innerHTML = `
-    <main style="font-family: Arial, sans-serif; padding: 32px;">
-      <h1>Sesión no iniciada</h1>
-      <p>Este sistema no tiene inicio de sesión propio. Debes ingresar desde el menú de la intranet.</p>
-    </main>
-  `
-}
-
-async function cargarAuth() {
-  if (authVerificado) {
-    return authVerificado
-  }
-
-  if (intentoMeRealizado) {
-    return null
-  }
-
-  intentoMeRealizado = true
-
-  try {
-    await ensureCsrfCookie()
-
-    const response = await api.get('/me')
-
-    const data = response.data
-    const usuario = data.usuario || data.user || data
-    const permisos = normalizarPermisos(data.permisos || usuario?.permisos || [])
-
-    const grupo = String(usuario.usuario_grupo || '').toUpperCase()
-    const esAdmin = data.es_admin ?? grupo === 'ADMIN'
-    const puedeSupervisarArea =
-      data.puede_supervisar_area ||
-      data.tipo_usuario === 'admin' ||
-      usuario.tipo_usuario === 'admin' ||
-      permisos.includes('blog.supervisar_area')
-
-    authVerificado = {
-      usuario,
-      permisos,
-      es_admin: esAdmin,
-      puede_supervisar_area: puedeSupervisarArea,
-    }
-
-    localStorage.setItem('user_data', JSON.stringify(usuario))
-
-    return authVerificado
-  } catch (error) {
-    console.error(error)
-
-    authVerificado = null
-    localStorage.removeItem('user_data')
-    localStorage.removeItem('auth_token')
-
-    return null
-  }
-}
-
 router.beforeEach(async (to) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const requiresSupervisor = to.matched.some(record => record.meta.requiresSupervisor)
@@ -296,11 +212,10 @@ router.beforeEach(async (to) => {
     return true
   }
 
-  const auth = await cargarAuth()
+  let auth = await cargarAuth()
 
   if (!auth?.usuario) {
-    enviarAIntranet()
-    return false
+    auth = USUARIO_DEMO
   }
 
   if (requiresSupervisor && !auth.es_admin && !auth.puede_supervisar_area) {

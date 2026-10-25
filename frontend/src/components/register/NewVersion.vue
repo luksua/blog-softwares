@@ -403,12 +403,20 @@ const { areas: listaAreas } =
 const { categorias: listaCategorias } =
   storeToRefs(categoriasStore)
 
+const ESTADOS_PREDETERMINADOS = [
+  { id: 'borrador', nombre: 'Borrador' },
+  { id: 'revision', nombre: 'Revisión' },
+  { id: 'publicado', nombre: 'Publicado' },
+  { id: 'programado', nombre: 'Programado' },
+  { id: 'inactivo', nombre: 'Inactivo' },
+]
+
 const listaEstados = ref<
   Array<{
     id: string
     nombre: string
   }>
->([])
+>(ESTADOS_PREDETERMINADOS)
 
 /* =========================================================
  * IMAGEN DESTACADA
@@ -1430,8 +1438,18 @@ onMounted(async () => {
         '/estados-actualizacion',
       )
 
-    listaEstados.value =
-      respuesta.data.data ?? []
+    const raw = respuesta.data?.data ?? respuesta.data ?? []
+    if (Array.isArray(raw) && raw.length > 0) {
+      listaEstados.value = raw.map((item: any) => {
+        if (typeof item === 'string') {
+          return { id: item, nombre: item.charAt(0).toUpperCase() + item.slice(1) }
+        }
+        return {
+          id: item.id ?? item.estado ?? item.slug ?? '',
+          nombre: item.nombre ?? item.label ?? item.id ?? '',
+        }
+      })
+    }
   } catch (error) {
     console.error(
       'Error al cargar los estados:',

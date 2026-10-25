@@ -119,8 +119,6 @@
             </div>
 
             <div v-else class="relacionados-carousel">
-              
-
               <div ref="relacionadosTrackRef" class="relacionados-footer-grid">
                 <article v-for="item in relacionados" :key="item.id" class="tarjeta-changelog" tabindex="0"
                   @click="irA(item.id)" @keyup.enter="irA(item.id)">

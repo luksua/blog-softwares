@@ -540,8 +540,13 @@ const cargarListas = async () => {
 }
 
 const initEditor = async (initialData: any = {}) => {
+  const holderEl = editorHolder.value || document.getElementById('editorjs')
+  if (!holderEl) {
+    console.warn('Contenedor de EditorJS no encontrado')
+    return
+  }
   await iniciarEditor({
-    holder: editorHolder.value!,
+    holder: holderEl,
     data: initialData,
     headerLevels: [2, 3, 4],
   })
@@ -569,6 +574,8 @@ const cargarRegistro = async () => {
   previewImagen.value = null
   pestanaActiva.value = 'editor'
   contenidoPreviewHtml.value = ''
+
+  let editorData: any = { blocks: [] }
 
   try {
     const respuesta = await api.get(`/actualizaciones/${props.id}`)
@@ -599,23 +606,37 @@ const cargarRegistro = async () => {
 
     const contenidoBD = data.actualizacion_contenido
 
-    let editorData = {}
     if (contenidoBD) {
       try {
-        editorData = typeof contenidoBD === 'string'
+        const parseado = typeof contenidoBD === 'string'
           ? JSON.parse(contenidoBD)
           : contenidoBD
+
+        if (Array.isArray(parseado)) {
+          editorData = { blocks: parseado }
+        } else if (parseado && typeof parseado === 'object') {
+          if (Array.isArray(parseado.blocks)) {
+            editorData = parseado
+          } else if (parseado.data && Array.isArray(parseado.data.blocks)) {
+            editorData = parseado.data
+          } else if (Array.isArray(parseado.data)) {
+            editorData = { blocks: parseado.data }
+          }
+        }
       } catch (e) {
         console.error('Error al parsear el JSON del editor:', e)
       }
     }
-
-    await nextTick()
-    await initEditor(editorData)
   } catch (error) {
     console.error('Error al cargar registro:', error)
   } finally {
     cargando.value = false
+    await nextTick()
+    try {
+      await initEditor(editorData)
+    } catch (e) {
+      console.error('Error al inicializar editor con contenido:', e)
+    }
     await nextTick()
     enfocarTitulo()
   }

@@ -49,6 +49,15 @@
             <span class="nav-text">Guardados</span>
           </router-link>
         </li>
+        <li>
+          <router-link :to="{ name: 'notificaciones' }" class="nav-item" @click="cerrarSidebarMovil">
+            <i class="bi bi-bell-fill nav-icon"></i>
+            <span class="nav-text">Notificaciones</span>
+            <span v-if="notificacionesNoLeidas > 0" class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.75rem;">
+              {{ etiquetaNotificacionesNoLeidas }}
+            </span>
+          </router-link>
+        </li>
       </ul>
     </aside>
 
@@ -148,11 +157,19 @@
               </section>
             </div>
 
+            <!-- Selector de Rol Demo -->
+            <div class="demo-role-badge" @click="cambiarRolDemo" :title="isAdmin ? 'Modo actual: Administrador. Haz clic para probar como Lector / Empleado' : 'Modo actual: Lector. Haz clic para probar como Administrador'">
+              <span class="demo-pill" :class="isAdmin ? 'pill-admin' : 'pill-empleado'">
+                <i class="bi" :class="isAdmin ? 'bi-shield-check' : 'bi-person-badge'"></i>
+                {{ isAdmin ? 'Demo: Admin' : 'Demo: Lector' }}
+              </span>
+            </div>
+
             <!-- Botón de Ayuda -->
 
             <HelpButton />
 
-            <button class="btn-logout" type="button" @click="logout">
+            <button class="btn-logout" type="button" @click="logout" title="Cerrar sesión demo">
               <i class="bi bi-door-open"></i><i class="bi bi-arrow-right"></i>
             </button>
           </template>
@@ -176,6 +193,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api, { INTRANET_ENTRY_URL } from '../api/api'
 import { cargarAuth, limpiarAuthCache } from '../api/auth'
+import { toast } from 'vue-sonner'
 import HelpButton from '../components/HelpButton.vue'
 import {
   listarNotificaciones,
@@ -185,6 +203,23 @@ import {
 } from '../api/notificaciones'
 
 const puedeSupervisarArea = ref(false)
+
+const cambiarRolDemo = () => {
+  if (isAdmin.value) {
+    isAdmin.value = false
+    isEmpleado.value = true
+    puedeSupervisarArea.value = false
+    toast.info('Modo Demo: Vista de Empleado / Lector activada.')
+    if (route.name === 'dashboard' || route.name === 'supervision' || route.name === 'actualizaciones-crear') {
+      router.push({ name: 'inicio' })
+    }
+  } else {
+    isAdmin.value = true
+    isEmpleado.value = false
+    puedeSupervisarArea.value = true
+    toast.success('Modo Demo: Vista de Administrador y Supervisor activada.')
+  }
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -1054,8 +1089,7 @@ onUnmounted(() => {
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  padding: 10px;
-  padding: 11111040;
+  padding: 4px 8px;
 }
 
 .notification-empty {
@@ -1463,5 +1497,50 @@ onUnmounted(() => {
 /* Evitar scroll del body cuando el drawer está abierto */
 body.no-scroll {
   overflow: hidden;
+}
+
+/* Selector de Rol Demo en Navbar */
+.demo-role-badge {
+  display: flex;
+  align-items: center;
+  margin: 0 6px;
+}
+
+.demo-pill {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.pill-admin {
+  background: rgba(7, 126, 157, 0.12);
+  color: #077e9d;
+  border: 1px solid rgba(7, 126, 157, 0.35);
+}
+
+.pill-admin:hover {
+  background: rgba(7, 126, 157, 0.22);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(7, 126, 157, 0.2);
+}
+
+.pill-empleado {
+  background: rgba(252, 187, 28, 0.18);
+  color: #b45309;
+  border: 1px solid rgba(252, 187, 28, 0.5);
+}
+
+.pill-empleado:hover {
+  background: rgba(252, 187, 28, 0.28);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(252, 187, 28, 0.25);
 }
 </style>

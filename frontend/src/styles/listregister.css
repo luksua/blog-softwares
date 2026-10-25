@@ -408,9 +408,11 @@
   background: white;
   border-radius: 16px;
   overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid #e1e7f0;
   box-shadow: var(--shadow-md);
   transition: var(--transition);
+  scrollbar-width: thin;
 }
 
 .table-container:hover {
@@ -448,11 +450,18 @@
   transition: var(--transition-smooth);
 }
 
+.base-table tbody tr td:first-child {
+  box-shadow: inset 4px 0 0 transparent;
+  transition: box-shadow 0.2s ease, var(--transition-smooth);
+}
+
 .base-table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-  transform: translateX(5px) scale(1.01);
-  box-shadow: -4px 0 0 var(--primary);
+  background-color: rgba(0, 0, 0, 0.035);
   cursor: pointer;
+}
+
+.base-table tbody tr:hover td:first-child {
+  box-shadow: inset 4px 0 0 var(--primary);
 }
 
 .base-table tbody tr:hover td {
@@ -467,7 +476,6 @@
   background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
   color: white;
   border-color: transparent;
-  transform: scale(1.05);
 }
 
 .titulo-tabla {
@@ -477,11 +485,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
-}
-
-.base-table tbody tr:hover .badge-estado,
-.base-table tbody tr:hover .btn-icon {
-  transform: scale(1.05);
 }
 
 .base-table td {
@@ -507,7 +510,8 @@
   }
 
   .base-table tbody tr:hover {
-    transform: translateX(4px) scale(1.02);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
 
   .base-table td {

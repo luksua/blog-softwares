@@ -57,14 +57,68 @@ async function solicitarAuth(): Promise<AuthCache | null> {
 
     return authVerificado
   } catch (error) {
-    console.error(error)
+    console.warn('Backend o sesión no disponible. Activando usuario demo para navegación.')
 
-    authVerificado = null
-    localStorage.removeItem('user_data')
-    localStorage.removeItem('auth_token')
+    authVerificado = USUARIO_DEMO
+    localStorage.setItem('user_data', JSON.stringify(USUARIO_DEMO.usuario))
 
-    return null
+    return authVerificado
   }
+}
+
+export const USUARIO_DEMO: AuthCache = {
+  usuario: {
+    usuario_id: 1,
+    usuario_usuario: 'admin.demo',
+    usuario_nombre1: 'Administrador',
+    usuario_nombre2: '',
+    usuario_apellido1: 'Demo',
+    usuario_apellido2: '',
+    usuario_grupo: 'ADMIN',
+    cargo_id: 1,
+    medico_id: null,
+    area_servicio_id: 1,
+    area_servicio: {
+      area_servicio_id: 1,
+      area_servicio_nombre: 'Tecnología y Sistemas',
+    },
+    area: 'Tecnología y Sistemas',
+    nombre: 'Administrador Demo',
+    permisos: [
+      'blog.supervisar_area',
+      'blog.crear',
+      'blog.editar',
+      'blog.eliminar',
+      'blog.publicar',
+      'blog.gestionar_categorias',
+    ],
+    jefaturas: [
+      {
+        area_servicio_id: 1,
+        area_servicio: {
+          area_servicio_id: 1,
+          area_servicio_nombre: 'Tecnología y Sistemas',
+        },
+      },
+    ],
+    areas_supervisadas: [
+      {
+        area_servicio_id: 1,
+        area_servicio_nombre: 'Tecnología y Sistemas',
+      },
+    ],
+    tipo_usuario: 'admin',
+  },
+  permisos: [
+    'blog.supervisar_area',
+    'blog.crear',
+    'blog.editar',
+    'blog.eliminar',
+    'blog.publicar',
+    'blog.gestionar_categorias',
+  ],
+  es_admin: true,
+  puede_supervisar_area: true,
 }
 
 /**
