@@ -423,6 +423,11 @@ export async function demoAdapter(config: InternalAxiosRequestConfig): Promise<A
     return crearRespuesta(200, { data: { no_leidas: noLeidas } }, config)
   }
 
+  if (pathname === '/notificaciones/observaciones') {
+    const obs = obtenerObservacionesDemo()
+    return crearRespuesta(200, { data: obs }, config)
+  }
+
   const matchNotifLeida = pathname.match(/^\/notificaciones\/(\d+)\/leida$/)
   if (matchNotifLeida && method === 'post') {
     const id = Number(matchNotifLeida[1])

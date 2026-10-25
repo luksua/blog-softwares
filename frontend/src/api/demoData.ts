@@ -498,7 +498,10 @@ export function obtenerNotificacionesDemo(): BlogNotification[] {
   try {
     const guardado = localStorage.getItem(LOCAL_STORAGE_KEY_NOTIFICACIONES)
     if (guardado) {
-      return JSON.parse(guardado)
+      const parsed = JSON.parse(guardado)
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed
+      }
     }
   } catch (e) {
     console.error(e)

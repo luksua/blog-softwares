@@ -49,6 +49,15 @@
             <span class="nav-text">Guardados</span>
           </router-link>
         </li>
+        <li>
+          <router-link :to="{ name: 'notificaciones' }" class="nav-item" @click="cerrarSidebarMovil">
+            <i class="bi bi-bell-fill nav-icon"></i>
+            <span class="nav-text">Notificaciones</span>
+            <span v-if="notificacionesNoLeidas > 0" class="badge bg-danger ms-auto rounded-pill" style="font-size: 0.75rem;">
+              {{ etiquetaNotificacionesNoLeidas }}
+            </span>
+          </router-link>
+        </li>
       </ul>
     </aside>
 
@@ -1080,8 +1089,7 @@ onUnmounted(() => {
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  padding: 10px;
-  padding: 11111040;
+  padding: 4px 8px;
 }
 
 .notification-empty {
